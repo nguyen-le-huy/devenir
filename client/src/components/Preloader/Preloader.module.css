@@ -1,0 +1,80 @@
+.preloader {
+    background-color: var(--brown);
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    place-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    color: var(--white);
+}
+
+.loaderNumberWrapper {
+    height: 10vw;
+    line-height: 10vw;
+    overflow: hidden;
+    display: flex;
+    position: relative;
+}
+
+.firstLoaderNumber, .secondLoaderNumber {
+    font-size: 10vw;
+    font-weight: 500;
+    opacity: 1;
+    display: block;
+    transform: translateY(0%);
+}
+
+.loaderLogo {
+    width: 150px;
+    position: absolute;
+    opacity: 0;
+}
+
+.loaderLogo path {
+    fill: none;
+    stroke: white;
+    stroke-width: 2;
+}
+
+.loaderCircle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid #7f7f7f;
+    border-top-color: var(--white);
+    animation: spin 1s linear infinite;
+    position: absolute;
+    bottom: 10%;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .loaderNumberWrapper {
+        height: 25vw;
+        line-height: 25vw;
+    }
+
+    .firstLoaderNumber, .secondLoaderNumber {
+        font-size: 25vw;
+    }
+
+    .loaderLogo {
+        width: 100px;
+    }
+
+    .loaderCircle {
+        width: 50px;
+        height: 50px;
+    }
+}

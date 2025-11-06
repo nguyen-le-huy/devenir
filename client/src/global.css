@@ -1,0 +1,30 @@
+@import url('satoshi.css');
+
+:root {
+  --black: #0e0e0e;
+  --white: #ffffff;
+  --light-gray: #f6f6f6;
+  --brown: #5C4439;
+  --midnight: #041E3A;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Satoshi', sans-serif;
+}
+
+img {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
