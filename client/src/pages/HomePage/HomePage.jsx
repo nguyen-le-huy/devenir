@@ -4,6 +4,7 @@ import Hero from './Hero.jsx';
 import Introduction from './Introduction.jsx';
 import NewArrivals from './NewArrivals.jsx';
 import CategoryBox from './CategoryBox.jsx';
+import SmallTreasures from './SmallTreasures.jsx';
 
 const HomePage = () => {
     return (
@@ -12,6 +13,7 @@ const HomePage = () => {
             <Hero />
             <Introduction />
             <NewArrivals />
+            <SmallTreasures />
             <CategoryBox />
         </>
     );

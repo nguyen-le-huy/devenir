@@ -1,0 +1,116 @@
+.smallTreasures {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background-color: #F6F6F6;
+}
+
+.title {
+    z-index: 99;
+}
+
+.title > h1 {
+    font-size: 96px;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--black);
+    mix-blend-mode: difference;
+}
+
+.imageParallaxContainer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+}
+
+.imageParallax {
+    width: 390px;
+    height: 440px;
+    position: absolute;
+}
+
+.image1 {
+    top: 227px;
+    left: -155px;
+    rotate: 15deg;
+}
+
+.image2 {
+    top: 586px;
+    left: 237px;
+}
+
+.image3 {
+    top: 56px;
+    left: 585px;
+    rotate: 5deg;
+}
+
+.image4 {
+    top: 4px;
+    left: 1308px;
+    rotate: -15deg;
+}
+
+.image5 {
+    top: -54px;
+    left: 91px;
+}
+
+.image6 {
+    top: 380px;
+    left: 1400px;
+    rotate: 25deg;
+}
+
+.image7 {
+    top: 616px;
+    left: 1000px;
+}
+
+@media (max-width: 768px) {
+    .title > h1 {
+        font-size: 48px;
+    }
+
+    .imageParallax {
+        width: 200px;
+        height: 225px;
+    }
+    
+    .image3, .image5 {
+        display: none;
+    }
+
+    .image4 {
+        top: 50px;
+        left: 220px;
+    }
+
+    .image6 {
+        top: 450px;
+        left: 230px;
+    }
+
+    .image7 {
+        top: 750px;
+        left: 100px;
+    }
+
+    .image2 {
+        top: 600px;
+        left: -60px;
+    }
+
+    .image1 {
+        top: 150px;
+        left: -50px;
+    }
+
+}
