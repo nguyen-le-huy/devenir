@@ -6,6 +6,7 @@ import NewArrivals from './NewArrivals.jsx';
 import CategoryBox from './CategoryBox.jsx';
 import SmallTreasures from './SmallTreasures.jsx';
 import Scarves from './Scarves.jsx';
+import OurPartners from './OurPartners.jsx';
 
 const HomePage = () => {
     return (
@@ -17,6 +18,7 @@ const HomePage = () => {
             <SmallTreasures />
             <CategoryBox />
             <Scarves />
+            <OurPartners />
         </>
     );
 }

@@ -10,7 +10,6 @@
 .scarvesList {
     position: relative;
     width: 100%;
-    overflow: hidden;
 }
 
 /* Override Swiper default styles */
@@ -60,6 +59,10 @@
 .arrows > svg {
     cursor: pointer;
     pointer-events: all;
+}
+
+.titleSectionScarves {
+    padding-inline: 20px;
 }
 
 

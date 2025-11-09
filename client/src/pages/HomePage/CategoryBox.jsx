@@ -31,7 +31,7 @@ const CategoryBox = () => {
                 <div className={styles.contentBox}>
                     <h2 className={styles.title}>New In Jackets</h2> 
                     <p className={styles.description}>Discover timeless craftsmanship and modern silhouettes for the season ahead.</p>
-                    <a className={styles.link} href="#">Shop</a>   
+                    <a className={styles.link} href="#">Shop Now</a>   
                 </div>       
             </div>
             <div className={`${styles.box2} ${styles.box}`} style={{ 
@@ -40,7 +40,7 @@ const CategoryBox = () => {
                 <div className={styles.contentBox}>
                     <h2 className={styles.title}>New In Jackets</h2> 
                     <p className={styles.description}>Discover timeless craftsmanship and modern silhouettes for the season ahead.</p>
-                    <a className={styles.link} href="#">Shop</a>   
+                    <a className={styles.link} href="#">Shop Now</a>   
                 </div>       
             </div>
             <div className={`${styles.box3} ${styles.box}`} style={{ 
@@ -49,7 +49,7 @@ const CategoryBox = () => {
                 <div className={styles.contentBox}>
                     <h2 className={styles.title}>New In Sweaters</h2> 
                     <p className={styles.description}>Discover timeless craftsmanship and modern silhouettes for the season ahead.</p>
-                    <a className={styles.link} href="#">Shop</a>   
+                    <a className={styles.link} href="#">Shop Now</a>   
                 </div>       
             </div>
             <div className={`${styles.box4} ${styles.box}`}>

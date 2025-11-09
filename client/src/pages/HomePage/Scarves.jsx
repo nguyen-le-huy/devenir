@@ -37,6 +37,36 @@ const scarves = [
         price: 59.99,
         image: '/images/scarf4.png'
     },
+    {
+        id: '5',
+        name: 'Patterned Fashion Scarf',
+        price: 69.99,
+        image: '/images/scarf5.webp'
+    },
+    {
+        id: '6',
+        name: 'Linen Casual Scarf',
+        price: 49.99,
+        image: '/images/scarf6.png'
+    },
+    { 
+        id: '7',
+        name: 'Silk Blend Scarf',
+        price: 89.99,
+        image: '/images/scarf7.webp'
+    },
+    {
+        id: '8',
+        name: 'Alpaca Cozy Scarf',
+        price: 139.99,
+        image: '/images/scarf8.webp'
+    },
+    {
+        id: '9',
+        name: 'Fringed Wool Scarf',
+        price: 99.99,
+        image: '/images/scarf9.png'
+    }
 ];
 
 const Scarves = () => {
@@ -85,8 +115,8 @@ const Scarves = () => {
     }, { scope: scarvesContainerRef });
 
     return (
-        <div className={`${styles.scarves} container`} ref={scarvesContainerRef}>
-            <div className="titleSection">
+        <div className={`${styles.scarves}`} ref={scarvesContainerRef}>
+            <div className={`${styles.titleSectionScarves} titleSection`}>
                 <h3 className="titleSplit">Scarves Collection</h3>
                 <a href="#" className="viewAllLinkSplit">
                     View All
