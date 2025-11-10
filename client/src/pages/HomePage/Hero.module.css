@@ -44,22 +44,6 @@
     align-items: center;
 }
 
-.thirdRow > button {
-    padding: 16px 32px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    border: none;
-    
-}
-
-.thirdRow > button > span {
-    font-size: 18px;
-    font-weight: 600;
-}
-
 .text {
     display: flex;
     gap: 40px;
@@ -88,18 +72,85 @@
     will-change: transform;
 }
 
-/* Masking for split lines */
 :global(.line) {
     overflow: hidden;
     display: block;
 }
 
+/* Shop Button - Atlas Effect */
 .shopButton {
+    opacity: 0;
+    padding: 16px 32px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: none;
+    background: var(--white);
+    position: relative;
+    overflow: hidden;
+    font-weight: bold;
+}
+
+.shopButton > span {
+    display: inline-block;
+    font-size: 16px;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.shopButton:hover > span {
     opacity: 0;
 }
 
-@media (max-width: 768px) {
+.marquee {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    pointer-events: none;
+}
 
+.marqueeInner {
+    width: fit-content;
+    display: flex;
+    position: relative;
+    --offset: 1rem;
+    --move-initial: calc(-25% + var(--offset));
+    --move-final: calc(-50% + var(--offset));
+    transform: translate3d(var(--move-initial), 0, 0);
+    animation: marquee 1s linear infinite;
+    animation-play-state: paused;
+    opacity: 0;
+}
+
+.shopButton:hover .marqueeInner {
+    animation-play-state: running;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.marquee span {
+    text-align: center;
+    white-space: nowrap;
+    font-style: italic;
+    padding: 16px 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+@keyframes marquee {
+    0% {
+        transform: translate3d(var(--move-initial), 0, 0);
+    }
+    100% {
+        transform: translate3d(var(--move-final), 0, 0);
+    }
+}
+
+@media (max-width: 768px) {
     video {
         display: none;
     }
@@ -133,12 +184,13 @@
         height: 62px;
     }
 
-    .thirdRow > button {
+    .shopButton {
         padding: 12px 24px;
     }
 
-    .thirdRow > button > span {
-        font-size: 13px
+    .shopButton > span,
+    .marquee span {
+        font-size: 13px;
     }
 }
 
