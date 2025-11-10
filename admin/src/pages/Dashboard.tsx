@@ -1,32 +1,55 @@
+import { AppSidebar } from "@/components/app-sidebar"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Separator } from "@/components/ui/separator"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+
 export default function Dashboard() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      
-      <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="text-sm font-medium text-gray-500">Total Revenue</h3>
-          <p className="text-2xl font-bold mt-2">$45,231.89</p>
-          <p className="text-xs text-green-600 mt-1">+20.1% from last month</p>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 data-[orientation=vertical]:h-4"
+            />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="#">
+                    Building Your Application
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+            <div className="bg-muted/50 aspect-video rounded-xl" />
+            <div className="bg-muted/50 aspect-video rounded-xl" />
+            <div className="bg-muted/50 aspect-video rounded-xl" />
+          </div>
+          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
         </div>
-        
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="text-sm font-medium text-gray-500">Orders</h3>
-          <p className="text-2xl font-bold mt-2">+2,350</p>
-          <p className="text-xs text-green-600 mt-1">+18.0% from last month</p>
-        </div>
-        
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="text-sm font-medium text-gray-500">Active Products</h3>
-          <p className="text-2xl font-bold mt-2">573</p>
-          <p className="text-xs text-gray-500 mt-1">12 added this week</p>
-        </div>
-      </section>
-
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold mb-4">Recent Orders</h2>
-        <div className="text-sm text-gray-600">Order table will be here...</div>
-      </div>
-    </div>
-  );
+      </SidebarInset>
+    </SidebarProvider>
+  )
 }
