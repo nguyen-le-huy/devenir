@@ -43,10 +43,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: inherit;
+    background-color: var(--white);
     position: sticky;
     top: 0;
-    background-color: var(--white);
     z-index: 1000;
 }
 
