@@ -35,7 +35,7 @@ const Header = () => {
                         <li className={styles.link}>Pants</li>
                         <li className={styles.link}>Sweaters</li>
                         <li className={styles.link}>Shirts</li>
-                        <li className={styles.link}>Scarves</li>
+                        <li className={styles.link}><a href="/scarf">Scarves</a></li>
                         <li className={styles.link}>Gallery</li>
                         <li className={styles.link}>Contact</li>
                     </ul>

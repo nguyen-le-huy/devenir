@@ -117,6 +117,10 @@
     cursor: pointer;
 }
 
+.link > a {
+    color: var(--black);
+}
+
 /*************====> OVERLAY MENU <====*************/
 
 .overlayMenu {

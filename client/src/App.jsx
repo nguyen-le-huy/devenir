@@ -6,6 +6,7 @@ import Lenis from 'lenis';
 import { useEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/all';
+import ProductByCategory from './pages/ProductByCategory/ProductByCategory.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -49,6 +50,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/scarf" element={<ProductByCategory />} />
         </Routes>
       </Layout>
     </BrowserRouter>
