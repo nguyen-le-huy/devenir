@@ -126,11 +126,30 @@ const Scarves = () => {
             <div className={styles.scarvesList}>
                 <Swiper
                     modules={[Navigation]}
-                    spaceBetween={10}
-                    slidesPerView="auto"
+                    spaceBetween={20}
+                    slidesPerView={4}
+                    slidesPerGroup={1}
                     navigation={{
                         prevEl: prevRef.current,
                         nextEl: nextRef.current,
+                    }}
+                    breakpoints={{
+                        320: {
+                            slidesPerView: 1,
+                            spaceBetween: 10,
+                        },
+                        640: {
+                            slidesPerView: 2,
+                            spaceBetween: 15,
+                        },
+                        1024: {
+                            slidesPerView: 3,
+                            spaceBetween: 20,
+                        },
+                        1280: {
+                            slidesPerView: 4,
+                            spaceBetween: 20,
+                        },
                     }}
                     onBeforeInit={(swiper) => {
                         swiper.params.navigation.prevEl = prevRef.current;
@@ -143,20 +162,6 @@ const Scarves = () => {
                     onInit={(swiper) => {
                         setIsBeginning(swiper.isBeginning);
                         setIsEnd(swiper.isEnd);
-                    }}
-                    breakpoints={{
-                        320: {
-                            slidesPerView: 'auto',
-                            spaceBetween: 10
-                        },
-                        768: {
-                            slidesPerView: 'auto',
-                            spaceBetween: 10
-                        },
-                        1024: {
-                            slidesPerView: 'auto',
-                            spaceBetween: 10
-                        }
                     }}
                 >
                     {scarves.map((scarf) => (

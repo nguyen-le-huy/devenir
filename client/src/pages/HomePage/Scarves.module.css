@@ -10,24 +10,28 @@
 .scarvesList {
     position: relative;
     width: 100%;
+    padding-inline: 20px;
+    overflow: hidden; /* Ẩn overflow để không có scrollbar Y */
 }
 
 /* Override Swiper default styles */
 .scarvesList :global(.swiper) {
     overflow: visible;
-    overflow-y: hidden;
 }
 
 .scarvesList :global(.swiper-wrapper) {
     display: flex;
-    gap: 10px;
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 .scarvesList :global(.swiper-slide) {
-    width: auto !important;
     height: auto;
     display: flex;
+}
+
+/* Đảm bảo ScarfCard fill toàn bộ slide */
+.scarvesList :global(.swiper-slide) > * {
+    width: 100%;
 }
 
 /* Ẩn scrollbar */
@@ -47,24 +51,25 @@
 .arrows {
     position: absolute;
     top: 50%;
-    width: 100%;
+    left: 0;
+    right: 0;
     display: flex;
     justify-content: space-between;
     transform: translateY(-50%);
     z-index: 10;
     pointer-events: none;
-    padding: 0 20px;
+    padding: 0 20px; /* Padding để arrows không sát mép */
 }
 
 .arrows > svg {
     cursor: pointer;
     pointer-events: all;
+    transition: opacity 0.3s ease;
 }
 
 .titleSectionScarves {
     padding-inline: 20px;
 }
-
 
 .arrows > svg.swiper-button-disabled {
     opacity: 0.3;
@@ -76,6 +81,10 @@
         padding-top: 20px;
         padding-bottom: 20px;
         gap: 20px;
+    }
+    
+    .scarvesList {
+        padding-inline: 10px;
     }
     
     .arrows {
