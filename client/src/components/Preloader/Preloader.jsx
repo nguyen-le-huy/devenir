@@ -1,15 +1,15 @@
 import styles from './Preloader.module.css';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
 import { lenisInstance } from '../../App.jsx';
 
-
 gsap.registerPlugin(useGSAP, DrawSVGPlugin);
 
 const Preloader = () => {
-    // Refs for GSAP animations
+    const [shouldShowPreloader, setShouldShowPreloader] = useState(false);
+    
     const containerRef = useRef(null);
     const firstNumberRef = useRef(null);
     const secondNumberRef = useRef(null);
@@ -17,9 +17,34 @@ const Preloader = () => {
     const pathsRef = useRef([]);
     const circleLoaderRef = useRef(null);
 
-
-    // Lock scroll on mount
+    // ✅ Kiểm tra xem có phải page reload hay navigation
     useEffect(() => {
+        // Kiểm tra performance API để phát hiện reload
+        const navigationType = performance.getEntriesByType('navigation')[0]?.type;
+        
+        // navigationType có thể là:
+        // - 'reload': Người dùng nhấn F5 hoặc reload button
+        // - 'navigate': Vào trang lần đầu qua URL
+        // - 'back_forward': Dùng nút Back/Forward
+        
+        const isPageLoad = navigationType === 'reload' || navigationType === 'navigate';
+        
+        if (isPageLoad) {
+            // Đây là page reload hoặc vào web lần đầu → Show preloader
+            setShouldShowPreloader(true);
+            // Đánh dấu đã load xong preloader trong session này
+            sessionStorage.setItem('preloaderShown', 'true');
+        } else {
+            // Đây là client-side navigation → Skip preloader
+            setShouldShowPreloader(false);
+            window.dispatchEvent(new CustomEvent('preloaderComplete'));
+        }
+    }, []);
+
+    // Lock scroll khi preloader hiển thị
+    useEffect(() => {
+        if (!shouldShowPreloader) return;
+
         const scrollY = window.scrollY;
         
         document.body.style.position = 'fixed';
@@ -34,9 +59,11 @@ const Preloader = () => {
             document.body.style.overflow = '';
             window.scrollTo(0, scrollY);
         };
-    }, []);
+    }, [shouldShowPreloader]);
 
     useGSAP(() => {
+        if (!shouldShowPreloader) return;
+
         if (lenisInstance) {
             lenisInstance.stop();
         }
@@ -85,8 +112,7 @@ const Preloader = () => {
           .set(secondNum, { innerText: '9', y: '100%' })
           .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase });
 
-        // --- ANIMATION END ---
-
+        // Fade out numbers
         tl.to([firstNum, secondNum, circleLoader], {
             opacity: 0,
             duration: 0.3,
@@ -94,6 +120,7 @@ const Preloader = () => {
             delay: 0.5
         });
 
+        // Logo animation
         tl.to(logo, {
             opacity: 1,
             duration: 0.5,
@@ -112,6 +139,7 @@ const Preloader = () => {
             ease: 'power1.inOut'
         }, '-=0.5');
 
+        // Slide up
         tl.to(container, {
             yPercent: -100,
             duration: 1.2,
@@ -119,7 +147,7 @@ const Preloader = () => {
             delay: 0.5
         });
 
-        // Unlock scroll và dispatch event cho Hero
+        // Unlock scroll & dispatch event
         tl.call(() => {
             const scrollY = parseInt(document.body.style.top || '0') * -1;
             
@@ -134,14 +162,15 @@ const Preloader = () => {
                 lenisInstance.start();
             }
 
-            // Dispatch custom event để Hero bắt đầu animation
             window.dispatchEvent(new CustomEvent('preloaderComplete'));
         }, null, '-=0.5');
 
         tl.set(container, {
             display: 'none',
         });
-    }, { scope: containerRef });
+    }, { scope: containerRef, dependencies: [shouldShowPreloader] });
+
+    if (!shouldShowPreloader) return null;
 
     return (
         <div className={styles.preloader} ref={containerRef}>

@@ -17,55 +17,55 @@ const scarves = [
         id: '1',
         name: 'Elegant Silk Scarf',
         price: 79.99,
-        image: '/images/scarf1.png'
+        image: '/images/scarf/scarf1.png'
     },
     {
         id: '2',
         name: 'Cashmere Winter Scarf',
         price: 129.99,
-        image: '/images/scarf2.png'
+        image: '/images/scarf/scarf2.png'
     },
     {
         id: '3',
         name: 'Wool Check Scarf',
         price: 89.99,
-        image: '/images/scarf3.png'
+        image: '/images/scarf/scarf3.png'
     },
     {
         id: '4',
         name: 'Cotton Summer Scarf',
         price: 59.99,
-        image: '/images/scarf4.png'
+        image: '/images/scarf/scarf4.png'
     },
     {
         id: '5',
         name: 'Patterned Fashion Scarf',
         price: 69.99,
-        image: '/images/scarf5.webp'
+        image: '/images/scarf/scarf5.png'
     },
     {
         id: '6',
         name: 'Linen Casual Scarf',
         price: 49.99,
-        image: '/images/scarf6.png'
+        image: '/images/scarf/scarf6.png'
     },
     { 
         id: '7',
         name: 'Silk Blend Scarf',
         price: 89.99,
-        image: '/images/scarf7.webp'
+        image: '/images/scarf/scarf7.png'
     },
     {
         id: '8',
         name: 'Alpaca Cozy Scarf',
         price: 139.99,
-        image: '/images/scarf8.webp'
+        image: '/images/scarf/scarf8.png'
     },
     {
         id: '9',
         name: 'Fringed Wool Scarf',
         price: 99.99,
-        image: '/images/scarf9.png'
+        image: '/images/scarf/scarf9.png'
     }
 ];
 
@@ -151,9 +151,15 @@ const Scarves = () => {
                             spaceBetween: 20,
                         },
                     }}
-                    onBeforeInit={(swiper) => {
-                        swiper.params.navigation.prevEl = prevRef.current;
-                        swiper.params.navigation.nextEl = nextRef.current;
+                    onSwiper={(swiper) => {
+                        // ✅ Khởi tạo navigation sau khi Swiper mount
+                        setTimeout(() => {
+                            swiper.params.navigation.prevEl = prevRef.current;
+                            swiper.params.navigation.nextEl = nextRef.current;
+                            swiper.navigation.destroy();
+                            swiper.navigation.init();
+                            swiper.navigation.update();
+                        });
                     }}
                     onSlideChange={(swiper) => {
                         setIsBeginning(swiper.isBeginning);

@@ -2,7 +2,7 @@ import styles from './Hero.module.css';
 import gsap from 'gsap';
 import SplitText from 'gsap/src/SplitText';
 import { useGSAP } from '@gsap/react';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 
 gsap.registerPlugin(useGSAP, SplitText, DrawSVGPlugin);
@@ -13,88 +13,90 @@ const Hero = () => {
     const svgPathRef = useRef(null);
     const logoRef = useRef(null);
     const buttonRef = useRef(null);
+    const [shouldAnimate, setShouldAnimate] = useState(false);
 
+    // ✅ Lắng nghe event từ Preloader
     useEffect(() => {
         const handlePreloaderComplete = () => {
-            if (!hasAnimated.current && heroRef.current) {
-                document.fonts.ready.then(() => {
-                    const heroTexts = heroRef.current.querySelectorAll('.splitHero');
-                    
-                    gsap.set(heroTexts, { opacity: 1 });
-
-                    // Tạo timeline cho Hero animations
-                    const tl = gsap.timeline();
-
-                    heroTexts.forEach((text, index) => {
-                        SplitText.create(text, {
-                            type: "words,lines",
-                            linesClass: "line",
-                            autoSplit: true,
-                            mask: "lines",
-                            onSplit: (self) => {
-                                tl.from(self.lines, {
-                                    delay: 0.5,
-                                    duration: 0.8,
-                                    yPercent: 100,
-                                    opacity: 0,
-                                    stagger: 0.1,
-                                    ease: "power2.out",
-                                }, index * 0.2); // Stagger giữa các h1
-                            }
-                        });
-                    });
-
-                    // Thêm các animation khác của Hero vào timeline
-                    // Ví dụ: animate button, video, etc.
-                    // tl.from(`.${styles.thirdRow} button`, {
-                    //     opacity: 0,
-                    //     y: 20,
-                    //     duration: 0.5,
-                    //     ease: "power2.out"
-                    // }, '-=0.3');
-
-                    gsap.set(buttonRef.current, { opacity: 1 });
-                    
-
-                    tl.from(buttonRef.current, {
-                        opacity: 0,
-                        x: 50,
-                        duration: 0.8,
-                        ease: "power2.inOut"
-                    }, '<');
-
-                    // Animate SVG path
-                    tl.to(logoRef.current, {
-                        opacity: 1,
-                        duration: 1,
-                    }, '<');
-
-                    tl.from(svgPathRef.current, {
-                        drawSVG: "0%",
-                        duration: 1,
-                        ease: "power3.in"
-                    }, '<' );
-
-                    // Fill SVG after drawing
-                    tl.to(svgPathRef.current, {
-                        fill: 'white',
-                        duration: 0.5,
-                        ease: 'power3.inOut'
-                    }, '-=0.5');
-
-
-                    hasAnimated.current = true;
-                });
-            }
+            setShouldAnimate(true);
         };
-
-        // Listen cho event từ Preloader
-        window.addEventListener('preloaderComplete', handlePreloaderComplete);
-
+        
+        // Kiểm tra navigation type
+        const navigationType = performance.getEntriesByType('navigation')[0]?.type;
+        const isPageLoad = navigationType === 'reload' || navigationType === 'navigate';
+        
+        if (isPageLoad) {
+            // Đợi event từ Preloader
+            window.addEventListener('preloaderComplete', handlePreloaderComplete);
+        } else {
+            // Client-side navigation → Animate ngay
+            setShouldAnimate(true);
+        }
+        
         return () => {
             window.removeEventListener('preloaderComplete', handlePreloaderComplete);
         };
     }, []);
+
+    // Chạy animation
+    useEffect(() => {
+        if (!shouldAnimate || hasAnimated.current || !heroRef.current) return;
+
+        document.fonts.ready.then(() => {
+            const heroTexts = heroRef.current.querySelectorAll('.splitHero');
+            
+            gsap.set(heroTexts, { opacity: 1 });
+
+            const tl = gsap.timeline();
+
+            heroTexts.forEach((text, index) => {
+                SplitText.create(text, {
+                    type: "words,lines",
+                    linesClass: "line",
+                    autoSplit: true,
+                    mask: "lines",
+                    onSplit: (self) => {
+                        tl.from(self.lines, {
+                            delay: 0.5,
+                            duration: 0.8,
+                            yPercent: 100,
+                            opacity: 0,
+                            stagger: 0.1,
+                            ease: "power2.out",
+                        }, index * 0.2);
+                    }
+                });
+            });
+
+            gsap.set(buttonRef.current, { opacity: 1 });
+            
+            tl.from(buttonRef.current, {
+                opacity: 0,
+                x: 50,
+                duration: 0.8,
+                ease: "power2.inOut"
+            }, '<');
+
+            tl.to(logoRef.current, {
+                opacity: 1,
+                duration: 1,
+            }, '<');
+
+            tl.from(svgPathRef.current, {
+                drawSVG: "0%",
+                duration: 1,
+                ease: "power3.in"
+            }, '<');
+
+            tl.to(svgPathRef.current, {
+                fill: 'white',
+                duration: 0.5,
+                ease: 'power3.inOut'
+            }, '-=0.5');
+
+            hasAnimated.current = true;
+        });
+    }, [shouldAnimate]);
 
     return (
         <div ref={heroRef} className={`${styles.hero} container`}>
