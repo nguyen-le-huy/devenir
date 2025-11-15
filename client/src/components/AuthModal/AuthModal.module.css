@@ -1,0 +1,181 @@
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.modal {
+    background-color: var(--white);
+    border-radius: 10px;
+    padding: 30px;
+    width: 90%;
+    max-width: 420px;
+    max-height: 75vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideUp 0.3s ease-in-out;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    margin-top: 140px;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.closeButton {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--black);
+    transition: all 0.3s ease;
+    border-radius: 50%;
+}
+
+.closeButton:hover {
+    background-color: var(--light-gray);
+    transform: scale(1.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--black);
+    margin: 0 0 10px 0;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.formContainer {
+    width: 100%;
+    padding-top: -50px;
+
+}
+
+.formWrapper {
+    width: 100%;
+}
+
+.switchForm {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.switchButton {
+    background: none;
+    border: none;
+    color: var(--brown);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.switchButton:hover {
+    text-decoration: underline;
+}
+
+.successMessage {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.successMessage h3 {
+    color: var(--brown);
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.successMessage p {
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 20px 0;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.primaryButton {
+    padding: 10px 20px;
+    background-color: var(--brown);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.primaryButton:hover {
+    background-color: #4a3530;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .modal {
+        width: 95%;
+        padding: 30px 20px;
+        max-height: 95vh;
+    }
+
+    .title {
+        font-size: 24px;
+    }
+
+    .subtitle {
+        font-size: 13px;
+    }
+}

@@ -1,8 +1,15 @@
 import styles from "./Header.module.css";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../contexts/AuthContext";
+import AuthModal from "../../AuthModal/AuthModal";
+import UserMenu from "../../UserMenu/UserMenu";
 
 const Header = () => {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     
     const handleOpenMenu = () => {
         setIsMenuOpen(true);
@@ -12,8 +19,17 @@ const Header = () => {
         setIsMenuOpen(false);
     }
 
+    const handleOpenAuthModal = () => {
+        setIsAuthModalOpen(true);
+    }
+
+    const handleCloseAuthModal = () => {
+        setIsAuthModalOpen(false);
+    }
+
     return (
         <>
+            <AuthModal isOpen={isAuthModalOpen} onClose={handleCloseAuthModal} />
             <div className={`${styles.topBar} container`}>
                 <div className={styles.left}></div>
                 <div className={styles.center}>Fast, Free Delivery With Prime | <span className={styles.campaignLink}>
@@ -50,9 +66,15 @@ const Header = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.searchIcon}>
                         <path d="M19.4412 19.4412C20.2607 18.6217 20.9108 17.6488 21.3543 16.578C21.7979 15.5073 22.0262 14.3596 22.0262 13.2006C22.0262 12.0416 21.7979 10.894 21.3543 9.82322C20.9108 8.75245 20.2607 7.77953 19.4412 6.96C18.6217 6.14047 17.6487 5.49038 16.578 5.04685C15.5072 4.60333 14.3596 4.37505 13.2006 4.37505C12.0416 4.37505 10.8939 4.60333 9.82317 5.04685C8.75241 5.49038 7.77948 6.14047 6.95995 6.96C5.30483 8.61511 4.375 10.8599 4.375 13.2006C4.375 15.5413 5.30483 17.7861 6.95995 19.4412C8.61507 21.0964 10.8599 22.0262 13.2006 22.0262C15.5413 22.0262 17.7861 21.0964 19.4412 19.4412ZM19.4412 19.4412L25 25" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.userIcon}>
-                        <path d="M6.25 25V23.75C6.25 21.4294 7.17187 19.2038 8.81282 17.5628C10.4538 15.9219 12.6794 15 15 15M15 15C17.3206 15 19.5462 15.9219 21.1872 17.5628C22.8281 19.2038 23.75 21.4294 23.75 23.75V25M15 15C16.3261 15 17.5979 14.4732 18.5355 13.5355C19.4732 12.5979 20 11.3261 20 10C20 8.67392 19.4732 7.40215 18.5355 6.46447C17.5979 5.52678 16.3261 5 15 5C13.6739 5 12.4021 5.52678 11.4645 6.46447C10.5268 7.40215 10 8.67392 10 10C10 11.3261 10.5268 12.5979 11.4645 13.5355C12.4021 14.4732 13.6739 15 15 15Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    
+                    {/* User Icon or Menu based on auth state */}
+                    {isAuthenticated ? (
+                        <UserMenu />
+                    ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.userIcon} onClick={handleOpenAuthModal} style={{cursor: 'pointer'}}>
+                            <path d="M6.25 25V23.75C6.25 21.4294 7.17187 19.2038 8.81282 17.5628C10.4538 15.9219 12.6794 15 15 15M15 15C17.3206 15 19.5462 15.9219 21.1872 17.5628C22.8281 19.2038 23.75 21.4294 23.75 23.75V25M15 15C16.3261 15 17.5979 14.4732 18.5355 13.5355C19.4732 12.5979 20 11.3261 20 10C20 8.67392 19.4732 7.40215 18.5355 6.46447C17.5979 5.52678 16.3261 5 15 5C13.6739 5 12.4021 5.52678 11.4645 6.46447C10.5268 7.40215 10 8.67392 10 10C10 11.3261 10.5268 12.5979 11.4645 13.5355C12.4021 14.4732 13.6739 15 15 15Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    )}
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.heartIcon}>
                         <path d="M15 6.875L14.325 7.525C14.4125 7.61573 14.5173 7.6879 14.6333 7.7372C14.7493 7.78649 14.874 7.8119 15 7.8119C15.126 7.8119 15.2507 7.78649 15.3667 7.7372C15.4827 7.6879 15.5875 7.61573 15.675 7.525L15 6.875ZM11.7825 22.9025C9.8875 21.4087 7.81625 19.95 6.1725 18.1C4.5625 16.285 3.4375 14.1687 3.4375 11.4212H1.5625C1.5625 14.7537 2.95 17.2962 4.77125 19.345C6.55875 21.3575 8.83875 22.97 10.6213 24.375L11.7825 22.9025ZM3.4375 11.4212C3.4375 8.73375 4.95625 6.47875 7.03 5.53C9.045 4.60875 11.7525 4.8525 14.325 7.525L15.675 6.22625C12.625 3.055 9.08 2.53125 6.25 3.825C3.4825 5.09125 1.5625 8.03125 1.5625 11.4212H3.4375ZM10.6213 24.375C11.2625 24.88 11.95 25.4175 12.6462 25.825C13.3425 26.2325 14.1375 26.5625 15 26.5625V24.6875C14.6125 24.6875 14.1575 24.5375 13.5925 24.2062C13.0262 23.8762 12.44 23.4212 11.7825 22.9025L10.6213 24.375ZM19.3787 24.375C21.1613 22.9687 23.4412 21.3587 25.2288 19.345C27.05 17.295 28.4375 14.7537 28.4375 11.4212H26.5625C26.5625 14.1687 25.4375 16.285 23.8275 18.1C22.1838 19.95 20.1125 21.4087 18.2175 22.9025L19.3787 24.375ZM28.4375 11.4212C28.4375 8.03125 26.5187 5.09125 23.75 3.825C20.92 2.53125 17.3775 3.055 14.325 6.225L15.675 7.525C18.2475 4.85375 20.955 4.60875 22.97 5.53C25.0437 6.47875 26.5625 8.7325 26.5625 11.4212H28.4375ZM18.2175 22.9025C17.56 23.4212 16.9738 23.8762 16.4075 24.2062C15.8413 24.5362 15.3875 24.6875 15 24.6875V26.5625C15.8625 26.5625 16.6575 26.2312 17.3538 25.825C18.0513 25.4175 18.7375 24.88 19.3787 24.375L18.2175 22.9025Z" fill="black"/>
                     </svg>
@@ -83,9 +105,35 @@ const Header = () => {
                         </ul>
                     </div>
                     <div className={styles.overlayBottom}>
-                        <a href="/">Sign in / Register</a>
-                        <a href="/">Devenir Services</a>
-                        <a href="/">Customer Support</a>
+                        {isAuthenticated ? (
+                            <>
+                                <a href="/">Devenir Services</a>
+                                <a href="/">Customer Support</a>
+                            </>
+                        ) : (
+                            <>
+                                <button 
+                                    onClick={() => {
+                                        navigate('/auth');
+                                        handleCloseMenu();
+                                    }}
+                                    style={{background: 'none', border: 'none', cursor: 'pointer', color: '#0E0E0E', fontSize: '16px', fontWeight: '500'}}
+                                >
+                                    Đăng nhập
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        navigate('/register');
+                                        handleCloseMenu();
+                                    }}
+                                    style={{background: 'none', border: 'none', cursor: 'pointer', color: '#0E0E0E', fontSize: '16px', fontWeight: '500'}}
+                                >
+                                    Đăng ký ngay
+                                </button>
+                                <a href="/">Devenir Services</a>
+                                <a href="/">Customer Support</a>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

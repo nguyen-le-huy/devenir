@@ -61,9 +61,29 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Please enter a password'],
-      minlength: [6, 'Password must be at least 6 characters'],
+      required: function() {
+        // Password required chỉ khi không là Google OAuth
+        return !this.googleId;
+      },
+      validate: {
+        validator: function(v) {
+          // Nếu không có googleId thì password phải >= 6 characters
+          if (!this.googleId && v) {
+            return v.length >= 6;
+          }
+          return true;
+        },
+        message: 'Password must be at least 6 characters'
+      },
       select: false, // Do not return password in queries by default
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
     },
     googleId: {
       type: String,
@@ -89,8 +109,8 @@ const userSchema = new mongoose.Schema(
  * Only run if the password was modified (isModified)
  */
 userSchema.pre('save', async function (next) {
-  // If password is not changed, skip
-  if (!this.isModified('password')) {
+  // If password is not changed or password is empty, skip
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
 

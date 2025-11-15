@@ -1,0 +1,383 @@
+import User from '../models/UserModel.js';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
+import { OAuth2Client } from 'google-auth-library';
+import crypto from 'crypto';
+import { sendResetEmail } from '../utils/emailService.js';
+import asyncHandler from 'express-async-handler';
+
+/**
+ * Tạo JWT Token
+ * @param {String} userId - User ID
+ * @returns {String} - JWT Token
+ */
+const generateToken = (userId, role) => {
+  return jwt.sign(
+    { userId, role }, 
+    process.env.JWT_SECRET, 
+    {expiresIn: process.env.JWT_EXPIRE || '7d'}
+ );
+}
+
+/**
+ * Tạo username ngẫu nhiên cho Google OAuth
+ * Format: user_XXXXXXXX (8 ký tự random)
+ * @returns {String} - Random username
+ */
+const generateRandomUsername = async () => {
+  let username;
+  let userExists = true;
+
+  // Tạo username random cho đến khi không trùng
+  while (userExists) {
+    const randomStr = Math.random().toString(36).substring(2, 10);
+    username = `user_${randomStr}`;
+    const existingUser = await User.findOne({ username });
+    userExists = !!existingUser;
+  }
+
+  return username;
+}
+
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "https://developers.google.com/oauthplayground"
+);
+
+/**
+ * REGISTRATION - Đăng ký tài khoản mới
+ * @route POST /api/auth/register
+ * @access Public
+ */
+export const register = asyncHandler(async (req, res) => {
+    const { username, email, password } = req.body;
+
+    // valodation - check input
+    if (!username || !email || !password) {
+        return res.status(400).json({ 
+            message: 'Vui lòng điền đầy đủ thông tin' 
+        });
+    }
+
+    // check if email already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+        return res.status(400).json({ 
+            message: 'Email đã được sử dụng' 
+        });
+    }
+
+    // check if username already exists
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+        return res.status(400).json({ 
+            message: 'Tên người dùng đã được sử dụng' 
+        });
+    }
+
+    // create new user
+    const user = await User.create({
+        username: username.toLowerCase(),
+        email: email.toLowerCase(),
+        password,
+        role: 'user', // default role
+    });
+
+    // create token
+    const token = generateToken(user._id, user.role);
+    res.status(201).json({
+        success: true,
+        message: 'Đăng ký thành công',
+        token,
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+        }
+    });
+});
+
+/**
+ * LOGIN - Đăng nhập
+ * @route POST /api/auth/login
+ * @access Public
+ */
+export const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    // validation - check input
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Email and password is required!'
+        });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+
+    if (!user) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid email or password!'
+        });
+    }
+
+    // check password
+    const isPasswordMatch = await user.matchPassword(password);
+    if (!isPasswordMatch) {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid password!'
+        });
+    }
+
+    // create token
+    const token = generateToken(user._id, user.role);
+    res.status(200).json({
+        success: true,
+        message: 'Đăng nhập thành công',
+        token,
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+        }
+    });
+});
+
+/**
+* LOGOUT - Đăng xuất
+* @route POST /api/auth/logout
+* @access Private
+*/
+export const logout = asyncHandler(async (req, res, next) => {
+    // JWT không có state ở server, logout chỉ cần xóa token ở client
+    res.status(200).json({
+        success: true,
+        message: 'Đăng xuất thành công'
+      });
+    });
+
+/**
+ * GOOGLE OAUTH LOGIN
+ * @route POST /api/auth/google
+ * @access Public
+ */
+export const googleLogin = asyncHandler(async (req, res, next) => {
+  const { credential } = req.body; // credential từ Google Identity API
+
+  if (!credential) {
+    return res.status(400).json({
+      success: false,
+      message: 'Google credential không được tìm thấy'
+    });
+  }
+
+  try {
+    // 1️⃣ Verify credential với Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId, picture } = payload;
+
+    // 2️⃣ Kiểm tra user theo googleId
+    let user = await User.findOne({ googleId });
+
+    if (user) {
+      // User đã tồn tại với googleId
+      const token = generateToken(user._id, user.role);
+      return res.status(200).json({
+        success: true,
+        message: 'Đăng nhập thành công',
+        token,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role
+        }
+      });
+    }
+
+    // 3️⃣ Kiểm tra xem email có tồn tại không (đăng ký truyền thống)
+    user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
+      // Email tồn tại nhưng chưa có googleId
+      // Cập nhật googleId cho user này
+      user.googleId = googleId;
+      await user.save();
+
+      const token = generateToken(user._id, user.role);
+      return res.status(200).json({
+        success: true,
+        message: 'Đăng nhập thành công',
+        token,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role
+        }
+      });
+    }
+
+    // 4️⃣ Tạo user mới
+    // Lấy username từ phần trước @ của email
+    // Nếu trùng, thêm số random ở cuối
+    let username = email.split('@')[0].toLowerCase();
+    let userExists = await User.findOne({ username });
+    let counter = 1;
+    while (userExists) {
+      username = `${email.split('@')[0].toLowerCase()}${counter}`;
+      userExists = await User.findOne({ username });
+      counter++;
+    }
+    
+    user = await User.create({
+      username,
+      email: email.toLowerCase(),
+      googleId,
+      // Password để trống cho OAuth accounts
+      password: undefined,
+      role: 'user'
+    });
+
+    const token = generateToken(user._id, user.role);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Đăng ký và đăng nhập thành công',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Google verification error:', error);
+    return res.status(401).json({
+      success: false,
+      message: 'Google authentication thất bại'
+    });
+  }
+});
+
+/**
+ * FORGOT PASSWORD
+ * @route POST /api/auth/forgot-password
+ * @access Public
+ */
+export const forgotPassword = asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email là bắt buộc'
+    });
+  }
+
+  // 1️⃣ Tìm user bằng email
+  const user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    // Không trả về "user không tồn tại" vì bảo mật
+    return res.status(200).json({
+      success: true,
+      message: 'Nếu email tồn tại, bạn sẽ nhận được email reset'
+    });
+  }
+
+  // 2️⃣ Tạo reset token
+  // Token là một chuỗi ngẫu nhiên được hash
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // 3️⃣ Lưu token vào database
+  user.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  user.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
+  await user.save();
+
+  // 4️⃣ Gửi email
+  try {
+    await sendResetEmail(user.email, resetToken);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Email reset password đã được gửi'
+    });
+  } catch (error) {
+    // Xóa token nếu gửi email thất bại
+    user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
+    await user.save();
+
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi gửi email'
+    });
+  }
+});
+
+/**
+ * RESET PASSWORD
+ * @route POST /api/auth/reset-password/:token
+ * @access Public
+ */
+export const resetPassword = asyncHandler(async (req, res, next) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password mới là bắt buộc'
+    });
+  }
+
+  // 1️⃣ Hash token để so sánh với database
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  // 2️⃣ Tìm user với token hợp lệ và chưa hết hạn
+  const user = await User.findOne({
+    resetPasswordToken: hashedToken,
+    resetPasswordExpires: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: 'Token không hợp lệ hoặc đã hết hạn'
+    });
+  }
+
+  // 3️⃣ Cập nhật password mới
+  user.password = newPassword;
+  user.resetPasswordToken = null;
+  user.resetPasswordExpires = null;
+  await user.save(); // Password sẽ được hash tự động
+
+  // 4️⃣ Trả về response
+  res.status(200).json({
+    success: true,
+    message: 'Mật khẩu đã được cập nhật thành công'
+  });
+});
+

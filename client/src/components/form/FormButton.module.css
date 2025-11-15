@@ -1,0 +1,127 @@
+.button {
+    font-family: 'Satoshi', sans-serif;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.5px;
+    text-transform: none;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ============ VARIANTS ============ */
+
+/* Primary - Brown */
+.primary {
+    background-color: var(--brown);
+    color: var(--white);
+    border: 2px solid var(--brown);
+}
+
+.primary:hover:not(:disabled) {
+    background-color: #4a3530;
+    box-shadow: 0 8px 16px rgba(92, 68, 57, 0.2);
+}
+
+.primary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Secondary - Light Gray */
+.secondary {
+    background-color: var(--light-gray);
+    color: var(--black);
+    border: 2px solid #d1d1d1;
+}
+
+.secondary:hover:not(:disabled) {
+    background-color: #e8e8e8;
+    border-color: var(--brown);
+    color: var(--brown);
+}
+
+/* Outline - Brown Border */
+.outline {
+    background-color: transparent;
+    color: var(--brown);
+    border: 2px solid var(--brown);
+}
+
+.outline:hover:not(:disabled) {
+    background-color: rgba(92, 68, 57, 0.05);
+}
+
+/* Danger - Red */
+.danger {
+    background-color: #e74c3c;
+    color: var(--white);
+    border: 2px solid #e74c3c;
+}
+
+.danger:hover:not(:disabled) {
+    background-color: #c0392b;
+    box-shadow: 0 8px 16px rgba(231, 76, 60, 0.2);
+}
+
+/* ============ SIZES ============ */
+
+.sm {
+    padding: 8px 16px;
+    font-size: 12px;
+    min-height: 32px;
+}
+
+.md {
+    padding: 12px 24px;
+    font-size: 14px;
+    min-height: 44px;
+    width: 100%;
+}
+
+.lg {
+    padding: 16px 32px;
+    font-size: 16px;
+    min-height: 52px;
+    width: 100%;
+}
+
+/* ============ DISABLED STATE ============ */
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============ LOADING STATE ============ */
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+
+    .md,
+    .lg {
+        width: 100%;
+        font-size: 14px;
+    }
+}

@@ -1,0 +1,93 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import RegisterForm from '../components/form/RegisterForm';
+import authService from '../services/authService';
+import styles from './RegisterPage.module.css';
+
+/**
+ * RegisterPage - Full-page registration with background
+ * Separate page for registration flow
+ */
+export default function RegisterPage() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleRegister = async (data) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await authService.register(data);
+
+      // Update AuthContext state
+      login(response.token, response.user);
+
+      // Redirect to home
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Đăng ký thất bại');
+      console.error('Register error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (credential) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await authService.googleLogin(credential);
+
+      // Update AuthContext state
+      login(response.token, response.user);
+
+      // Redirect to home
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Google đăng ký thất bại');
+      console.error('Google login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSwitchToLogin = () => {
+    navigate('/');
+  };
+
+  return (
+    <div className={styles.registerPageContainer}>
+      <div className={styles.registerCard}>
+        {/* Header */}
+        <div className={styles.header}>
+          <h1 className={styles.title}>Devenir</h1>
+          <p className={styles.subtitle}>Tạo tài khoản mới</p>
+        </div>
+
+        {/* Form */}
+        <div className={styles.formContainer}>
+          <RegisterForm
+            onSubmit={handleRegister}
+            onGoogleLogin={handleGoogleLogin}
+            loading={loading}
+            error={error}
+          />
+          <div className={styles.switchForm}>
+            <span>Đã có tài khoản?</span>
+            <button
+              type="button"
+              onClick={handleSwitchToLogin}
+              className={styles.switchButton}
+            >
+              Đăng nhập
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

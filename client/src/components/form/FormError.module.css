@@ -1,0 +1,37 @@
+.errorContainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: rgba(231, 76, 60, 0.08);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.errorIcon {
+    font-size: 18px;
+    color: #e74c3c;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.errorMessage {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: #e74c3c;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .errorContainer {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .errorMessage {
+        font-size: 13px;
+    }
+}

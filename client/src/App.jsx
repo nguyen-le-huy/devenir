@@ -1,5 +1,7 @@
 import './global.css'
 import HomePage from './pages/HomePage/HomePage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import RegisterPage from './pages/RegisterPage'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './components/layout/Layout.jsx'
 import Lenis from 'lenis';
@@ -7,6 +9,8 @@ import { useEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/all';
 import ProductByCategory from './pages/ProductByCategory/ProductByCategory.jsx';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -47,12 +51,22 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Layout>
+      <AuthProvider>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/scarves" element={<ProductByCategory />} />
+          {/* Reset Password Route */}
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          
+          {/* Registration Route */}
+          <Route path="/register" element={<RegisterPage />} />
+          
+          {/* Public Routes - HomePage không cần login */}
+          <Route path="/" element={<Layout><HomePage /></Layout>} />
+          <Route path="/scarves" element={<Layout><ProductByCategory /></Layout>} />
+          
+          {/* Redirect unknown paths to home */}
+          <Route path="*" element={<Layout><HomePage /></Layout>} />
         </Routes>
-      </Layout>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
