@@ -1,0 +1,284 @@
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 120px);
+    background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
+    padding: 40px 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 60px 40px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+.loading,
+.success,
+.error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f0f0f0;
+    border-top: 4px solid var(--brown);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading p {
+    font-size: 16px;
+    color: #666;
+    font-weight: 500;
+}
+
+.successIcon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #d4edda;
+    color: #28a745;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.errorIcon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #f8d7da;
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--black);
+    margin: 0;
+}
+
+.message {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.subtext {
+    font-size: 13px;
+    color: #999;
+    margin: 0;
+    font-style: italic;
+}
+
+.button {
+    padding: 12px 24px;
+    border: 1.5px solid var(--brown);
+    background-color: var(--brown);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Satoshi', sans-serif;
+    transition: all 0.3s ease;
+    margin-top: 12px;
+}
+
+.button:hover {
+    background-color: #6b4423;
+    border-color: #6b4423;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .container {
+        min-height: calc(100vh - 100px);
+        padding: 30px 15px;
+    }
+
+    .card {
+        padding: 40px 20px;
+        border-radius: 8px;
+    }
+
+    .loading,
+    .success,
+    .error {
+        gap: 20px;
+    }
+
+    .spinner {
+        width: 45px;
+        height: 45px;
+        border: 3px solid #f0f0f0;
+        border-top: 3px solid var(--brown);
+    }
+
+    .successIcon,
+    .errorIcon {
+        width: 56px;
+        height: 56px;
+        font-size: 28px;
+    }
+
+    .title {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+
+    .message {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .subtext {
+        font-size: 12px;
+    }
+
+    .button {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        min-height: calc(100vh - 90px);
+        padding: 25px 12px;
+    }
+
+    .card {
+        padding: 32px 16px;
+        border-radius: 6px;
+        max-width: 100%;
+    }
+
+    .loading,
+    .success,
+    .error {
+        gap: 16px;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #f0f0f0;
+        border-top: 3px solid var(--brown);
+    }
+
+    .successIcon,
+    .errorIcon {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+
+    .title {
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+
+    .message {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .subtext {
+        font-size: 11px;
+    }
+
+    .button {
+        padding: 9px 18px;
+        font-size: 12px;
+        margin-top: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        min-height: 100vh;
+        padding: 20px 10px;
+    }
+
+    .card {
+        padding: 24px 14px;
+        border-radius: 6px;
+        max-width: 100%;
+    }
+
+    .loading,
+    .success,
+    .error {
+        gap: 14px;
+    }
+
+    .spinner {
+        width: 36px;
+        height: 36px;
+        border: 2.5px solid #f0f0f0;
+        border-top: 2.5px solid var(--brown);
+    }
+
+    .loading p {
+        font-size: 13px;
+    }
+
+    .successIcon,
+    .errorIcon {
+        width: 44px;
+        height: 44px;
+        font-size: 22px;
+    }
+
+    .title {
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+
+    .message {
+        font-size: 11px;
+        line-height: 1.4;
+        margin: 0;
+    }
+
+    .subtext {
+        font-size: 10px;
+        margin-top: 2px;
+    }
+
+    .button {
+        padding: 8px 16px;
+        font-size: 12px;
+        margin-top: 6px;
+        min-height: 40px;
+        border-radius: 4px;
+    }
+}

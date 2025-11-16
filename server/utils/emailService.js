@@ -19,30 +19,27 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Gửi email reset password
- * @param {String} email - Email của user
- * @param {String} resetToken - Reset token
+ * @param {Object} options - Email options with email, subject, message
  */
-export const sendResetEmail = async (email, resetToken) => {
-  const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+export const sendResetEmail = async (options) => {
+  const { email, subject, message } = options;
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: email,
-    subject: 'Devenir - Reset Your Password',
+    subject: subject || 'Devenir - Email Verification',
     html: `
-      <h2>Password Reset Request</h2>
-      <p>You requested to reset your password. Click the link below:</p>
-      <a href="${resetLink}" style="padding: 10px 20px; background-color: #333; color: white; text-decoration: none;">
-        Reset Password
-      </a>
-      <p>This link expires in 1 hour.</p>
-      <p>If you didn't request this, ignore this email.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>${subject}</h2>
+        <p>${message.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>
+        <p>If you didn't request this, ignore this email.</p>
+      </div>
     `
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Reset email sent to ${email}`);
+    console.log(`Email sent to ${email}`);
   } catch (error) {
     console.error('Email sending error:', error);
     throw error;

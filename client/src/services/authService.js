@@ -76,6 +76,34 @@ const authService = {
   },
 
   /**
+   * Verify Email - Xác nhận email
+   * @param {String} token - Verification token từ email
+   * @returns {Promise}
+   */
+  verifyEmail: async (token) => {
+    try {
+      const response = await apiClient.post(`/auth/verify-email/${token}`, {});
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Add Phone - Thêm số điện thoại
+   * @param {Object} data - {phone, googleToken}
+   * @returns {Promise}
+   */
+  addPhone: async (data) => {
+    try {
+      const response = await apiClient.post('/auth/add-phone', data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
    * Logout - Đăng xuất
    * @returns {Promise}
    */

@@ -3,39 +3,34 @@ import PropTypes from 'prop-types';
 import FormInput from './FormInput';
 import FormButton from './FormButton';
 import FormError from './FormError';
-import styles from './ForgotPasswordForm.module.css';
+import styles from './PhoneVerificationForm.module.css';
 
 /**
- * Forgot Password Form Component
+ * Phone Verification Form Component
+ * Used after Google OAuth signup to collect phone number
  * @param {Function} onSubmit - Form submission handler
- * @param {Function} onBack - Back to login handler
+ * @param {Function} onSkip - Skip phone verification handler
  * @param {Boolean} loading - Is form loading
  * @param {String} error - Error message
- * @param {Boolean} submitted - Has form been submitted successfully
  */
-const ForgotPasswordForm = ({
-  onSubmit,
-  onBack,
-  loading = false,
-  error = '',
-  submitted = false,
-}) => {
-  const [email, setEmail] = useState('');
+const PhoneVerificationForm = ({ onSubmit, onSkip, loading = false, error = '' }) => {
+  const [phone, setPhone] = useState('');
   const [fieldError, setFieldError] = useState('');
 
   const handleChange = (e) => {
-    setEmail(e.target.value);
+    setPhone(e.target.value);
     if (fieldError) {
       setFieldError('');
     }
   };
 
   const validateForm = () => {
-    if (!email.trim()) {
-      return 'Email is required';
+    if (!phone.trim()) {
+      return 'Phone number is required';
     }
-    if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
-      return 'Invalid email address';
+    // Vietnamese phone validation: +84 or 0, followed by 9-10 digits
+    if (!/^(\+84|0)[0-9]{9,10}$/.test(phone)) {
+      return 'Invalid phone number format. Example: 0912345678 or +84912345678';
     }
     return '';
   };
@@ -50,23 +45,8 @@ const ForgotPasswordForm = ({
       return;
     }
 
-    onSubmit({ email });
+    onSubmit({ phone });
   };
-
-  if (submitted) {
-    return (
-      <div className={styles.successContainer}>
-        <div className={styles.successIcon}>✓</div>
-        <h3 className={styles.successTitle}>Email sent</h3>
-        <p className={styles.successMessage}>
-          Please check your email to reset your password. The link is valid for 1 hour.
-        </p>
-        <FormButton onClick={onBack} variant="primary">
-          Back to sign in
-        </FormButton>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -76,29 +56,29 @@ const ForgotPasswordForm = ({
             type="button"
             onClick={onBack}
             className={styles.backButton}
-            title="Back to login"
+            title="Skip phone verification"
           >
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         )}
-        <h2 className={styles.formTitle}>Forgot Password</h2>
+        <h2 className={styles.formTitle}>Complete Registration</h2>
       </div>
 
       {error && <FormError message={error} />}
 
       <p className={styles.description}>
-        Enter your email and we'll send you instructions to reset your password
+        Almost done! Please provide your phone number to complete registration.
       </p>
 
       <FormInput
-        label="Email"
-        type="email"
-        name="email"
-        value={email}
+        label="Phone Number"
+        type="tel"
+        name="phone"
+        value={phone}
         onChange={handleChange}
-        placeholder="example@email.com"
+        placeholder="+84 or 0 followed by 9-10 digits"
         error={fieldError}
         required
       />
@@ -109,26 +89,25 @@ const ForgotPasswordForm = ({
         loading={loading}
         variant="primary"
       >
-        Send recover email
+        Complete
       </FormButton>
 
       <button
         type="button"
-        onClick={onBack}
-        className={styles.backLink}
+        onClick={onSkip}
+        className={styles.skipButton}
       >
-        ← Back to sign up
+        Skip for now
       </button>
     </form>
   );
 };
 
-ForgotPasswordForm.propTypes = {
+PhoneVerificationForm.propTypes = {
   onSubmit: PropTypes.func.isRequired,
-  onBack: PropTypes.func.isRequired,
+  onSkip: PropTypes.func.isRequired,
   loading: PropTypes.bool,
   error: PropTypes.string,
-  submitted: PropTypes.bool,
 };
 
-export default ForgotPasswordForm;
+export default PhoneVerificationForm;

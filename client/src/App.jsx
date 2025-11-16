@@ -1,8 +1,10 @@
 import './global.css'
 import HomePage from './pages/HomePage/HomePage'
 import ResetPasswordPage from './pages/auth/ResetPasswordPage'
+import EmailVerificationPage from './pages/auth/EmailVerificationPage'
 import RegisterPage from './pages/RegisterPage'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import AuthPage from './pages/auth/AuthPage'
 import Layout from './components/layout/Layout.jsx'
 import Lenis from 'lenis';
 import { useEffect } from 'react';
@@ -53,6 +55,10 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Auth Route - with Layout (Header & Footer) */}
+          <Route path="/auth" element={<Layout><AuthPage /></Layout>} />
+          {/* Email Verification Route */}
+          <Route path="/verify-email/:token" element={<Layout><EmailVerificationPage /></Layout>} />
           {/* Reset Password Route */}
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           

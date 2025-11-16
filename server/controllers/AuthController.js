@@ -52,12 +52,12 @@ const googleClient = new OAuth2Client(
  * @access Public
  */
 export const register = asyncHandler(async (req, res) => {
-    const { username, email, password } = req.body;
+    const { username, email, phone, password } = req.body;
 
     // valodation - check input
-    if (!username || !email || !password) {
+    if (!username || !email || !phone || !password) {
         return res.status(400).json({ 
-            message: 'Vui lòng điền đầy đủ thông tin' 
+            message: 'Please provide all required fields' 
         });
     }
 
@@ -65,7 +65,7 @@ export const register = asyncHandler(async (req, res) => {
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
         return res.status(400).json({ 
-            message: 'Email đã được sử dụng' 
+            message: 'Email already in use' 
         });
     }
 
@@ -73,29 +73,42 @@ export const register = asyncHandler(async (req, res) => {
     const existingUsername = await User.findOne({ username: username.toLowerCase() });
     if (existingUsername) {
         return res.status(400).json({ 
-            message: 'Tên người dùng đã được sử dụng' 
+            message: 'Username already in use' 
         });
     }
 
-    // create new user
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+    // create new user (not verified yet)
     const user = await User.create({
         username: username.toLowerCase(),
         email: email.toLowerCase(),
+        phone: phone,
         password,
         role: 'user', // default role
+        isEmailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires
     });
 
-    // create token
-    const token = generateToken(user._id, user.role);
+    // Send verification email
+    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    await sendResetEmail({
+        email: user.email,
+        subject: 'Verify your email - Devenir',
+        message: `Please click the link below to verify your email:\n\n${verificationUrl}\n\nThis link expires in 24 hours.`
+    });
+
     res.status(201).json({
         success: true,
-        message: 'Đăng ký thành công',
-        token,
+        message: 'Registration successful. Please check your email to verify your account.',
         user: {
             id: user._id,
             username: user.username,
             email: user.email,
-            role: user.role,
+            isEmailVerified: user.isEmailVerified
         }
     });
 });
@@ -132,6 +145,14 @@ export const login = asyncHandler(async (req, res) => {
         return res.status(401).json({
             success: false,
             message: 'Invalid password!'
+        });
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+        return res.status(403).json({
+            success: false,
+            message: 'Please verify your email first. Check your inbox for the verification link.'
         });
     }
 
@@ -212,8 +233,11 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
 
     if (user) {
       // Email tồn tại nhưng chưa có googleId
-      // Cập nhật googleId cho user này
+      // Cập nhật googleId cho user này và tự động verify email (vì Google đã xác nhận)
       user.googleId = googleId;
+      user.isEmailVerified = true;
+      user.emailVerificationToken = null;
+      user.emailVerificationExpires = null;
       await user.save();
 
       const token = generateToken(user._id, user.role);
@@ -248,7 +272,11 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
       googleId,
       // Password để trống cho OAuth accounts
       password: undefined,
-      role: 'user'
+      role: 'user',
+      // Auto-verify email cho Google OAuth users vì Google đã xác nhận
+      isEmailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpires: null
     });
 
     const token = generateToken(user._id, user.role);
@@ -314,7 +342,12 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
 
   // 4️⃣ Gửi email
   try {
-    await sendResetEmail(user.email, resetToken);
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    await sendResetEmail({
+      email: user.email,
+      subject: 'Devenir - Reset Your Password',
+      message: `You requested to reset your password. Click the link below:\n\n${resetLink}\n\nThis link expires in 1 hour.`
+    });
     
     res.status(200).json({
       success: true,
@@ -380,4 +413,146 @@ export const resetPassword = asyncHandler(async (req, res, next) => {
     message: 'Mật khẩu đã được cập nhật thành công'
   });
 });
+
+/**
+ * VERIFY EMAIL
+ * @route POST /api/auth/verify-email/:token
+ * @access Public
+ */
+export const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      message: 'Verification token is required'
+    });
+  }
+
+  console.log('Verifying token:', token);
+  console.log('Current time:', Date.now());
+
+  // Find user with valid token
+  const user = await User.findOne({
+    emailVerificationToken: token,
+    emailVerificationExpires: { $gt: Date.now() }
+  });
+
+  console.log('User found:', user ? `${user.email}` : 'NOT FOUND');
+
+  if (!user) {
+    // Try to find without expiry check to debug
+    const userNoExpiry = await User.findOne({
+      emailVerificationToken: token
+    });
+    console.log('User without expiry check:', userNoExpiry ? `${userNoExpiry.email}, expires at: ${userNoExpiry.emailVerificationExpires}` : 'NOT FOUND');
+    
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid or expired verification token'
+    });
+  }
+
+  // Mark email as verified
+  user.isEmailVerified = true;
+  user.emailVerificationToken = null;
+  user.emailVerificationExpires = null;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Email verified successfully. Please log in with your account.'
+  });
+});
+
+/**
+ * ADD PHONE NUMBER - For Google OAuth users or after email verification
+ * @route POST /api/auth/add-phone
+ * @access Private
+ */
+export const addPhone = asyncHandler(async (req, res) => {
+  const { phone, googleToken } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({
+      success: false,
+      message: 'Phone number is required'
+    });
+  }
+
+  // Validate phone format
+  const phoneRegex = /^(\+84|0)[0-9]{9,10}$/;
+  if (!phoneRegex.test(phone)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid phone number format'
+    });
+  }
+
+  // If googleToken provided (after Google signup), use it to find/create user
+  if (googleToken) {
+    try {
+      // Verify the credential
+      const ticket = await googleClient.verifyIdToken({
+        idToken: googleToken,
+        audience: process.env.GOOGLE_CLIENT_ID
+      });
+
+      const payload = ticket.getPayload();
+      const { email, name, sub: googleId } = payload;
+
+      // Check if user already has phone
+      let user = await User.findOne({ googleId });
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      // Add phone number
+      user.phone = phone;
+      await user.save();
+
+      // Generate token for auto-login
+      const token = generateToken(user._id, user.role);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Phone number added successfully',
+        token,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      console.error('Google verification error:', error);
+      return res.status(401).json({
+        success: false,
+        message: 'Google authentication failed'
+      });
+    }
+  }
+
+  res.status(400).json({
+    success: false,
+    message: 'Google token is required'
+  });
+});
+
+export default {
+  register,
+  login,
+  logout,
+  googleLogin,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  addPhone
+};
 

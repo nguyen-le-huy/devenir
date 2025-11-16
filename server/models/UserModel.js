@@ -90,6 +90,26 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true, // Allow multiple null values
     },
+    phone: {
+      type: String,
+      default: null,
+      match: [
+        /^(\+84|0)[0-9]{9,10}$/,
+        'Please enter a valid phone number',
+      ],
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      default: null,
+    },
     role: {
       type: String,
       enum: ['user', 'admin'],
@@ -156,10 +176,8 @@ userSchema.statics.findByEmailWithPassword = function (email) {
 /**
  * Create indexes to optimize queries
  * Helps speed up searches by email, username, googleId
+ * Note: unique constraints are already defined in field definitions above
  */
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-userSchema.index({ googleId: 1 });
 
 // ============ CREATE & EXPORT MODEL ============
 

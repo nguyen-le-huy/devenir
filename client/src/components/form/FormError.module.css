@@ -29,9 +29,49 @@
     .errorContainer {
         padding: 10px 12px;
         gap: 10px;
+        border-radius: 5px;
+    }
+
+    .errorIcon {
+        font-size: 16px;
     }
 
     .errorMessage {
         font-size: 13px;
+    }
+}
+
+@media (max-width: 600px) {
+    .errorContainer {
+        padding: 9px 11px;
+        gap: 9px;
+        margin-bottom: 12px;
+    }
+
+    .errorIcon {
+        font-size: 15px;
+    }
+
+    .errorMessage {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+}
+
+@media (max-width: 480px) {
+    .errorContainer {
+        padding: 8px 10px;
+        gap: 8px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+    }
+
+    .errorIcon {
+        font-size: 14px;
+    }
+
+    .errorMessage {
+        font-size: 11px;
+        line-height: 1.3;
     }
 }

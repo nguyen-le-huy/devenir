@@ -10,13 +10,15 @@ import styles from './RegisterForm.module.css';
  * Register Form Component
  * @param {Function} onSubmit - Form submission handler
  * @param {Function} onGoogleLogin - Google OAuth handler
+ * @param {Function} onBack - Back button handler
  * @param {Boolean} loading - Is form loading
  * @param {String} error - Error message
  */
-const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) => {
+const RegisterForm = ({ onSubmit, onGoogleLogin, onBack, loading = false, error = '' }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -41,27 +43,33 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
     const errors = {};
 
     if (!formData.username.trim()) {
-      errors.username = 'Username không được để trống';
+      errors.username = 'Username is required';
     } else if (formData.username.length < 3) {
-      errors.username = 'Username phải ít nhất 3 ký tự';
+      errors.username = 'Username must be at least 3 characters';
     }
 
     if (!formData.email.trim()) {
-      errors.email = 'Email không được để trống';
+      errors.email = 'Email is required';
     } else if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
-      errors.email = 'Email không hợp lệ';
+      errors.email = 'Invalid email address';
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^(\+84|0)[0-9]{9,10}$/.test(formData.phone)) {
+      errors.phone = 'Invalid phone number format';
     }
 
     if (!formData.password) {
-      errors.password = 'Mật khẩu không được để trống';
+      errors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      errors.password = 'Mật khẩu phải ít nhất 6 ký tự';
+      errors.password = 'Password must be at least 6 characters';
     }
 
     if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+      errors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Mật khẩu không khớp';
+      errors.confirmPassword = 'Passwords do not match';
     }
 
     return errors;
@@ -69,6 +77,7 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    e.stopPropagation();
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -79,12 +88,29 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
     onSubmit({
       username: formData.username,
       email: formData.email,
+      phone: formData.phone,
       password: formData.password,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
+      <div className={styles.formHeader}>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className={styles.backButton}
+            title="Back to login"
+          >
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        )}
+        <h2 className={styles.formTitle}>Sign Up</h2>
+      </div>
+
       {error && <FormError message={error} />}
 
       <FormInput
@@ -93,7 +119,7 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
         name="username"
         value={formData.username}
         onChange={handleChange}
-        placeholder="Nhập username"
+        placeholder="Enter your username"
         error={fieldErrors.username || ''}
         required
       />
@@ -110,24 +136,35 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
       />
 
       <FormInput
-        label="Mật khẩu"
+        label="Phone Number"
+        type="tel"
+        name="phone"
+        value={formData.phone}
+        onChange={handleChange}
+        placeholder="+84 or 0 followed by 9-10 digits"
+        error={fieldErrors.phone || ''}
+        required
+      />
+
+      <FormInput
+        label="Password"
         type="password"
         name="password"
         value={formData.password}
         onChange={handleChange}
-        placeholder="Nhập mật khẩu"
+        placeholder="Enter your password"
         error={fieldErrors.password || ''}
         autoComplete="new-password"
         required
       />
 
       <FormInput
-        label="Xác nhận mật khẩu"
+        label="Confirm Password"
         type="password"
         name="confirmPassword"
         value={formData.confirmPassword}
         onChange={handleChange}
-        placeholder="Xác nhận mật khẩu"
+        placeholder="Confirm your password"
         error={fieldErrors.confirmPassword || ''}
         autoComplete="new-password"
         required
@@ -139,13 +176,13 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
         loading={loading}
         variant="primary"
       >
-        Đăng ký
+        Sign Up
       </FormButton>
 
       {/* Google OAuth */}
       {onGoogleLogin && (
         <div className={styles.divider}>
-          <span>Hoặc</span>
+          <span>Or</span>
         </div>
       )}
       {onGoogleLogin && (
@@ -157,7 +194,8 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
               }}
               onError={() => console.log('Login Failed')}
               text="signup"
-              locale="vi_VN"
+              locale="en_US"
+              size="compact"
             />
           </div>
         </GoogleOAuthProvider>
@@ -169,6 +207,7 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, loading = false, error = '' }) 
 RegisterForm.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   onGoogleLogin: PropTypes.func,
+  onBack: PropTypes.func,
   loading: PropTypes.bool,
   error: PropTypes.string,
 };

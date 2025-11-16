@@ -94,3 +94,52 @@
         font-size: 12px;
     }
 }
+
+@media (max-width: 600px) {
+    .form {
+        gap: 14px;
+    }
+
+    .divider {
+        margin: 8px 0;
+        font-size: 12px;
+    }
+
+    .googleButtonWrapper :global(.g_id_signin) {
+        transform: scale(0.95) !important;
+        transform-origin: center !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .form {
+        gap: 12px;
+    }
+
+    .forgotPasswordLink {
+        font-size: 11px;
+        margin-top: -6px;
+        margin-bottom: 6px;
+    }
+
+    .divider {
+        margin: 4px 0;
+        font-size: 11px;
+        gap: 8px;
+    }
+
+    .registerLink {
+        font-size: 12px;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .switchButton {
+        font-size: 12px;
+    }
+
+    .googleButtonWrapper :global(.g_id_signin) {
+        transform: scale(0.9) !important;
+        transform-origin: center !important;
+    }
+}

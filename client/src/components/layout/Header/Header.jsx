@@ -2,14 +2,12 @@ import styles from "./Header.module.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
-import AuthModal from "../../AuthModal/AuthModal";
 import UserMenu from "../../UserMenu/UserMenu";
 
 const Header = () => {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     
     const handleOpenMenu = () => {
         setIsMenuOpen(true);
@@ -19,12 +17,8 @@ const Header = () => {
         setIsMenuOpen(false);
     }
 
-    const handleOpenAuthModal = () => {
-        setIsAuthModalOpen(true);
-    }
-
-    const handleCloseAuthModal = () => {
-        setIsAuthModalOpen(false);
+    const handleOpenAuth = () => {
+        navigate('/auth');
     }
 
     const handleLogoClick = () => {
@@ -33,7 +27,6 @@ const Header = () => {
 
     return (
         <>
-            <AuthModal isOpen={isAuthModalOpen} onClose={handleCloseAuthModal} />
             <div className={`${styles.topBar} container`}>
                 <div className={styles.left}></div>
                 <div className={styles.center}>Fast, Free Delivery With Prime | <span className={styles.campaignLink}>
@@ -78,8 +71,8 @@ const Header = () => {
                     {isAuthenticated ? (
                         <UserMenu />
                     ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.userIcon} onClick={handleOpenAuthModal} style={{cursor: 'pointer'}}>
-                            <path d="M6.25 25V23.75C6.25 21.4294 7.17187 19.2038 8.81282 17.5628C10.4538 15.9219 12.6794 15 15 15M15 15C17.3206 15 19.5462 15.9219 21.1872 17.5628C22.8281 19.2038 23.75 21.4294 23.75 23.75V25M15 15C16.3261 15 17.5979 14.4732 18.5355 13.5355C19.4732 12.5979 20 11.3261 20 10C20 8.67392 19.4732 7.40215 18.5355 6.46447C17.5979 5.52678 16.3261 5 15 5C13.6739 5 12.4021 5.52678 11.4645 6.46447C10.5268 7.40215 10 8.67392 10 10C10 11.3261 10.5268 12.5979 11.4645 13.5355C12.4021 14.4732 13.6739 15 15 15Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.userIcon} onClick={handleOpenAuth} style={{cursor: 'pointer'}}>
+                            <path d="M6.25 25V23.75C6.25 21.4294 7.17187 19.2038 8.81282 17.5628C10.4538 15.9219 12.6794 15 15 15M15 15C17.3206 15 19.5462 15.9219 21.1872 17.5628C22.8281 19.2038 23.75 21.4294 23.75 23.75V25M15 15C16.3261 15 17.5979 14.4732 18.5355 13.5355C19.4732 12.5979 20 11.3261 20 10C20 8.67392 19.4732 7.40215 18.5355 6.46447C17.5979 5.52678 16.3261 5 15 5C13.6739 5 12.4021 5.52678 11.4645 6.46447C10.5268 7.40215 10 8.67392 10 10C10 11.3261 10.5268 12.5979 11.4645 13.5355C12.4021 14.4732 13.6739 15 15 15Z" stroke="#999999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     )}
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.heartIcon}>
@@ -126,7 +119,7 @@ const Header = () => {
                                     }}
                                     style={{background: 'none', border: 'none', cursor: 'pointer', color: '#0E0E0E', fontSize: '16px', fontWeight: '500'}}
                                 >
-                                    Đăng nhập
+                                    Sign In
                                 </button>
                                 <button 
                                     onClick={() => {
@@ -135,7 +128,7 @@ const Header = () => {
                                     }}
                                     style={{background: 'none', border: 'none', cursor: 'pointer', color: '#0E0E0E', fontSize: '16px', fontWeight: '500'}}
                                 >
-                                    Đăng ký ngay
+                                    Sign Up Now
                                 </button>
                                 <a href="/">Devenir Services</a>
                                 <a href="/">Customer Support</a>

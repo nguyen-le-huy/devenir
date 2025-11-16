@@ -41,13 +41,13 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
     const errors = {};
 
     if (!formData.email.trim()) {
-      errors.email = 'Email không được để trống';
+      errors.email = 'Email is required';
     } else if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
-      errors.email = 'Email không hợp lệ';
+      errors.email = 'Invalid email address';
     }
 
     if (!formData.password) {
-      errors.password = 'Mật khẩu không được để trống';
+      errors.password = 'Password is required';
     }
 
     return errors;
@@ -55,6 +55,7 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    e.stopPropagation();
 
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -81,12 +82,12 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
       />
 
       <FormInput
-        label="Mật khẩu"
+        label="Password"
         type="password"
         name="password"
         value={formData.password}
         onChange={handleChange}
-        placeholder="Nhập mật khẩu"
+        placeholder="Enter your password"
         error={fieldErrors.password || ''}
         autoComplete="current-password"
         required
@@ -97,7 +98,7 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
         onClick={onForgotPassword}
         className={styles.forgotPasswordLink}
       >
-        Quên mật khẩu?
+        Forgot password?
       </button>
 
       <FormButton
@@ -106,13 +107,13 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
         loading={loading}
         variant="primary"
       >
-        Đăng nhập
+        Sign In
       </FormButton>
 
       {/* Google OAuth */}
       {onGoogleLogin && (
         <div className={styles.divider}>
-          <span>Hoặc</span>
+          <span>Or</span>
         </div>
       )}
       {onGoogleLogin && (
@@ -124,7 +125,8 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
               }}
               onError={() => console.log('Login Failed')}
               text="signin"
-              locale="vi_VN"
+              locale="en_US"
+              size="compact"
             />
           </div>
         </GoogleOAuthProvider>
@@ -133,13 +135,13 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
       {/* Register Link */}
       {onSwitchToRegister && (
         <div className={styles.registerLink}>
-          <span>Chưa có tài khoản?</span>
+          <span>Don't have an account?</span>
           <button
             type="button"
             onClick={onSwitchToRegister}
             className={styles.switchButton}
           >
-            Đăng ký ngay
+            Sign up now
           </button>
         </div>
       )}

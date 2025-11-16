@@ -52,9 +52,9 @@
     margin: 0;
 }
 
-.backLink {
+.skipButton {
     align-self: center;
-    padding: 0;
+    padding: 8px 16px;
     background: none;
     border: none;
     font-family: 'Satoshi', sans-serif;
@@ -67,8 +67,9 @@
     margin-top: 8px;
 }
 
-.backLink:hover {
+.skipButton:hover {
     color: #4a3530;
+    text-decoration: underline;
 }
 
 /* ============ RESPONSIVE ============ */
@@ -77,13 +78,17 @@
         font-size: 24px;
     }
 
+    .backButton {
+        width: 22px;
+        height: 22px;
+    }
+
     .description {
         font-size: 13px;
     }
 
-    .backButton {
-        width: 22px;
-        height: 22px;
+    .skipButton {
+        font-size: 12px;
     }
 }
 
@@ -110,8 +115,9 @@
         line-height: 1.5;
     }
 
-    .backLink {
+    .skipButton {
         font-size: 12px;
+        padding: 6px 12px;
     }
 }
 
@@ -139,91 +145,9 @@
         margin: 0;
     }
 
-    .successContainer {
-        padding: 30px 15px;
-        gap: 15px;
-    }
-
-    .successIcon {
-        width: 50px;
-        height: 50px;
-        font-size: 28px;
-    }
-
-    .successTitle {
-        font-size: 18px;
-    }
-
-    .successMessage {
-        font-size: 12px;
-    }
-
-    .backLink {
+    .skipButton {
         font-size: 11px;
-        margin-top: 6px;
-    }
-}
-
-.successContainer {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-    padding: 40px 20px;
-    text-align: center;
-}
-
-.successIcon {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: #d4edda;
-    color: #28a745;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    font-weight: 700;
-}
-
-.successTitle {
-    font-family: 'Satoshi', sans-serif;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--black);
-    margin: 0;
-}
-
-.successMessage {
-    font-family: 'Satoshi', sans-serif;
-    font-size: 14px;
-    color: #666;
-    line-height: 1.6;
-    margin: 0;
-}
-
-/* ============ RESPONSIVE ============ */
-@media (max-width: 768px) {
-    .form {
-        gap: 16px;
-    }
-
-    .successContainer {
-        padding: 30px 15px;
-        gap: 16px;
-    }
-
-    .successIcon {
-        width: 50px;
-        height: 50px;
-        font-size: 28px;
-    }
-
-    .successTitle {
-        font-size: 18px;
-    }
-
-    .successMessage {
-        font-size: 13px;
+        padding: 6px 10px;
+        margin-top: 4px;
     }
 }
