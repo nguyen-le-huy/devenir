@@ -6,20 +6,19 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 8px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
     color: var(--black);
     transition: all 0.3s ease;
 }
 
-.userButton:hover {
-    opacity: 0.7;
-    transform: scale(1.1);
+.userButton svg {
+    width: 30px;
+    height: 30px;
 }
+
 
 .dropdown {
     position: absolute;
@@ -98,10 +97,6 @@
     border-bottom: 1px solid #f0f0f0;
 }
 
-.adminLink:hover {
-    background-color: var(--light-gray);
-}
-
 .logoutButton {
     width: 100%;
     padding: 12px 15px;
@@ -116,9 +111,6 @@
     transition: all 0.3s ease;
 }
 
-.logoutButton:hover {
-    background-color: #fff5f5;
-}
 
 @media (max-width: 768px) {
     .dropdown {

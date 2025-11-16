@@ -17,27 +17,23 @@ const Preloader = () => {
     const pathsRef = useRef([]);
     const circleLoaderRef = useRef(null);
 
-    // ✅ Kiểm tra xem có phải page reload hay navigation
+    // ✅ Chỉ show preloader khi truy cập trực tiếp qua URL (không phải client-side navigation)
     useEffect(() => {
-        // Kiểm tra performance API để phát hiện reload
-        const navigationType = performance.getEntriesByType('navigation')[0]?.type;
+        // Kiểm tra xem đã navigate trong app chưa
+        const hasNavigated = sessionStorage.getItem('hasNavigated');
         
-        // navigationType có thể là:
-        // - 'reload': Người dùng nhấn F5 hoặc reload button
-        // - 'navigate': Vào trang lần đầu qua URL
-        // - 'back_forward': Dùng nút Back/Forward
-        
-        const isPageLoad = navigationType === 'reload' || navigationType === 'navigate';
-        
-        if (isPageLoad) {
-            // Đây là page reload hoặc vào web lần đầu → Show preloader
+        if (!hasNavigated) {
+            // Lần đầu tiên load trang (truy cập qua URL/link) → Show preloader
             setShouldShowPreloader(true);
-            // Đánh dấu đã load xong preloader trong session này
-            sessionStorage.setItem('preloaderShown', 'true');
+            // Đánh dấu là đã vào app
+            sessionStorage.setItem('hasNavigated', 'true');
         } else {
-            // Đây là client-side navigation → Skip preloader
+            // Đã navigate trong app rồi → Skip preloader
             setShouldShowPreloader(false);
-            window.dispatchEvent(new CustomEvent('preloaderComplete'));
+            // ✅ Dispatch event ngay lập tức để Hero animation chạy
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('preloaderComplete'));
+            }, 0);
         }
     }, []);
 
