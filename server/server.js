@@ -18,7 +18,10 @@ const allowedOrigins = [
   'http://localhost:5174',
   'http://localhost:4173',
   'http://127.0.0.1:5173',
-  'http://127.0.0.1:5174'
+  'http://127.0.0.1:5174',
+  // Thêm domain Vercel của bạn ở đây sau khi deploy
+  // 'https://your-app.vercel.app',
+  'https://devenir-demo.vercel.app/' // Preview deployments
 ];
 
 app.use(cors({
