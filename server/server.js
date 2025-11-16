@@ -19,13 +19,31 @@ const allowedOrigins = [
   'http://localhost:4173',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
-  // Thêm domain Vercel của bạn ở đây sau khi deploy
-  // 'https://your-app.vercel.app',
-  'https://devenir-demo.vercel.app/' // Preview deployments
+  'https://devenir-demo.vercel.app',
+  'https://devenir-demo-*.vercel.app', // Preview deployments với wildcard
+  'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net' // Thêm Tailscale domain
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    // Cho phép requests không có origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Kiểm tra exact match hoặc wildcard pattern
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin.includes('*')) {
+        const pattern = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
+        return pattern.test(origin);
+      }
+      return allowedOrigin === origin;
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
