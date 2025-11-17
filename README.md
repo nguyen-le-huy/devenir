@@ -7,7 +7,7 @@
 
 ---
 
-## 📋 Mục lục
+## 📋 Menu
 
 - [Tính năng chính](#-tính-năng-chính)
 - [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
