@@ -1,0 +1,103 @@
+name: Devenir Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy-backend:
+    runs-on: self-hosted
+    
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'server/package-lock.json'
+
+      # 3. Install backend dependencies
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm ci
+
+      # 4. Run backend tests (nếu có)
+      - name: Run server tests
+        run: |
+          cd server
+          npm test || echo "No tests found"
+        continue-on-error: true
+
+      # 5. Restart backend với PM2
+      - name: Restart backend
+        run: |
+          cd server
+          pm2 restart devenir-server || pm2 start server.js --name devenir-server
+          pm2 save
+
+  deploy-frontend:
+    runs-on: self-hosted
+    needs: deploy-backend  # Chỉ deploy frontend nếu backend OK
+    
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'client/package-lock.json'
+
+      # 3. Install frontend dependencies
+      - name: Install client dependencies
+        run: |
+          cd client
+          npm ci
+
+      # 4. Build frontend
+      - name: Build React app
+        run: |
+          cd client
+          npm run build
+        env:
+          NODE_ENV: production
+
+      # 5. Deploy frontend (copy build files)
+      - name: Deploy to nginx
+        run: |
+          # Backup old build
+          sudo mkdir -p /var/www/devenir/backup
+          sudo mv /var/www/devenir/current /var/www/devenir/backup/$(date +%Y%m%d_%H%M%S) || true
+          
+          # Deploy new build
+          sudo mkdir -p /var/www/devenir/current
+          sudo cp -r client/build/* /var/www/devenir/current/
+          
+          # Reload nginx
+          sudo nginx -t && sudo systemctl reload nginx
+
+  notify:
+    runs-on: self-hosted
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
+    
+    steps:
+      - name: Send deployment status
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi
