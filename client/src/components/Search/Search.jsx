@@ -43,7 +43,7 @@ const Search = ({ onClose }) => {
             <div className={styles.searchContainer}>
                 <div className={styles.inputWrapper}>
                     <input type="text" placeholder="Search" ref={inputRef} />
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="16" viewBox="0 0 34 22" fill="none">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 22" fill="none">
                         <path d="M22.619 1.19043L32.1428 10.719L22.619 20.2452M1.19043 10.7214H32.1428" stroke="#0E0E0E" strokeWidth="2.38095" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg> 
                 </div>
