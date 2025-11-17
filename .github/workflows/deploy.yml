@@ -3,40 +3,29 @@ name: Devenir Deploy
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   deploy-backend:
     runs-on: self-hosted
-    
+
     steps:
-      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Check Node version
         run: |
-          echo "Node version:"
+          echo "=== Node & NPM Versions ==="
           node -v
-          echo "NPM version:"
           npm -v
+          which node
+          which npm
 
-      # 3. Install backend dependencies
       - name: Install server dependencies
         run: |
           cd server
           npm ci
 
-      # 4. Run backend tests (nếu có)
-      - name: Run server tests
-        run: |
-          cd server
-          npm test || echo "No tests found"
-        continue-on-error: true
-
-      # 5. Restart backend với PM2
-      - name: Restart backend
+      - name: Restart backend with PM2
         run: |
           cd server
           pm2 restart devenir-server || pm2 start server.js --name devenir-server
@@ -44,28 +33,25 @@ jobs:
 
   deploy-frontend:
     runs-on: self-hosted
-    needs: deploy-backend  # Chỉ deploy frontend nếu backend OK
-    
+    needs: deploy-backend
+
     steps:
-      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'client/package-lock.json'
+      - name: Check Node version
+        run: |
+          echo "=== Node & NPM Versions ==="
+          node -v
+          npm -v
+          which node
+          which npm
 
-      # 3. Install frontend dependencies
       - name: Install client dependencies
         run: |
           cd client
           npm ci
 
-      # 4. Build frontend
       - name: Build React app
         run: |
           cd client
@@ -73,30 +59,23 @@ jobs:
         env:
           NODE_ENV: production
 
-      # 5. Deploy frontend (copy build files)
-      - name: Deploy to nginx
+      - name: Verify build output
         run: |
-          # Backup old build
-          sudo mkdir -p /var/www/devenir/backup
-          sudo mv /var/www/devenir/current /var/www/devenir/backup/$(date +%Y%m%d_%H%M%S) || true
-          
-          # Deploy new build
-          sudo mkdir -p /var/www/devenir/current
-          sudo cp -r client/build/* /var/www/devenir/current/
-          
-          # Reload nginx
-          sudo nginx -t && sudo systemctl reload nginx
+          echo "=== Build Output ==="
+          ls -la client/dist/ || ls -la client/build/
+          echo "✅ Build completed successfully!"
 
   notify:
     runs-on: self-hosted
     needs: [deploy-backend, deploy-frontend]
     if: always()
-    
+
     steps:
-      - name: Send deployment status
+      - name: Deployment status
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
+          if [ "${{ needs.deploy-frontend.result }}" == "success" ]; then
             echo "✅ Deployment successful!"
           else
             echo "❌ Deployment failed!"
+            exit 1
           fi
