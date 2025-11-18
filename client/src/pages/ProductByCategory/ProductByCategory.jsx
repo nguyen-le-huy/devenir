@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './ProductByCategory.module.css';
 import Filter from '../../components/Filter/Filter.jsx';
 import ScarfCard from '../../components/ProductCard/ScarfCard.jsx';
@@ -6,6 +6,9 @@ import { scarves } from '../../data/scarvesData.js'; // ✅ Import dữ liệu
 
 const ProductByCategory = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [headerHeight, setHeaderHeight] = useState(0);
+
+    
 
     const handleOpenFilter = () => {
         setIsFilterOpen(true);
@@ -14,6 +17,28 @@ const ProductByCategory = () => {
     const handleCloseFilter = () => {
         setIsFilterOpen(false);
     };
+
+    useEffect(() => {
+        const updateHeaderHeight = () => {
+            const header = document.querySelector('[class*="header"]');
+            if (header) {
+                const rect = header.getBoundingClientRect();
+                setHeaderHeight(rect.bottom);
+            }
+        };
+
+        updateHeaderHeight();
+
+        // ✅ Listen scroll để update khi topbar biến mất
+        window.addEventListener('scroll', updateHeaderHeight);
+        window.addEventListener('resize', updateHeaderHeight);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('scroll', updateHeaderHeight);
+            window.removeEventListener('resize', updateHeaderHeight);
+        };
+    }, []);
 
     return (
         <div className={styles.productByCategory}>
@@ -24,7 +49,7 @@ const ProductByCategory = () => {
                 <p>Wool Scarves</p>
                 <p>Silk Scarves</p>
             </div>
-            <div className={styles.countAndFilter}>
+            <div className={styles.countAndFilter} style={{ top: `${headerHeight}px` }}>
                 <span className={styles.count}>212 items</span>
                 <span className={styles.filter} onClick={handleOpenFilter}>
                     Filter & Sort

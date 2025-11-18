@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './Filter.module.css';
+import { lenisInstance } from '../../App'; // Import Lenis
 
 const Filter = ({ isOpen, onClose }) => {
     const overlayRef = useRef(null);
@@ -63,26 +64,23 @@ const Filter = ({ isOpen, onClose }) => {
     // Disable scroll when filter is open
     useEffect(() => {
         if (isOpen) {
-            const scrollY = window.scrollY;
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${scrollY}px`;
-            document.body.style.width = '100%';
-            document.body.style.overflow = 'hidden';
-        } else {
-            const scrollY = document.body.style.top;
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            document.body.style.overflow = '';
-            window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        }
+            if (lenisInstance) {
+                lenisInstance.stop();
+            }
+            // ✅ Backup: Chặn native scroll events
+            const preventScroll = (e) => e.preventDefault();
+            window.addEventListener('wheel', preventScroll, { passive: false });
+            window.addEventListener('touchmove', preventScroll, { passive: false });
 
-        return () => {
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            document.body.style.overflow = '';
-        };
+            return () => {
+                // ✅ Khởi động lại Lenis khi đóng filter
+                if (lenisInstance) {
+                    lenisInstance.start();
+                }
+                window.removeEventListener('wheel', preventScroll);
+                window.removeEventListener('touchmove', preventScroll);
+            };
+        }
     }, [isOpen]);
 
     // Toggle Sort By dropdown (close Colour dropdown if open)

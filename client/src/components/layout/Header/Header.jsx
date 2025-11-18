@@ -129,24 +129,7 @@ const Header = () => {
                             </>
                         ) : (
                             <>
-                                <button 
-                                    onClick={() => {
-                                        navigate('/auth');
-                                        handleCloseMenu();
-                                    }}
-                                    style={{background: 'none', border: 'none', cursor: 'pointer', color: '#0E0E0E', fontSize: '16px', fontWeight: '500'}}
-                                >
-                                    Sign In
-                                </button>
-                                <button 
-                                    onClick={() => {
-                                        navigate('/register');
-                                        handleCloseMenu();
-                                    }}
-                                    style={{background: 'none', border: 'none', cursor: 'pointer', color: '#0E0E0E', fontSize: '16px', fontWeight: '500'}}
-                                >
-                                    Sign Up Now
-                                </button>
+                                <a href="/auth" onClick={handleCloseMenu}>Login / Register</a>
                                 <a href="/">Devenir Services</a>
                                 <a href="/">Customer Support</a>
                             </>

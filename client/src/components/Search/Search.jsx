@@ -1,46 +1,43 @@
 import styles from './Search.module.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { lenisInstance } from '../../App'; // Import Lenis
 
 const Search = ({ onClose }) => {
     const inputRef = useRef(null);
+    const [headerHeight, setHeaderHeight] = useState(0);
 
-
-     // ✅ Lock scroll khi Search mở
     useEffect(() => {
-        // Lưu vị trí scroll hiện tại
-        const scrollY = window.scrollY;
-        
-        // Lock body scroll
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${scrollY}px`;
-        document.body.style.width = '100%';
-        document.body.style.overflow = 'hidden';
+        // Tính toán chiều cao thực tế của header
+        const header = document.querySelector('[class*="header"]');
+        if (header) {
+            const rect = header.getBoundingClientRect();
+            setHeaderHeight(rect.bottom);
+        }
+
+        // ✅ Dừng Lenis - Không ảnh hưởng gì đến DOM/CSS
+        if (lenisInstance) {
+            lenisInstance.stop();
+        }
 
         // Focus vào input
         inputRef.current?.focus();
 
-        // Cleanup: Unlock scroll khi component unmount
+        // Cleanup
         return () => {
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.width = '';
-            document.body.style.overflow = '';
-            window.scrollTo(0, scrollY);
+            if (lenisInstance) {
+                lenisInstance.start();
+            }
         };
     }, []);
 
-    // Prevent scroll khi click vào Search container
-    const handleSearchContainerClick = (e) => {
-        e.stopPropagation();
-    };
-
     return (
         <>
-            {/* Backdrop - Click để đóng */}
             <div className={styles.backdrop} onClick={onClose}></div>
             
-            {/* Search Container */}
-            <div className={styles.searchContainer}>
+            <div 
+                className={styles.searchContainer}
+                style={{ top: `${headerHeight}px` }}
+            >
                 <div className={styles.inputWrapper}>
                     <input type="text" placeholder="Search" ref={inputRef} />
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 22" fill="none">

@@ -30,6 +30,8 @@
     font-size: 90px;
     font-weight: 500;
     color: var(--white);
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .secondRow {
@@ -65,11 +67,13 @@
 
 .content :global(.splitHero) {
     opacity: 0;
-    will-change: transform;
+    will-change: transform, opacity;
+    transform: translateZ(0);
 }
 
 .content :global(.splitHero) * {
     will-change: transform;
+    transform: translateZ(0);
 }
 
 :global(.line) {
