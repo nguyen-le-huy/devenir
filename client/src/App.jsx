@@ -14,6 +14,7 @@ import { ScrollTrigger } from 'gsap/all';
 import ProductByCategory from './pages/ProductByCategory/ProductByCategory.jsx';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
+import ProductDetail from './pages/ProductDetail/ProductDetail.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -64,22 +65,19 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Auth Route - with Layout (Header & Footer) */}
-            <Route path="/auth" element={<Layout><AuthPage /></Layout>} />
-            {/* Email Verification Route */}
-            <Route path="/verify-email/:token" element={<Layout><EmailVerificationPage /></Layout>} />
-            {/* Reset Password Route */}
+            {/* ✅ Routes KHÔNG cần Layout */}
+            <Route path="/register" element={<RegisterPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             
-            {/* Registration Route */}
-            <Route path="/register" element={<RegisterPage />} />
-            
-            {/* Public Routes - HomePage không cần login */}
-            <Route path="/" element={<Layout><HomePage /></Layout>} />
-            <Route path="/scarves" element={<Layout><ProductByCategory /></Layout>} />
-            
-            {/* Redirect unknown paths to home */}
-            <Route path="*" element={<Layout><HomePage /></Layout>} />
+            {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
+            <Route element={<Layout />}>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/scarves" element={<ProductByCategory />} />
+              <Route path="/product-detail" element={<ProductDetail />} />
+              <Route path="*" element={<HomePage />} />
+            </Route>
           </Routes>
         </AuthProvider>
       </BrowserRouter>

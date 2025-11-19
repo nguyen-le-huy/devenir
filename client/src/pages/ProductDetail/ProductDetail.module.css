@@ -1,0 +1,352 @@
+.product {
+    display: flex;
+    position: relative;
+}
+
+.left, .center {
+    width: 35%;
+}
+
+.left {
+    position: sticky;
+    height: 100vh; /* Chiều cao viewport */
+    overflow-y: auto; /* Cho phép scroll nếu content dài */
+    align-self: flex-start; /* Quan trọng! */
+}
+
+.left > img,
+.center > img {
+    width: 100%;
+    height: 100vh;
+    object-fit: cover;
+}
+
+.center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.right {
+    background-color: var(--white);
+    flex: 1;
+    position: sticky;
+    overflow-y: auto;
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 60px;
+    padding: 60px 20px;
+}
+
+.box1 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.productInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.type {
+    font-size: 15px;
+    font-weight: 400;
+}
+
+.nameAndPrice {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.name,
+.price {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.colour {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.productColour {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.productColour > p {
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.colourSquare {
+    width: 20px;
+    height: 20px;
+}
+
+.colourVarients {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.colourVarients > p {
+    font-size: 16px;
+}
+
+.buttonList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.buttonList > button {
+    width: 100%;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 15px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.addToBag {
+    background-color: var(--brown);
+    color: var(--white);
+    border: 1px solid var(--brown);
+}
+
+.sendGift {
+    background-color: var(--white);
+    color: var(--brown);
+    border: 1px solid var(--brown);
+}
+
+.sendGift:hover {
+    background-color: var(--brown);
+    color: var(--white);
+}
+
+.instalment {
+    font-size: 15px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ✅ Learn More Link Effect */
+.learnMore {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    padding: 7px 0;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* ✅ SVG Graphic Slide Effect */
+.linkGraphicSlide {
+    position: absolute;
+    top: -3px;
+    left: 0;
+    pointer-events: none;
+    fill: none;
+    stroke: #000;
+    stroke-width: 2px;
+    transition: transform 0.7s;
+    transition-timing-function: cubic-bezier(0, 0.25, 0.5, 1);
+}
+
+.learnMore:hover .linkGraphicSlide {
+    transform: translate3d(-66.6%, 0, 0);
+}
+
+.box2 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.itemBox {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.itemBoxTitle {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.itemBoxDescription {
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.box3 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.itemLabel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.itemLabel > p {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+
+/* ... existing styles ... */
+
+/* ✅ Accordion Styles */
+
+
+.itemLabel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.itemLabel > p {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.itemLabel > svg {
+    transition: transform 0.3s ease;
+}
+
+/* ✅ Content container - hidden by default */
+.itemContent {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+/* ✅ Content khi mở */
+.itemContent.open {
+    max-height: 500px; /* Adjust based on your content */
+    transition: max-height 0.5s ease-in;
+}
+
+.contentText {
+    padding-top: 15px; 
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.box4 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.appointmentLink,
+.contactLink {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    padding: 7px 0;
+    font-size: 16px;
+    font-weight: 400;
+    cursor: pointer;
+    width: fit-content; /* ✅ Chỉ rộng bằng text */
+}
+
+.appointmentLink:hover .linkGraphicSlide,
+.contactLink:hover .linkGraphicSlide {
+    transform: translate3d(-66.6%, 0, 0);
+}
+
+/* ... existing styles ... */
+.mobileGallery {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobileGallery {
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        align-self: flex-start;
+        z-index: 1;
+        width: 100%;
+    }
+
+    .mobileGallerySwiper {
+        width: 100%;
+        height: 60vh;
+    }
+
+    .mobileGalleryItems {
+        width: 100%;
+        height: 100%;
+    }
+
+    .mobileGalleryItems > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* ✅ Progress Bar Container */
+    .mobileGalleryNav {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* ✅ Background Track (thanh background) */
+    .progressBarTrack {
+        position: relative;
+        width: 100%;
+        height: 1px;
+        overflow: hidden;
+    }
+
+    /* ✅ Active Progress Bar (thanh di chuyển) */
+    .progressBarActive {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        background-color: var(--black); /* Màu đen */
+        transition: left 0.3s ease, width 0.3s ease; /* Smooth animation */
+    }
+
+    .left,
+    .center {
+        display: none;
+    }
+
+    .right {
+        padding: 30px 10px;
+        position: relative;
+        z-index: 10;
+        background-color: var(--white);
+    }
+
+    .product {
+        flex-direction: column;
+    }
+
+    .buttonList > button {
+        padding: 10px;
+    }
+}
