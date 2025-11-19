@@ -153,7 +153,8 @@
 }
 
 .box4Content > .description {
-    width: 649px;
+    width: 100%;
+    max-width: 649px;
 }
 
 .navigation {
@@ -263,7 +264,8 @@
     }
 
     .box4Content > .description {
-        width: 370px;
+        width: 100%;
+        max-width: 370px;
     }
 
     .swiperContainer {
@@ -277,7 +279,8 @@
 
 
     .arrows {
-        width: 420px;
+        width: 100%;
+        max-width: 420px;
     }
 
     .arrows > svg {

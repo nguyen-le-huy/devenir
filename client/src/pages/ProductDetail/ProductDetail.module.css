@@ -9,9 +9,8 @@
 
 .left {
     position: sticky;
-    height: 100vh; /* Chiều cao viewport */
-    overflow-y: auto; /* Cho phép scroll nếu content dài */
-    align-self: flex-start; /* Quan trọng! */
+    align-self: flex-start;
+    height: 100vh;
 }
 
 .left > img,
@@ -19,12 +18,13 @@
     width: 100%;
     height: 100vh;
     object-fit: cover;
+    display: block;
 }
 
 .center {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    overflow-y: auto;
 }
 
 .right {
@@ -37,6 +37,12 @@
     flex-direction: column;
     gap: 60px;
     padding: 60px 20px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.right::-webkit-scrollbar {
+    display: none;
 }
 
 .box1 {
@@ -181,12 +187,12 @@
 }
 
 .itemBoxTitle {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 500;
 }
 
 .itemBoxDescription {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 400;
 }
 
@@ -223,7 +229,7 @@
 }
 
 .itemLabel > p {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 500;
 }
 
@@ -246,7 +252,7 @@
 
 .contentText {
     padding-top: 15px; 
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 400;
     line-height: 1.5;
 }

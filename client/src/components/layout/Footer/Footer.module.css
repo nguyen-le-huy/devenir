@@ -58,7 +58,8 @@
 }
 
 .logo {
-    width: 1540px;
+    width: 100%;
+    max-width: 1540px;
     margin-inline: auto;
 }
 
@@ -80,16 +81,22 @@
         gap: 15px;
     }
 
+    .col2and3 {
+        justify-content: space-between;
+        gap: 0;
+    }
+
     .sAndC {
         flex-direction: column;
         gap: 20px;
     }
 
     .social, .copyright {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .logo {
-        width: 380px;
+        width: 100%;
+        max-width: 380px;
     }
 }

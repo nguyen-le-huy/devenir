@@ -17,8 +17,13 @@
 
 img {
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   display: block;
+}
+
+video {
+  max-width: none;
 }
 
 ul {
@@ -31,10 +36,20 @@ a {
 
 .container {
   padding: 0 20px;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
-body {
+html, body {
   background-color: var(--white);
+  overflow-x: clip;
+  max-width: 100vw;
+}
+
+/* Prevent horizontal scroll */
+#root {
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 
