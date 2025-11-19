@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import FormInput from './FormInput';
 import FormButton from './FormButton';
 import FormError from './FormError';
@@ -117,19 +117,17 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
         </div>
       )}
       {onGoogleLogin && (
-        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
-          <div className={styles.googleButtonWrapper}>
-            <GoogleLogin
-              onSuccess={(credentialResponse) => {
-                onGoogleLogin(credentialResponse.credential);
-              }}
-              onError={() => console.log('Login Failed')}
-              text="signin"
-              locale="en_US"
-              size="compact"
-            />
-          </div>
-        </GoogleOAuthProvider>
+        <div className={styles.googleButtonWrapper}>
+          <GoogleLogin
+            onSuccess={(credentialResponse) => {
+              onGoogleLogin(credentialResponse.credential);
+            }}
+            onError={() => console.log('Login Failed')}
+            text="signin"
+            locale="en_US"
+            size="compact"
+          />
+        </div>
       )}
 
       {/* Register Link */}
