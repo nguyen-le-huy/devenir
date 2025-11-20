@@ -3,7 +3,7 @@
 [![MERN Stack](https://img.shields.io/badge/Stack-MERN-green)](https://www.mongodb.com/mern-stack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Devenir** là nền tảng thương mại điện tử cao cấp chuyên về thời trang nam, được xây dựng trên **MERN Stack** với tích hợp AI Chatbot (RAG), tự động hóa n8n, và thanh toán đa kênh.
+**Devenir** là nền tảng thương mại điện tử cao cấp chuyên về thời trang, được xây dựng trên **MERN Stack** với tích hợp AI Chatbot (RAG), tự động hóa n8n, và thanh toán đa kênh.
 
 ---
 
