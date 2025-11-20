@@ -42,32 +42,6 @@ export default function UserMenu() {
         </svg>
       </button>
 
-      {isOpen && (
-        <div className={styles.dropdown}>
-          <div className={styles.userInfo}>
-            <p className={styles.username}>{user.username}</p>
-            <p className={styles.email}>{user.email}</p>
-            {user.role === 'admin' && (
-              <span className={styles.adminBadge}>Admin</span>
-            )}
-          </div>
-
-          <div className={styles.divider}></div>
-
-          {user.role === 'admin' && (
-            <a href="http://localhost:5173" className={styles.adminLink}>
-              Go to Admin Dashboard
-            </a>
-          )}
-
-          <button
-            className={styles.logoutButton}
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-        </div>
-      )}
     </div>
   );
 }
