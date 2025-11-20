@@ -3,6 +3,13 @@
     position: relative;
 }
 
+.productDetail {
+    padding-bottom: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
 .left, .center {
     width: 35%;
 }

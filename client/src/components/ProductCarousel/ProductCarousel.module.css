@@ -1,0 +1,95 @@
+.productCarousel {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    padding-top: 40px;
+    padding-bottom: 40px;
+    overflow: visible;
+}
+
+.productList {
+    position: relative;
+    width: 100%;
+    padding-inline: 20px;
+    overflow: hidden;
+}
+
+.productList :global(.swiper) {
+    overflow: visible;
+}
+
+.productList :global(.swiper-wrapper) {
+    display: flex;
+    align-items: stretch;
+}
+
+.productList :global(.swiper-slide) {
+    height: auto;
+    display: flex;
+}
+
+.productList :global(.swiper-slide) > * {
+    width: 100%;
+}
+
+.productList :global(.swiper-scrollbar) {
+    display: none !important;
+}
+
+.productList :global(.swiper-horizontal) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.productList :global(.swiper-horizontal::-webkit-scrollbar) {
+    display: none;
+}
+
+.arrows {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    z-index: 10;
+    pointer-events: none;
+    padding: 0 20px;
+}
+
+.arrows > svg {
+    cursor: pointer;
+    pointer-events: all;
+    transition: opacity 0.3s ease;
+}
+
+.titleSection {
+    padding-inline: 20px;
+}
+
+.arrows > svg.swiper-button-disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .productCarousel {
+        padding-top: 20px;
+        padding-bottom: 20px;
+        gap: 20px;
+    }
+    
+    .productList {
+        padding-inline: 10px;
+    }
+    
+    .arrows {
+        padding: 0 10px;
+    }
+    
+    .arrows > svg {
+        width: 40px;
+        height: 40px;
+    }
+}

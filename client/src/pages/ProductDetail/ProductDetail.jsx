@@ -1,7 +1,8 @@
 import styles from './ProductDetail.module.css';
 import { useState, useEffect } from 'react';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
-
+import ProductCarousel from '../../components/ProductCarousel/ProductCarousel.jsx';
+import { scarves } from '../../data/scarvesData.js';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
@@ -56,6 +57,10 @@ export default function ProductDetail() {
     // ✅ Calculate progress bar position
     const progressBarLeft = (activeSlide / totalSlides) * 100;
     const progressBarWidth = (1 / totalSlides) * 100;
+
+
+    const relatedProducts = scarves.slice(0, 8);
+
 
     return (
         <div className={styles.productDetail}>
@@ -201,6 +206,14 @@ export default function ProductDetail() {
                     </div>
                 </div>
             </div>
+
+            {/* ✅ Reusable ProductCarousel với title khác */}
+            <ProductCarousel 
+                title="We Recommend"
+                viewAllLink="#"
+                products={relatedProducts}
+                showViewAll={false}
+            />
         </div>
     );
 };
