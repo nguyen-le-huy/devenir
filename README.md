@@ -48,7 +48,7 @@
 | **Payment** | PayOS, VNPAY, Coinbase Commerce |
 | **Storage** | Cloudinary (Images/Videos) |
 | **Automation** | n8n |
-| **Deployment** | Vercel/Netlify (Frontend), Render/Railway (Backend) |
+| **Deployment** | Vercel (Frontend), Self-host (Backend) |
 
 ---
 
