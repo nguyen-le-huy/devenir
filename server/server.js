@@ -21,6 +21,8 @@ const allowedOrigins = [
   'http://127.0.0.1:5174',
   'https://devenir-demo.vercel.app',
   'https://devenir-demo-*.vercel.app', // Preview deployments với wildcard
+  'https://devenir.shop', // Domain chính
+  'https://www.devenir.shop', // Subdomain www
   'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net' // Thêm Tailscale domain
 ];
 
