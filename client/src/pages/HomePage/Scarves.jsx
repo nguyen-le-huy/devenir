@@ -86,19 +86,19 @@ const Scarves = () => {
                     breakpoints={{
                         320: {
                             slidesPerView: 2,
-                            spaceBetween: 10,
+                            spaceBetween: 5,
                         },
                         640: {
                             slidesPerView: 2,
-                            spaceBetween: 15,
+                            spaceBetween: 5,
                         },
                         1024: {
                             slidesPerView: 3,
-                            spaceBetween: 20,
+                            spaceBetween: 5,
                         },
                         1280: {
                             slidesPerView: 4,
-                            spaceBetween: 20,
+                            spaceBetween: 5,
                         },
                     }}
                     onSwiper={(swiper) => {

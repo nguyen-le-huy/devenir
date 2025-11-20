@@ -237,6 +237,10 @@
         display: none;
     }
 
+    .userMenuWrapper {
+        display: none;
+    }
+
     .actions {
         gap: 15px;
     }
