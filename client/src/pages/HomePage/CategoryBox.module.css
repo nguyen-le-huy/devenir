@@ -287,4 +287,32 @@
         width: 25px;
         height: 25px;
     }
+
+    .title {
+        font-size: 25px;
+    }
+
+    .description {
+        font-size: 18px;
+    }
+
+    .link {
+        font-size: 18px;
+    }
+
+    .contentBox {
+        gap: 10px;
+    }
+
+    .box4Content > .title {
+        font-size: 25px;
+    }
+
+    .box4Content > .description {
+        font-size: 18px;
+    }
+
+    .box4Content > .link {
+        font-size: 18px;
+    }
 }
