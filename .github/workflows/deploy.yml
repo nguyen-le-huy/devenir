@@ -1,8 +1,15 @@
-name: Devenir Deploy
+name: Devenir Deploy Backend
 
 on:
   push:
     branches: [ main ]
+
+# KHAI BÁO ĐƯỜNG DẪN 1 LẦN TẠI ĐÂY
+env:
+  # Đường dẫn gốc của dự án trên server
+  PROJECT_ROOT: "/home/nguyenlehuy/Development/devenir"
+  # Đường dẫn vào folder server (backend)
+  SERVER_PATH: "/home/nguyenlehuy/Development/devenir/server"
 
 jobs:
   deploy-backend:
@@ -12,70 +19,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check Node version
+      - name: Sync files to Production Folder
         run: |
-          echo "=== Node & NPM Versions ==="
-          node -v
-          npm -v
-          which node
-          which npm
+          echo "🚀 Deploying to: ${{ env.PROJECT_ROOT }}"
+          
+          # Tạo thư mục nếu chưa có
+          mkdir -p ${{ env.PROJECT_ROOT }}
+          
+          # Copy code backend sang (loại trừ file rác)
+          # Lưu ý: Cần cài rsync trên linux: sudo apt install rsync
+          rsync -av --exclude='node_modules' --exclude='.git' --exclude='.github' ./server/ ${{ env.SERVER_PATH }}/
+          
+          echo "✅ Files synced!"
 
-      - name: Install server dependencies
+      - name: Install Dependencies
         run: |
-          cd server
+          echo "📦 Installing dependencies in ${{ env.SERVER_PATH }}"
+          cd ${{ env.SERVER_PATH }}
           npm ci
 
-      - name: Restart backend with PM2
+      - name: Restart PM2
         run: |
-          cd server
-          pm2 restart devenir-server || pm2 start server.js --name devenir-server
+          echo "🔄 Restarting PM2..."
+          cd ${{ env.SERVER_PATH }}
+          
+          # Update env và restart
+          pm2 restart devenir-server --update-env || pm2 start server.js --name devenir-server
           pm2 save
-
-  deploy-frontend:
-    runs-on: self-hosted
-    needs: deploy-backend
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check Node version
-        run: |
-          echo "=== Node & NPM Versions ==="
-          node -v
-          npm -v
-          which node
-          which npm
-
-      - name: Install client dependencies
-        run: |
-          cd client
-          npm ci
-
-      - name: Build React app
-        run: |
-          cd client
-          npm run build
-        env:
-          NODE_ENV: production
-
-      - name: Verify build output
-        run: |
-          echo "=== Build Output ==="
-          ls -la client/dist/ || ls -la client/build/
-          echo "✅ Build completed successfully!"
+          
+          echo "✅ Backend Deployed Successfully!"
 
   notify:
     runs-on: self-hosted
-    needs: [deploy-backend, deploy-frontend]
+    needs: deploy-backend
     if: always()
-
     steps:
-      - name: Deployment status
-        run: |
-          if [ "${{ needs.deploy-frontend.result }}" == "success" ]; then
-            echo "✅ Deployment successful!"
-          else
-            echo "❌ Deployment failed!"
-            exit 1
-          fi
+      - name: Status
+        run: echo "${{ needs.deploy-backend.result == 'success' && '✅ DEPLOY OK' || '❌ DEPLOY FAILED' }}"
