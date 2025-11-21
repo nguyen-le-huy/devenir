@@ -10,8 +10,8 @@
 }
 
 .searchContainer {
-    position: fixed;
     background-color: var(--white);
+    position: absolute;
     left: 0;
     width: 100%;
     z-index: 550;
