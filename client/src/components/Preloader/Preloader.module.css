@@ -61,20 +61,20 @@
 
 @media (max-width: 768px) {
     .loaderNumberWrapper {
-        height: 25vw;
-        line-height: 25vw;
+        height: 50vw;
+        line-height: 50vw;
     }
 
     .firstLoaderNumber, .secondLoaderNumber {
-        font-size: 25vw;
+        font-size: 50vw;
     }
 
     .loaderLogo {
-        width: 100px;
+        width: 50px;
     }
 
     .loaderCircle {
-        width: 50px;
-        height: 50px;
+        width: 25px;
+        height: 25px;
     }
 }
