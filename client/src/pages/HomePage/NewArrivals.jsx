@@ -2,7 +2,7 @@ import styles from './NewArrivals.module.css';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
-    
+
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { useRef } from 'react';
@@ -27,7 +27,7 @@ const products = [
     },
     {
         id: '2',
-        name: 'Wool Shawl-Collar Cardigan',
+        name: 'Wool Cardigan',
         price: 2499.99,
         images: ['/images/newArr2.png', '/images/newArrHover2.png'],
         colors: [
@@ -38,7 +38,18 @@ const products = [
     },
     {
         id: '3',
-        name: 'Donegal Tweed Balmacaan Coat',
+        name: 'Donegal Tweed Coat',
+        price: 3499.00,
+        images: ['/images/newArr3.png', '/images/newArrHover3.png'],
+        colors: [
+            { name: 'Charcoal', hex: '#36454f' },
+            { name: 'Camel', hex: '#C19A6B' }
+        ],
+        tag: 'Hot'
+    },
+    {
+        id: '4',
+        name: 'Donegal Tweed Coat',
         price: 3499.00,
         images: ['/images/newArr3.png', '/images/newArrHover3.png'],
         colors: [
@@ -58,12 +69,12 @@ const NewArrivals = () => {
 
         gsap.set([".titleSplit", ".viewAllLinkSplit"], { opacity: 1 });
 
-        const titleSplit = new SplitText(".titleSplit", { 
+        const titleSplit = new SplitText(".titleSplit", {
             type: "words, lines",
             lineClass: "line"
         });
 
-        const linkSplit = new SplitText(".viewAllLinkSplit", { 
+        const linkSplit = new SplitText(".viewAllLinkSplit", {
             type: "words, lines",
             lineClass: "line"
         });
@@ -81,20 +92,20 @@ const NewArrivals = () => {
             opacity: 0,
             ease: "power3.out",
         })
-        .from(linkSplit.lines, {
-            duration: 0.8,
-            yPercent: 50,
-            opacity: 0,
-            ease: "power3.out",
-        }, "-=0.4")
-        
-        .from(`.${styles.productList} > *`, {
-            duration: 0.6,
-            y: 100,
-            opacity: 0,
-            stagger: 0.2,
-            ease: "power2.in",
-        }, "-=0.5");
+            .from(linkSplit.lines, {
+                duration: 0.8,
+                yPercent: 50,
+                opacity: 0,
+                ease: "power3.out",
+            }, "-=0.4")
+
+            .from(`.${styles.productList} > *`, {
+                duration: 0.6,
+                y: 100,
+                opacity: 0,
+                stagger: 0.2,
+                ease: "power2.in",
+            }, "-=0.5");
 
     }, { scope: newArrContainerRef });
 
