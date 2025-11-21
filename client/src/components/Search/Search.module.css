@@ -11,7 +11,7 @@
 
 .searchContainer {
     background-color: var(--white);
-    position: absolute;
+    position: fixed;
     left: 0;
     width: 100%;
     z-index: 550;
