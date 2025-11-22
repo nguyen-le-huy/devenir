@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './Filter.module.css';
 import { lenisInstance } from '../../App'; // Import Lenis
+import { useLenisControl } from '../../hooks/useLenisControl';
 
 const Filter = ({ isOpen, onClose }) => {
     const overlayRef = useRef(null);
@@ -61,21 +62,8 @@ const Filter = ({ isOpen, onClose }) => {
         };
     }, [isOpen, onClose]);
 
-    // Disable scroll when filter is open
-    useEffect(() => {
-        if (isOpen) {
-            if (lenisInstance) {
-                lenisInstance.stop();
-            }
 
-            return () => {
-                // ✅ Khởi động lại Lenis khi đóng filter
-                if (lenisInstance) {
-                    lenisInstance.start();
-                }
-            }
-        }
-    }, [isOpen]);
+    useLenisControl(isOpen);
 
     // Toggle Sort By dropdown (close Colour dropdown if open)
     const handleToggleSortBy = () => {

@@ -22,7 +22,7 @@
     gap: 5px;
 }
 
-.center > span {
+.center>span {
     cursor: pointer;
 }
 
@@ -35,7 +35,8 @@
     cursor: pointer;
 }
 
-.left, .right {
+.left,
+.right {
     flex: 1;
 }
 
@@ -61,7 +62,7 @@
     align-items: center;
 }
 
-.menu > svg {
+.menu>svg {
     height: 30px;
     width: 170px;
 }
@@ -116,13 +117,13 @@
     display: none;
 }
 
-.actions > svg {
+.actions>svg {
     height: 30px;
     width: 30px;
     cursor: pointer;
 }
 
-.link > a {
+.link>a {
     color: var(--black);
 }
 
@@ -143,12 +144,12 @@
     padding-top: 10px;
     padding-bottom: 10px;
     z-index: 9999;
-    transform : translateX(100%);
+    transform: translateX(100%);
     transition: transform 0.3s cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
 
 .overlayMenu.show {
-    transform : translateX(0);
+    transform: translateX(0);
 }
 
 .overlayTop {
@@ -163,7 +164,7 @@
     align-items: center;
 }
 
-.overlayTopHeader > a {
+.overlayTopHeader>a {
     cursor: pointer;
     color: var(--black);
     font-size: 20px;
@@ -188,17 +189,33 @@
     gap: 30px;
 }
 
-.overlayBottom > a {
+.overlayBottom>a {
     cursor: pointer;
     font-size: 20px;
     font-weight: 400;
     color: var(--black);
 }
 
-.overlayTopLink > a {
+.overlayTopLink>a {
     color: var(--black);
 }
 
+.bagWrapper {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    cursor: pointer;
+}
+
+.bagWrapper>span {
+    font-weight: 400;
+    color: var(--black);
+}
+
+.bagIcon {
+    height: 30px;
+    width: 30px;
+}
 
 /*************====> RESPONSIVE STYLES <====*************/
 
@@ -206,7 +223,8 @@
 
     /*************====> TOP BAR <====*************/
 
-    .left, .right {
+    .left,
+    .right {
         display: none;
     }
 
@@ -214,7 +232,8 @@
         justify-content: center;
     }
 
-    .center, .right {
+    .center,
+    .right {
         font-size: 12px;
     }
 
@@ -233,7 +252,8 @@
         width: 128px !important;
     }
 
-    .userIcon, .heartIcon {
+    .userIcon,
+    .heartIcon {
         display: none;
     }
 

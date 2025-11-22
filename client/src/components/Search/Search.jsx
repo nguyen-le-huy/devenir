@@ -4,6 +4,7 @@ import { lenisInstance } from '../../App';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
+import { useLenisControl } from '../../hooks/useLenisControl';
 
 const Search = ({ onClose }) => {
     const inputRef = useRef(null);
@@ -14,19 +15,7 @@ const Search = ({ onClose }) => {
     const resultsRef = useRef(null);
     const headerHeight = useHeaderHeight(); // ✅ Sử dụng custom hook
 
-    useEffect(() => {
-        // ✅ Dừng Lenis
-        if (lenisInstance) {
-            lenisInstance.stop();
-        }
-
-        // Cleanup
-        return () => {
-            if (lenisInstance) {
-                lenisInstance.start();
-            }
-        };
-    }, []);
+    useLenisControl(true);
 
     // ✅ Sử dụng useGSAP cho animations
     useGSAP(() => {
