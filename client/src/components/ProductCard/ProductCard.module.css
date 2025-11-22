@@ -46,7 +46,7 @@
 
 .tag {
     padding: 5px 10px;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
     color: var(--white);
     text-align: center;
@@ -74,9 +74,9 @@
     background-color: var(--black);
     color: var(--white);
     width: 100%;
-    padding: 20px 0;
+    padding: 15px 0;
     text-align: center;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
     text-transform: uppercase;
     transform: translateY(100%);
