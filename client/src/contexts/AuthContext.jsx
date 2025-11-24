@@ -63,6 +63,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update user profile
+  const updateUser = (updatedUserData) => {
+    const newUser = { ...user, ...updatedUserData };
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+  };
+
   // Check if user is admin
   const isAdmin = () => {
     return user?.role === 'admin';
@@ -75,6 +82,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     logout,
+    updateUser,
     isAdmin,
   };
 

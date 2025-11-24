@@ -8,7 +8,7 @@ import Bag from "../../Bag/Bag";
 
 const Header = () => {
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isBagOpen, setIsBagOpen] = useState(false);
@@ -41,6 +41,12 @@ const Header = () => {
     }
 
     const handleLogoClick = () => {
+        navigate('/');
+    }
+
+    const handleLogout = async () => {
+        await logout();
+        setIsMenuOpen(false);
         navigate('/');
     }
 
@@ -144,6 +150,7 @@ const Header = () => {
                         {isAuthenticated ? (
                             <>
                                 <a href="/profile" onClick={handleCloseMenu}>Profile</a>
+                                <button className={styles.signOutButton} onClick={handleLogout}>Sign Out</button>
                                 <a href="/">Devenir Services</a>
                                 <a href="/">Customer Support</a>
                             </>

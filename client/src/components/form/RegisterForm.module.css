@@ -66,18 +66,24 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    margin: 0;
 }
 
 .googleButtonWrapper :global(.g_id_signin) {
-    width: auto !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
 }
 
 .googleButtonWrapper :global(.g_id_signin div) {
-    width: auto !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
 }
 
 .googleButtonWrapper :global(.g_id_signin iframe) {
-    width: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 /* ============ RESPONSIVE ============ */
@@ -120,8 +126,7 @@
     }
 
     .googleButtonWrapper :global(.g_id_signin) {
-        transform: scale(0.95) !important;
-        transform-origin: center !important;
+        width: 100% !important;
     }
 }
 
@@ -151,7 +156,6 @@
     }
 
     .googleButtonWrapper :global(.g_id_signin) {
-        transform: scale(0.9) !important;
-        transform-origin: center !important;
+        width: 100% !important;
     }
 }

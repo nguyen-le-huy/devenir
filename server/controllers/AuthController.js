@@ -545,6 +545,180 @@ export const addPhone = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * UPDATE PROFILE - Cập nhật thông tin cá nhân
+ * @route PUT /api/auth/profile
+ * @access Private
+ */
+export const updateProfile = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  const { username, phone, firstName, lastName, birthday } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized'
+    });
+  }
+
+  // Validate phone format
+  if (phone && !/^(\+84|0)[0-9]{9,10}$/.test(phone)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid phone number format'
+    });
+  }
+
+  // Check if username is unique (if changing)
+  if (username) {
+    const existingUser = await User.findOne({
+      username: username.toLowerCase(),
+      _id: { $ne: userId }
+    });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username already in use'
+      });
+    }
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      $set: {
+        username: username || undefined,
+        phone: phone || undefined,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        birthday: birthday || undefined,
+      }
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Profile updated successfully',
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      birthday: user.birthday,
+      role: user.role
+    }
+  });
+});
+
+/**
+ * CHANGE PASSWORD - Đổi mật khẩu
+ * @route POST /api/auth/change-password
+ * @access Private
+ */
+export const changePassword = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized'
+    });
+  }
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Current password and new password are required'
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'New password must be at least 6 characters'
+    });
+  }
+
+  const user = await User.findById(userId).select('+password');
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  // Verify current password
+  const isPasswordMatch = await user.matchPassword(currentPassword);
+  if (!isPasswordMatch) {
+    return res.status(401).json({
+      success: false,
+      message: 'Current password is incorrect'
+    });
+  }
+
+  // Update password
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password changed successfully'
+  });
+});
+
+/**
+ * UPDATE PREFERENCES - Cập nhật sở thích nhận thông báo
+ * @route PUT /api/auth/preferences
+ * @access Private
+ */
+export const updatePreferences = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  const { channels, interests } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized'
+    });
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      $set: {
+        'preferences.channels': channels,
+        'preferences.interests': interests
+      }
+    },
+    { new: true }
+  );
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Preferences updated successfully',
+    preferences: user.preferences
+  });
+});
+
 export default {
   register,
   login,
@@ -553,6 +727,9 @@ export default {
   forgotPassword,
   resetPassword,
   verifyEmail,
-  addPhone
+  addPhone,
+  updateProfile,
+  changePassword,
+  updatePreferences
 };
 

@@ -7,6 +7,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import AuthPage from './pages/auth/AuthPage'
 import Layout from './components/layout/Layout.jsx'
 import CheckoutLayout from './components/checkoutLayout/CheckoutLayout.jsx'
+import UserProfile from './pages/UserProfile/UserProfile.jsx'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import Lenis from 'lenis';
 import { useEffect } from 'react';
@@ -75,6 +76,7 @@ function App() {
             <Route element={<Layout />}>
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
+              <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
               <Route path="/" element={<HomePage />} />
               <Route path="/scarves" element={<ProductByCategory />} />
               <Route path="/product-detail" element={<ProductDetail />} />

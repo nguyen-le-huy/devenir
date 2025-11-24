@@ -98,6 +98,31 @@ const userSchema = new mongoose.Schema(
         'Please enter a valid phone number',
       ],
     },
+    firstName: {
+      type: String,
+      default: null,
+    },
+    lastName: {
+      type: String,
+      default: null,
+    },
+    birthday: {
+      type: Date,
+      default: null,
+    },
+    preferences: {
+      channels: {
+        email: { type: Boolean, default: true },
+        phone: { type: Boolean, default: false },
+        messaging: { type: Boolean, default: false },
+        post: { type: Boolean, default: false },
+      },
+      interests: {
+        type: String,
+        enum: ['menswear', 'womenswear', 'both'],
+        default: 'menswear',
+      },
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,

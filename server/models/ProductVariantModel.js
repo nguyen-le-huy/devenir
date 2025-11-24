@@ -20,17 +20,10 @@ const productVariantSchema = new mongoose.Schema(
       enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', 'Free Size'],
     },
     color: {
-      name: {
-        type: String,
-        required: [true, 'Please enter the color name'],
-        trim: true,
-      },
-      code: {
-        type: String,
-        required: [true, 'Please enter the color code (hex)'],
-        trim: true,
-        match: [/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid color code'],
-      },
+      type: String,
+      required: false,
+      trim: true,
+      default: null,
     },
     price: {
       type: Number,
@@ -43,9 +36,30 @@ const productVariantSchema = new mongoose.Schema(
       min: [0, 'Stock must not be negative'],
       default: 0,
     },
-    variantImages: {
+    images: {
       type: [String],
       default: [],
+    },
+    lowStockThreshold: {
+      type: Number,
+      default: 10,
+    },
+    weight: {
+      type: Number,
+      default: 0,
+    },
+    dimensions: {
+      length: { type: Number, default: 0 },
+      width: { type: Number, default: 0 },
+      height: { type: Number, default: 0 },
+    },
+    barcode: {
+      type: String,
+      trim: true,
+    },
+    comparePrice: {
+      type: Number,
+      default: null,
     },
     isActive: {
       type: Boolean,
@@ -170,7 +184,6 @@ productVariantSchema.pre('save', async function (next) {
 // ============ INDEXES ============
 
 productVariantSchema.index({ product: 1 });
-productVariantSchema.index({ sku: 1 });
 productVariantSchema.index({ size: 1 });
 productVariantSchema.index({ 'color.name': 1 });
 productVariantSchema.index({ stock: 1 });

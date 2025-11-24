@@ -1,0 +1,340 @@
+.personalDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+/* ============= MESSAGES ============= */
+.successMessage {
+    padding: 16px 20px;
+    background-color: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 4px;
+    color: #166534;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+/* ============= SECTIONS ============= */
+.section {
+    padding-bottom: 40px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.sectionTitle {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 8px 0;
+}
+
+.sectionSubtitle {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 13px;
+    color: #999;
+    margin: 0 0 20px 0;
+}
+
+/* ============= FORM ============= */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.formRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.formRow:has(.formGroup:only-child) {
+    grid-template-columns: 1fr;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.label {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.input {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    padding: 12px 0;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    background: none;
+    color: #000;
+    transition: all 0.3s ease;
+}
+
+.input::placeholder {
+    color: #999;
+}
+
+.input:focus {
+    outline: none;
+    border-bottom-color: var(--brown);
+}
+
+.inputError {
+    border-bottom-color: #ef4444 !important;
+    color: #ef4444;
+}
+
+.inputDisabled {
+    color: #999;
+    background-color: #f9f9f9;
+    cursor: not-allowed;
+}
+
+.errorText {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 12px;
+    color: #ef4444;
+    margin-top: 2px;
+}
+
+.helperText {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 12px;
+    color: #999;
+    margin: 4px 0 0 0;
+}
+
+/* ============= BUTTONS ============= */
+.saveBtn {
+    align-self: flex-start;
+    padding: 12px 32px;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 12px;
+}
+
+.saveBtn:hover:not(:disabled) {
+    background-color: var(--brown);
+    color: #fff;
+    border-color: var(--brown);
+}
+
+.saveBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============= PASSWORD SECTION ============= */
+.passwordInfo {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.passwordDisplay {
+    flex: 1;
+    padding: 12px 0;
+    border-bottom: 1px solid #e0e0e0;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: #000;
+    letter-spacing: 2px;
+}
+
+.changePasswordBtn {
+    padding: 10px 24px;
+    background-color: #fff;
+    border: 1px solid #0066ff;
+    border-radius: 4px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0066ff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.changePasswordBtn:hover {
+    background-color: #0066ff;
+    color: #fff;
+}
+
+.changePasswordSubmitBtn {
+    padding: 12px 32px;
+    background-color: #0066ff;
+    border: 1px solid #0066ff;
+    border-radius: 4px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.changePasswordSubmitBtn:hover:not(:disabled) {
+    background-color: #0052cc;
+    border-color: #0052cc;
+}
+
+.changePasswordSubmitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.passwordActions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.cancelBtn {
+    padding: 12px 32px;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancelBtn:hover {
+    background-color: #f9f9f9;
+    border-color: #ccc;
+}
+
+/* ============= RESPONSIVE ============= */
+@media (max-width: 768px) {
+    .personalDetails {
+        gap: 24px;
+    }
+
+    .section {
+        padding-bottom: 24px;
+    }
+
+    .sectionTitle {
+        font-size: 16px;
+    }
+
+    .formRow {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .form {
+        gap: 16px;
+    }
+
+    .input {
+        padding: 10px 0;
+        font-size: 13px;
+    }
+
+    .label {
+        font-size: 13px;
+    }
+
+    .passwordInfo {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .passwordDisplay {
+        width: 100%;
+    }
+
+    .changePasswordBtn {
+        width: 100%;
+    }
+
+    .saveBtn,
+    .changePasswordSubmitBtn,
+    .cancelBtn {
+        width: 100%;
+        align-self: stretch;
+    }
+}
+
+@media (max-width: 480px) {
+    .personalDetails {
+        gap: 20px;
+    }
+
+    .section {
+        padding-bottom: 16px;
+    }
+
+    .sectionTitle {
+        font-size: 15px;
+    }
+
+    .sectionSubtitle {
+        font-size: 12px;
+    }
+
+    .form {
+        gap: 12px;
+    }
+
+    .formRow {
+        gap: 12px;
+    }
+
+    .input {
+        padding: 8px 0;
+        font-size: 12px;
+    }
+
+    .label {
+        font-size: 12px;
+    }
+
+    .errorText {
+        font-size: 11px;
+    }
+
+    .helperText {
+        font-size: 11px;
+    }
+
+    .saveBtn,
+    .changePasswordBtn,
+    .changePasswordSubmitBtn,
+    .cancelBtn {
+        font-size: 13px;
+        padding: 10px 16px;
+    }
+
+    .passwordActions {
+        flex-direction: column;
+        gap: 8px;
+    }
+}

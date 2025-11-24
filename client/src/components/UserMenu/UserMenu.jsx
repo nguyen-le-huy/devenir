@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from './UserMenu.module.css';
 
@@ -7,34 +7,16 @@ import styles from './UserMenu.module.css';
  * Hiển thị thông tin user và logout button
  */
 export default function UserMenu() {
-  const { user, logout, isAuthenticated } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
 
   if (!isAuthenticated || !user) return null;
 
-  const handleLogout = async () => {
-    await logout();
-    setIsOpen(false);
-  };
-
   return (
-    <div className={styles.userMenu} ref={menuRef}>
+    <div className={styles.userMenu}>
       <button
         className={styles.userButton}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => navigate('/profile')}
         title={`${user.username}`}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none">

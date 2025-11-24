@@ -1,0 +1,268 @@
+.preferences {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* ============= MESSAGES ============= */
+.errorMessage {
+    padding: 16px 20px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    color: #991b1b;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.successMessage {
+    padding: 16px 20px;
+    background-color: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 4px;
+    color: #166534;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+/* ============= FORM ============= */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* ============= SECTIONS ============= */
+.section {
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.section:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.sectionTitle {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 8px 0;
+}
+
+.sectionDescription {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+}
+
+/* ============= CHECKBOXES ============= */
+.channelList {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.checkboxGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--brown);
+}
+
+.checkboxLabel {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.checkbox:checked~.checkboxLabel {
+    color: var(--brown);
+    font-weight: 500;
+}
+
+.checkboxLabel:hover {
+    color: var(--brown);
+}
+
+/* ============= RADIO BUTTONS ============= */
+.interestsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.radioGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.radio {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--brown);
+}
+
+.radioLabel {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.radio:checked~.radioLabel {
+    color: var(--brown);
+    font-weight: 500;
+}
+
+.radioLabel:hover {
+    color: var(--brown);
+}
+
+/* ============= PRIVACY TEXT ============= */
+.privacyText {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.link {
+    color: var(--brown);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.link:hover {
+    border-bottom-color: var(--brown);
+}
+
+/* ============= BUTTON ============= */
+.saveBtn {
+    align-self: flex-start;
+    padding: 12px 32px;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 12px;
+}
+
+.saveBtn:hover:not(:disabled) {
+    background-color: var(--brown);
+    color: #fff;
+    border-color: var(--brown);
+}
+
+.saveBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============= RESPONSIVE ============= */
+@media (max-width: 768px) {
+    .preferences {
+        gap: 24px;
+    }
+
+    .section {
+        padding-bottom: 24px;
+    }
+
+    .sectionTitle {
+        font-size: 15px;
+    }
+
+    .sectionDescription {
+        font-size: 13px;
+    }
+
+    .checkboxLabel,
+    .radioLabel {
+        font-size: 13px;
+    }
+
+    .privacyText {
+        font-size: 11px;
+    }
+
+    .saveBtn {
+        width: 100%;
+        align-self: stretch;
+    }
+}
+
+@media (max-width: 480px) {
+    .preferences {
+        gap: 16px;
+    }
+
+    .form {
+        gap: 16px;
+    }
+
+    .section {
+        padding-bottom: 16px;
+    }
+
+    .sectionTitle {
+        font-size: 14px;
+    }
+
+    .sectionDescription {
+        font-size: 12px;
+    }
+
+    .checkboxLabel,
+    .radioLabel {
+        font-size: 12px;
+    }
+
+    .privacyText {
+        font-size: 10px;
+        line-height: 1.5;
+    }
+
+    .saveBtn {
+        font-size: 13px;
+        padding: 10px 16px;
+    }
+
+    .checkbox,
+    .radio {
+        width: 16px;
+        height: 16px;
+    }
+
+    .checkboxGroup,
+    .radioGroup {
+        gap: 10px;
+    }
+}

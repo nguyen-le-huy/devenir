@@ -2,11 +2,12 @@ import { useAuth } from '../contexts/AuthContext';
 import styles from './AdminButton.module.css';
 
 export default function AdminButton() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user, token } = useAuth();
 
   if (!isAdmin()) return null;
 
   const handleGoToAdmin = () => {
+    // Open admin panel - user must login again for security
     window.open('http://localhost:5173', '_blank');
   };
 

@@ -22,24 +22,24 @@ const productSchema = new mongoose.Schema(
       min: [0, 'Product price must not be negative'],
     },
     category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
+      type: String,
       required: [true, 'Please choose category'],
+      trim: true,
     },
     brand: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Brand',
+      type: String,
       required: false,
+      trim: true,
     },
     images: {
-      type: [String],
-      required: [true, 'Please add at least one image'],
-      validate: {
-        validator: function (arr) {
-          return arr.length > 1;
+      type: [
+        {
+          url: String,
+          altText: String,
+          isMain: { type: Boolean, default: false },
         },
-        message: 'Product must have at least two images',
-      },
+      ],
+      default: [],
     },
     tags: {
       type: [String],
@@ -61,6 +61,41 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    status: {
+      type: String,
+      enum: ['draft', 'published', 'archived'],
+      default: 'draft',
+    },
+    // SEO Fields
+    seoTitle: {
+      type: String,
+      maxlength: [60, 'SEO title must not exceed 60 characters'],
+    },
+    seoDescription: {
+      type: String,
+      maxlength: [160, 'SEO description must not exceed 160 characters'],
+    },
+    urlSlug: {
+      type: String,
+      lowercase: true,
+      trim: true,
+    },
+    focusKeyword: {
+      type: String,
+      trim: true,
+    },
+    relatedProducts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+      },
+    ],
+    upsellProducts: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+      },
+    ],
   },
   {
     timestamps: true,
@@ -75,6 +110,36 @@ const productSchema = new mongoose.Schema(
  */
 productSchema.virtual('reviewCount').get(function () {
   return this.reviews.length;
+});
+
+// ============ PRE-SAVE MIDDLEWARE ============
+
+/**
+ * Normalize images data - convert string URLs to objects if needed
+ */
+productSchema.pre('save', function (next) {
+  if (this.images && Array.isArray(this.images)) {
+    this.images = this.images.map((img) => {
+      // If it's a string, convert to object
+      if (typeof img === 'string') {
+        return {
+          url: img,
+          altText: this.name || 'Product image',
+          isMain: false,
+        };
+      }
+      // If it's an object, ensure it has a url
+      if (img && typeof img === 'object') {
+        return {
+          url: img.url || '',
+          altText: img.altText || this.name || 'Product image',
+          isMain: img.isMain || false,
+        };
+      }
+      return img;
+    });
+  }
+  next();
 });
 
 // ============ INSTANCE METHODS ============

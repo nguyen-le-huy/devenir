@@ -104,6 +104,48 @@ const authService = {
   },
 
   /**
+   * Update Profile - Cập nhật thông tin cá nhân
+   * @param {Object} data - {username, phone, firstName, lastName, birthday}
+   * @returns {Promise}
+   */
+  updateProfile: async (data) => {
+    try {
+      const response = await apiClient.put('/auth/profile', data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Change Password - Đổi mật khẩu
+   * @param {Object} data - {currentPassword, newPassword}
+   * @returns {Promise}
+   */
+  changePassword: async (data) => {
+    try {
+      const response = await apiClient.post('/auth/change-password', data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Update Preferences - Cập nhật sở thích nhận thông báo
+   * @param {Object} data - {channels, interests}
+   * @returns {Promise}
+   */
+  updatePreferences: async (data) => {
+    try {
+      const response = await apiClient.put('/auth/preferences', data);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
    * Logout - Đăng xuất
    * @returns {Promise}
    */

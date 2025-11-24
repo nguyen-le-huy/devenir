@@ -196,6 +196,23 @@
     color: var(--black);
 }
 
+.signOutButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--black);
+    text-align: left;
+    padding: 0;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.signOutButton:hover {
+    opacity: 0.7;
+}
+
 .overlayTopLink>a {
     color: var(--black);
 }

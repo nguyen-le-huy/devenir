@@ -82,12 +82,33 @@ export default function AuthPage() {
 
     try {
       const response = await authService.googleLogin(credential);
-      // Store credential and show phone verification form
-      setGoogleCredential(credential);
-      setRightForm('phone');
+      
+      // Check if user already exists or account just created
+      if (response.user && response.token) {
+        // Account already existed or verification not needed
+        // Auto-login the user
+        login(response.token, response.user);
+        window.location.href = '/';
+      } else {
+        // New account created, show phone verification form
+        setGoogleCredential(credential);
+        setRightForm('phone');
+      }
     } catch (err) {
-      setError(err.message || 'Google registration failed');
-      console.error('Google register error:', err);
+      // If error is "user already exists", treat it as login
+      if (err.message && (err.message.includes('already exists') || err.message.includes('already registered'))) {
+        try {
+          const response = await authService.googleLogin(credential);
+          login(response.token, response.user);
+          window.location.href = '/';
+        } catch (loginErr) {
+          setError(loginErr.message || 'Google registration failed');
+          console.error('Google register error:', loginErr);
+        }
+      } else {
+        setError(err.message || 'Google registration failed');
+        console.error('Google register error:', err);
+      }
     } finally {
       setLoading(false);
     }
