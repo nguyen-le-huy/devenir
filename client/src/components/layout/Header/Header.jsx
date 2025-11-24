@@ -111,8 +111,8 @@ const Header = () => {
                             <path d="M6.25 25V23.75C6.25 21.4294 7.17187 19.2038 8.81282 17.5628C10.4538 15.9219 12.6794 15 15 15M15 15C17.3206 15 19.5462 15.9219 21.1872 17.5628C22.8281 19.2038 23.75 21.4294 23.75 23.75V25M15 15C16.3261 15 17.5979 14.4732 18.5355 13.5355C19.4732 12.5979 20 11.3261 20 10C20 8.67392 19.4732 7.40215 18.5355 6.46447C17.5979 5.52678 16.3261 5 15 5C13.6739 5 12.4021 5.52678 11.4645 6.46447C10.5268 7.40215 10 8.67392 10 10C10 11.3261 10.5268 12.5979 11.4645 13.5355C12.4021 14.4732 13.6739 15 15 15Z" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     )}
-                    <div className={styles.bagWrapper}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.bagIcon} onMouseEnter={handleBagMouseEnter} onMouseLeave={handleBagMouseLeave}>
+                    <div className={styles.bagWrapper} onMouseEnter={handleBagMouseEnter} onMouseLeave={handleBagMouseLeave}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.bagIcon}>
                             <path d="M10 15V10C10 8.67392 10.5268 7.40215 11.4645 6.46447C12.4021 5.52678 13.6739 5 15 5C16.3261 5 17.5979 5.52678 18.5355 6.46447C19.4732 7.40215 20 8.67392 20 10V15" stroke="black" stroke-linecap="round" stroke-width="1.5" />
                             <path d="M4.61752 15.835C4.79877 13.6588 4.89002 12.5712 5.60752 11.91C6.32502 11.2487 7.41752 11.25 9.60127 11.25H20.4C22.5825 11.25 23.675 11.25 24.3925 11.91C25.11 12.57 25.2013 13.6588 25.3825 15.835L26.025 23.5425C26.13 24.8087 26.1825 25.4425 25.8125 25.8463C25.44 26.25 24.805 26.25 23.5325 26.25H6.46752C5.19627 26.25 4.56002 26.25 4.18877 25.8463C3.81752 25.4425 3.87002 24.8087 3.97627 23.5425L4.61752 15.835Z" stroke="black" stroke-width="1.5" />
                         </svg>

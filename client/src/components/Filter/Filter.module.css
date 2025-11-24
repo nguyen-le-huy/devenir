@@ -14,6 +14,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -47,17 +48,17 @@
     align-items: center;
 }
 
-.header > span {
+.header>span {
     font-size: 20px;
     font-weight: 500;
 }
 
-.header > svg {
+.header>svg {
     cursor: pointer;
     transition: transform 0.2s ease;
 }
 
-.header > svg:hover {
+.header>svg:hover {
     transform: rotate(90deg);
 }
 
@@ -67,13 +68,13 @@
     gap: 60px;
 }
 
-.sortByLabel > p,
-.colourLabel > p {
+.sortByLabel>p,
+.colourLabel>p {
     font-size: 20px;
     font-weight: 500;
 }
 
-.sortByLabel, 
+.sortByLabel,
 .colourLabel {
     display: flex;
     justify-content: space-between;
@@ -87,13 +88,13 @@
     opacity: 0.7;
 }
 
-.sortByLabel > svg,
-.colourLabel > svg {
+.sortByLabel>svg,
+.colourLabel>svg {
     transition: transform 0.3s ease;
 }
 
-.sortByLabel > svg.rotated,
-.colourLabel > svg.rotated {
+.sortByLabel>svg.rotated,
+.colourLabel>svg.rotated {
     transform: rotate(45deg);
 }
 
@@ -123,6 +124,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -204,8 +206,8 @@
         width: 85vw;
     }
 
-    .sortByLabel > p,
-    .colourLabel > p {
+    .sortByLabel>p,
+    .colourLabel>p {
         font-size: 18px;
     }
 
@@ -265,7 +267,6 @@
 .colourSwatch {
     width: 28px;
     height: 28px;
-    border-radius: 4px;
     border: 1px solid transparent;
     transition: all 0.2s ease;
 }
@@ -305,8 +306,8 @@
         width: 85vw;
     }
 
-    .sortByLabel > p,
-    .colourLabel > p {
+    .sortByLabel>p,
+    .colourLabel>p {
         font-size: 18px;
     }
 
