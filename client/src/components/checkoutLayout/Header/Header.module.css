@@ -1,0 +1,47 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 145px;
+}
+
+.left,
+.center,
+.right {
+    flex: 1;
+}
+
+.left {
+    display: flex;
+    justify-content: flex-start;
+    /* icon sát trái */
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+    /* logo ở giữa */
+}
+
+.backIcon {
+    cursor: pointer;
+}
+
+.logo {
+    cursor: pointer;
+    width: 200px;
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 20px 10px;
+    }
+
+    .logo {
+        width: 140px;
+    }
+
+    .backIcon {
+        width: 25px;
+    }
+}

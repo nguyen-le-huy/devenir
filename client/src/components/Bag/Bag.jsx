@@ -3,10 +3,16 @@ import { useHeaderHeight } from "../../hooks/useHeaderHeight";
 import { lenisInstance } from "../../App";
 import { useEffect } from "react";
 import { useLenisControl } from "../../hooks/useLenisControl";
+import { useNavigate } from "react-router-dom";
 
 export default function Bag({ onMouseEnter, onMouseLeave, bagCount }) {
+    const navigate = useNavigate();
     const headerHeight = useHeaderHeight();
     useLenisControl(true);
+
+    const handleCheckout = () => {
+        navigate("/checkout");
+    };
 
     return (
         <>
@@ -61,7 +67,7 @@ export default function Bag({ onMouseEnter, onMouseLeave, bagCount }) {
                         </div>
 
                         <div className={styles.checkoutButton}>
-                            <button>Checkout</button>
+                            <button onClick={handleCheckout}>Checkout</button>
                         </div>
 
                     </div>

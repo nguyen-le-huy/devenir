@@ -1,0 +1,278 @@
+.checkout {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    padding: 0 145px;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.header>h3 {
+    font-size: 21px;
+    font-weight: 500;
+}
+
+.header>p {
+    font-size: 16px;
+    font-weight: 4 00;
+}
+
+.body {
+    display: flex;
+    gap: 200px;
+}
+
+.left {
+    flex: 1.5;
+    padding: 30px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    border-top: 1px solid var(--gray);
+}
+
+.right {
+    flex: 1;
+    background-color: var(--light-gray);
+    padding: 40px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.right>h2 {
+    font-size: 22px;
+    font-weight: 500;
+}
+
+.summary {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-weight: 500;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--gray);
+}
+
+.summaryItem {
+    display: flex;
+    justify-content: space-between;
+}
+
+.subtotalLabel {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.total {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 500;
+    align-items: flex-end;
+}
+
+.totalLabel {
+    font-size: 20px;
+}
+
+.totalPrice {
+    font-size: 16px;
+}
+
+.checkoutButtonList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.checkoutButton {
+    background-color: var(--brown);
+    color: var(--white);
+    padding: 10px;
+    font-size: 20px;
+    font-weight: 400;
+    border: 1px solid var(--brown);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.checkoutButton:hover {
+    background-color: var(--light-gray);
+    color: var(--brown);
+}
+
+.coinbaseButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    border: 1px solid #0052FF;
+    cursor: pointer;
+}
+
+.coinbaseButton>svg {
+    width: 100px;
+}
+
+.instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.instructionsItem {
+    display: flex;
+    gap: 20px;
+}
+
+.instructionsItem>img {
+    width: 100px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.content>h3 {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.content>p {
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.benefits>p {
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.accepts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.accepts>p {
+    font-size: 16px;
+}
+
+.paymentMethods {
+    display: flex;
+    gap: 10px;
+}
+
+.paymentMethods>img {
+    width: 40px;
+}
+
+@media (max-width: 768px) {
+    .header {
+        gap: 5px;
+    }
+
+    .header>h3 {
+        font-size: 18px;
+    }
+
+    .header>p {
+        font-size: 14px;
+    }
+
+
+    .checkout {
+        padding: 0 10px;
+    }
+
+    .body {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .right {
+        gap: 20px;
+        padding: 20px 15px;
+    }
+
+    .right>h2 {
+        font-size: 20px;
+    }
+
+    .summary {
+        gap: 10px;
+    }
+
+    .summaryItem>p {
+        font-size: 14px;
+    }
+
+    .subtotalLabel {
+        font-size: 18px !important;
+    }
+
+    .checkoutButtonList {
+        gap: 10px;
+    }
+
+    .checkoutButton {
+        font-size: 16px;
+    }
+
+    .coinbaseButton>svg {
+        width: 80px;
+    }
+
+    .instruction {
+        gap: 10px;
+    }
+
+    .instructionsItem {
+        gap: 10px;
+    }
+
+    .instructionsItem>img {
+        width: 80px;
+        height: 80px;
+    }
+
+    .content>h3 {
+        font-size: 16px;
+    }
+
+    .content>p {
+        font-size: 14px;
+    }
+
+    .benefits {
+        gap: 5px;
+    }
+
+    .benefits>p {
+        font-size: 14px;
+    }
+
+    .accepts>p {
+        font-size: 14px;
+    }
+
+    .paymentMethods>img {
+        width: 30px;
+    }
+
+
+}

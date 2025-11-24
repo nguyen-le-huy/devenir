@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import AuthPage from './pages/auth/AuthPage'
 import Layout from './components/layout/Layout.jsx'
+import CheckoutLayout from './components/checkoutLayout/CheckoutLayout.jsx'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import Lenis from 'lenis';
 import { useEffect } from 'react';
@@ -15,6 +16,7 @@ import ProductByCategory from './pages/ProductByCategory/ProductByCategory.jsx';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import ProductDetail from './pages/ProductDetail/ProductDetail.jsx';
+import Checkout from './pages/Checkout/Checkout';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -37,7 +39,7 @@ function App() {
     });
 
     lenisInstance = lenis;
-    
+
     // Đồng bộ Lenis với GSAP ScrollTrigger
     lenis.on('scroll', ScrollTrigger.update)
 
@@ -68,7 +70,7 @@ function App() {
             {/* ✅ Routes KHÔNG cần Layout */}
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            
+
             {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
             <Route element={<Layout />}>
               <Route path="/auth" element={<AuthPage />} />
@@ -77,6 +79,10 @@ function App() {
               <Route path="/scarves" element={<ProductByCategory />} />
               <Route path="/product-detail" element={<ProductDetail />} />
               <Route path="*" element={<HomePage />} />
+            </Route>
+
+            <Route element={<CheckoutLayout />}>
+              <Route path="/checkout" element={<Checkout />} />
             </Route>
           </Routes>
         </AuthProvider>
