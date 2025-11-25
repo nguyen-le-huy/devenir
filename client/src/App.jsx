@@ -78,7 +78,7 @@ function App() {
               <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
               <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
               <Route path="/" element={<HomePage />} />
-              <Route path="/scarves" element={<ProductByCategory />} />
+              <Route path="/products" element={<ProductByCategory />} />
               <Route path="/product-detail" element={<ProductDetail />} />
               <Route path="*" element={<HomePage />} />
             </Route>
