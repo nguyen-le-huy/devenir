@@ -50,7 +50,7 @@ export type SizeCode = keyof typeof SIZE_CODES;
 export interface VariantConfig {
   brand: BrandCode;
   category: CategoryCode;
-  color: ColorCode;
+  color: ColorCode | string;
   size: SizeCode;
 }
 
@@ -86,7 +86,7 @@ export function parseSKU(sku: string): VariantConfig | null {
   if (
     !(brand in BRAND_CODES) ||
     !(category in CATEGORY_CODES) ||
-    !(color in COLOR_CODES) ||
+    (!(color in COLOR_CODES) && !/^[0-9A-F]{6}$/i.test(color)) || // Allow hex-like strings (6 chars)
     !(size in SIZE_CODES)
   ) {
     return null;
@@ -95,7 +95,7 @@ export function parseSKU(sku: string): VariantConfig | null {
   return {
     brand: brand as BrandCode,
     category: category as CategoryCode,
-    color: color as ColorCode,
+    color: color as ColorCode | string,
     size: size as SizeCode,
   };
 }
@@ -115,7 +115,7 @@ export function generateVariantMatrix(config: {
   brand: BrandCode;
   category: CategoryCode;
   sizes: SizeCode[];
-  colors: ColorCode[];
+  colors: (ColorCode | string)[];
 }): VariantConfig[] {
   const { brand, category, sizes, colors } = config;
   const matrix: VariantConfig[] = [];
@@ -137,8 +137,8 @@ export function generateVariantMatrix(config: {
 /**
  * Get color info by code
  */
-export function getColorInfo(code: ColorCode) {
-  return COLOR_CODES[code];
+export function getColorInfo(code: ColorCode | string) {
+  return COLOR_CODES[code as ColorCode] || (code.startsWith('#') ? { name: code, hex: code } : null);
 }
 
 /**

@@ -21,19 +21,32 @@ export const uploadImage = asyncHandler(async (req, res) => {
     });
   }
 
+  // Check Cloudinary config
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    console.error('Cloudinary credentials missing!');
+    return res.status(500).json({
+      success: false,
+      message: 'Server configuration error: Cloudinary credentials not configured',
+    });
+  }
+
   try {
     console.log('Starting image upload...');
-    console.log('File buffer size:', req.file.buffer.length);
+    console.log('File:', req.file.originalname);
+    console.log('File size:', (req.file.buffer.length / 1024 / 1024).toFixed(2), 'MB');
+    console.log('MIME type:', req.file.mimetype);
 
     // Convert buffer to base64 for upload
     const base64String = req.file.buffer.toString('base64');
     const dataURI = `data:${req.file.mimetype};base64,${base64String}`;
 
+    console.log('Uploading to Cloudinary...');
     const result = await cloudinary.uploader.upload(dataURI, {
       folder: 'devenir/products',
       resource_type: 'auto',
-      quality: 'auto',
-      fetch_format: 'auto',
+      quality: 100, // Upload with maximum quality (no compression)
+      flags: 'preserve_transparency', // Preserve PNG transparency
+      // No fetch_format - keep original format (PNG, JPG, etc.)
     });
 
     console.log('Upload successful:', result.public_id);
@@ -49,11 +62,17 @@ export const uploadImage = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Upload error:', error.message);
+    console.error('Upload error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
     res.status(500).json({
       success: false,
       message: 'Error uploading image to Cloudinary',
       error: error.message,
+      details: error.code || 'Unknown error',
     });
   }
 });
@@ -88,8 +107,9 @@ export const uploadImages = asyncHandler(async (req, res) => {
       const result = await cloudinary.uploader.upload(dataURI, {
         folder: 'devenir/products',
         resource_type: 'auto',
-        quality: 'auto',
-        fetch_format: 'auto',
+        quality: 100, // Upload with maximum quality (no compression)
+        flags: 'preserve_transparency', // Preserve PNG transparency
+        // No fetch_format - keep original format (PNG, JPG, etc.)
       });
 
       console.log(`Upload successful: ${result.public_id}`);

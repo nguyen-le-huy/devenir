@@ -16,11 +16,6 @@ const productSchema = new mongoose.Schema(
       minlength: [10, 'Product description must be at least 10 characters'],
       maxlength: [2000, 'Product description must not exceed 2000 characters'],
     },
-    basePrice: {
-      type: Number,
-      required: [true, 'Please enter product price'],
-      min: [0, 'Product price must not be negative'],
-    },
     category: {
       type: String,
       required: [true, 'Please choose category'],
@@ -30,16 +25,6 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: false,
       trim: true,
-    },
-    images: {
-      type: [
-        {
-          url: String,
-          altText: String,
-          isMain: { type: Boolean, default: false },
-        },
-      ],
-      default: [],
     },
     tags: {
       type: [String],
@@ -150,7 +135,7 @@ productSchema.pre('save', function (next) {
  */
 productSchema.methods.calculateAverageRating = async function () {
   const Review = mongoose.model('Review');
-  
+
   const stats = await Review.aggregate([
     {
       $match: { product: this._id },

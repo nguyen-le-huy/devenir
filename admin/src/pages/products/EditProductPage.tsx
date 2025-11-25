@@ -3,8 +3,9 @@ import { useParams, useNavigate } from "react-router-dom"
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { IconChevronLeft } from "@tabler/icons-react"
-import { ProductForm, type ProductFormData } from "@/components/ProductForm"
+import ProductFormSimplified, { type ProductFormData } from "@/components/ProductFormSimplified"
 import { useProducts } from "@/hooks/useProducts"
+import { api } from "@/services/api"
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>()
@@ -22,17 +23,12 @@ export default function EditProductPage() {
 
       try {
         setLoading(true)
-        const response = await fetch(`http://localhost:5000/api/products/${id}`)
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            setEditingProduct(data.data)
-          } else {
-            alert('Product not found')
-            navigate('/admin/products')
-          }
+        const response = await api.get(`/products/${id}`)
+        const data = response.data
+        if (data.success) {
+          setEditingProduct(data.data)
         } else {
-          alert('Failed to load product')
+          alert('Product not found')
           navigate('/admin/products')
         }
       } catch (error) {
@@ -57,14 +53,8 @@ export default function EditProductPage() {
       const productData = {
         name: data.name,
         description: data.description,
-        basePrice: data.basePrice,
         category: data.category,
         brand: data.brand,
-        images: data.images.map(img => ({
-          url: img.url,
-          altText: img.altText,
-          isMain: img.isMain,
-        })),
         tags: data.tags,
         status: data.status,
         variants: data.variants.map(v => ({
@@ -72,25 +62,19 @@ export default function EditProductPage() {
           size: v.size,
           color: v.color,
           price: v.price,
-          comparePrice: v.comparePrice,
-          stock: v.stock,
-          lowStockThreshold: v.lowStockThreshold,
+          quantity: v.quantity,
+          mainImage: v.mainImage,
+          hoverImage: v.hoverImage,
           images: v.images || [],
-          weight: v.weight,
-          dimensions: v.dimensions,
-          barcode: v.barcode,
-        })) as any,
+        })),
         // SEO fields
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
         urlSlug: data.urlSlug,
-        focusKeyword: data.focusKeyword,
-        relatedProducts: data.relatedProducts || [],
-        upsellProducts: data.upsellProducts || [],
-      } as any
+      }
 
-      const result = await updateProduct(id!, productData)
-      
+      const result = await updateProduct(id!, productData as any)
+
       if (result) {
         alert('Product updated successfully!')
         navigate('/admin/products')
@@ -143,7 +127,7 @@ export default function EditProductPage() {
           <IconChevronLeft className="mr-2 h-4 w-4" />
           Back to Products
         </Button>
-        <ProductForm
+        <ProductFormSimplified
           initialData={editingProduct}
           onSave={handleSaveProduct}
           onDraft={handleDraftProduct}

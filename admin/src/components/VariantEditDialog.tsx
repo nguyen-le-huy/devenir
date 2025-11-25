@@ -21,9 +21,10 @@ interface VariantEditDialogProps {
   isOpen: boolean
   onClose: () => void
   onSave: (updatedVariant: Variant) => void
+  customColors?: Record<string, { name: string; hex: string }>
 }
 
-export function VariantEditDialog({ variant, isOpen, onClose, onSave }: VariantEditDialogProps) {
+export function VariantEditDialog({ variant, isOpen, onClose, onSave, customColors = {} }: VariantEditDialogProps) {
   const [editedVariant, setEditedVariant] = useState<Variant | null>(variant)
   const [uploadingImages, setUploadingImages] = useState(false)
 
@@ -57,7 +58,7 @@ export function VariantEditDialog({ variant, isOpen, onClose, onSave }: VariantE
     try {
       setUploadingImages(true)
       const formData = new FormData()
-      
+
       for (const file of Array.from(files)) {
         formData.append("images", file)
       }
@@ -81,8 +82,13 @@ export function VariantEditDialog({ variant, isOpen, onClose, onSave }: VariantE
     }
   }
 
+
+
   const colorInfo = editedVariant
-    ? COLOR_CODES[editedVariant.color as keyof typeof COLOR_CODES]
+    ? (COLOR_CODES[editedVariant.color as keyof typeof COLOR_CODES] ||
+      customColors[editedVariant.color || ""] ||
+      Object.values(COLOR_CODES).find(c => c.hex.toLowerCase() === editedVariant.color?.toLowerCase()) ||
+      (editedVariant.color?.startsWith('#') ? { name: editedVariant.color, hex: editedVariant.color } : null))
     : null
 
   return (
@@ -144,27 +150,27 @@ export function VariantEditDialog({ variant, isOpen, onClose, onSave }: VariantE
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="price" className="text-sm">
-                      Price (VNĐ) *
+                      Price ($) *
                     </Label>
                     <Input
                       id="price"
                       type="number"
                       value={editedVariant.price}
                       onChange={(e) => handleChange("price", Number(e.target.value))}
-                      placeholder="350000"
+                      placeholder="50.00"
                       className="mt-1"
                     />
                   </div>
                   <div>
                     <Label htmlFor="comparePrice" className="text-sm">
-                      Compare at Price (VNĐ)
+                      Compare at Price ($)
                     </Label>
                     <Input
                       id="comparePrice"
                       type="number"
                       value={editedVariant.comparePrice || ""}
                       onChange={(e) => handleChange("comparePrice", e.target.value ? Number(e.target.value) : undefined)}
-                      placeholder="450000 (Optional)"
+                      placeholder="60.00 (Optional)"
                       className="mt-1"
                     />
                     <p className="text-xs text-muted-foreground mt-1">For showing discount</p>
@@ -208,6 +214,8 @@ export function VariantEditDialog({ variant, isOpen, onClose, onSave }: VariantE
                 </CardContent>
               </Card>
 
+
+
               {/* Variant Images */}
               <Card>
                 <CardHeader>
@@ -224,55 +232,88 @@ export function VariantEditDialog({ variant, isOpen, onClose, onSave }: VariantE
                     disabled={uploadingImages}
                     style={{ display: "none" }}
                   />
-                  <div className="flex flex-wrap gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {editedVariant.images && editedVariant.images.map((image, idx) => (
-                      <div key={idx} className="relative group">
-                        <div className="w-24 h-24 rounded-lg border-2 border-gray-200 overflow-hidden">
+                      <div key={idx} className="relative group border rounded-lg overflow-hidden">
+                        <div className="aspect-square">
                           <img
                             src={image}
                             alt={`Variant image ${idx + 1}`}
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newImages = editedVariant.images.filter((_, i) => i !== idx)
-                            handleChange("images", newImages)
-                          }}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ✕
-                        </button>
+
+                        {/* Overlay Actions */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 p-2">
+                          <Button
+                            size="sm"
+                            variant={editedVariant.thumbnail === image ? "default" : "secondary"}
+                            className="w-full h-7 text-xs"
+                            onClick={() => handleChange("thumbnail", image)}
+                          >
+                            {editedVariant.thumbnail === image ? "✓ Thumb" : "Set Thumb"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={editedVariant.hoverThumbnail === image ? "default" : "secondary"}
+                            className="w-full h-7 text-xs"
+                            onClick={() => handleChange("hoverThumbnail", image)}
+                          >
+                            {editedVariant.hoverThumbnail === image ? "✓ Hover" : "Set Hover"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="w-full h-7 text-xs"
+                            onClick={() => {
+                              const newImages = editedVariant.images.filter((_, i) => i !== idx)
+                              handleChange("images", newImages)
+                              // Also clear thumb/hover if deleted
+                              if (editedVariant.thumbnail === image) handleChange("thumbnail", "")
+                              if (editedVariant.hoverThumbnail === image) handleChange("hoverThumbnail", "")
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+
+                        {/* Badges */}
+                        <div className="absolute top-1 left-1 flex flex-col gap-1">
+                          {editedVariant.thumbnail === image && (
+                            <span className="text-[10px] font-bold text-white bg-green-600 px-1.5 py-0.5 rounded shadow-sm">
+                              Thumb
+                            </span>
+                          )}
+                          {editedVariant.hoverThumbnail === image && (
+                            <span className="text-[10px] font-bold text-white bg-purple-600 px-1.5 py-0.5 rounded shadow-sm">
+                              Hover
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
+
                     <button
                       type="button"
                       onClick={() => document.getElementById("variant-image-input")?.click()}
                       disabled={uploadingImages}
-                      className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed gap-2"
                     >
                       {uploadingImages ? (
-                        <svg
-                          className="w-6 h-6 text-muted-foreground animate-spin"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                          />
-                        </svg>
+                        <>
+                          <div className="animate-spin text-2xl">⏳</div>
+                          <span className="text-xs text-muted-foreground">Uploading...</span>
+                        </>
                       ) : (
-                        <span className="text-2xl text-muted-foreground">+</span>
+                        <>
+                          <span className="text-3xl text-muted-foreground">+</span>
+                          <span className="text-xs text-muted-foreground font-medium">Add Image</span>
+                        </>
                       )}
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    Upload images for this specific color variant. Hover over an image to delete.
+                    Upload images for this color. Hover over an image to set as Thumbnail or Hover image.
                   </p>
                 </CardContent>
               </Card>

@@ -44,7 +44,8 @@ export function VariantDetailModal({
 
   if (!variant) return null
 
-  const colorInfo = COLOR_CODES[variant.color as keyof typeof COLOR_CODES]
+  const colorInfo = COLOR_CODES[variant.color as keyof typeof COLOR_CODES] ||
+    (variant.color?.startsWith('#') ? { name: variant.color, hex: variant.color } : null)
 
   const handleSave = () => {
     onSave(variant)
@@ -113,7 +114,7 @@ export function VariantDetailModal({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <Label htmlFor="price">Price (VNĐ)</Label>
+                    <Label htmlFor="price">Price ($)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -130,7 +131,7 @@ export function VariantDetailModal({
                     <Input
                       id="comparePrice"
                       type="number"
-                      placeholder="450,000"
+                      placeholder="60.00"
                       value={variant.comparePrice || ""}
                       onChange={(e) =>
                         setVariant({ ...variant, comparePrice: parseInt(e.target.value) || undefined })

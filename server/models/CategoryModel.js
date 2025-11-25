@@ -20,6 +20,11 @@ const categorySchema = new mongoose.Schema(
       ref: 'Category',
       default: null, // null if it is a top-level category
     },
+    thumbnailUrl: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     isActive: {
       type: Boolean,
       default: true,

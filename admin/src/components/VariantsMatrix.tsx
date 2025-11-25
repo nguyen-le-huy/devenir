@@ -30,6 +30,8 @@ export interface Variant {
     height: number
   }
   barcode?: string
+  thumbnail?: string
+  hoverThumbnail?: string
 }
 
 interface VariantsMatrixProps {
@@ -146,7 +148,15 @@ export function VariantsMatrix({
                   {colors.map((color) => {
                     const colorFromCodes = COLOR_CODES[color as keyof typeof COLOR_CODES]
                     const colorFromCustom = customColors[color]
-                    const finalColor = colorFromCodes || colorFromCustom
+
+                    // Try to find standard color by hex if it is a hex string
+                    const isHex = color?.startsWith('#')
+                    const standardColorByHex = isHex
+                      ? Object.values(COLOR_CODES).find(c => c.hex.toLowerCase() === color?.toLowerCase())
+                      : null
+
+                    const finalColor = colorFromCodes || colorFromCustom || standardColorByHex || (isHex ? { name: color, hex: color } : null)
+
                     return (
                       <SelectItem key={color} value={color}>
                         <div className="flex items-center gap-2">
@@ -187,7 +197,7 @@ export function VariantsMatrix({
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Total Value</p>
-            <p className="text-2xl font-bold">{(totalValue / 1000000).toFixed(1)}M VNĐ</p>
+            <p className="text-2xl font-bold">${totalValue.toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>
@@ -250,9 +260,8 @@ export function VariantsMatrix({
                     return (
                       <tr
                         key={variant.sku}
-                        className={`border-b hover:bg-muted/50 transition ${
-                          selectedVariants.has(variant.sku) ? "bg-muted/70" : ""
-                        }`}
+                        className={`border-b hover:bg-muted/50 transition ${selectedVariants.has(variant.sku) ? "bg-muted/70" : ""
+                          }`}
                       >
                         <td className="py-3 px-3">
                           <Checkbox
@@ -289,11 +298,19 @@ export function VariantsMatrix({
                                   </>
                                 )
                               }
-                              
+
                               const colorFromCodes = COLOR_CODES[variant.color as keyof typeof COLOR_CODES]
                               const colorFromCustom = customColors[variant.color]
-                              const finalColor = colorFromCodes || colorFromCustom
-                              
+                              // Check if variant.color is a hex code
+                              const isHex = variant.color?.startsWith('#')
+
+                              // Try to find standard color by hex if it is a hex string
+                              const standardColorByHex = isHex
+                                ? Object.values(COLOR_CODES).find(c => c.hex.toLowerCase() === variant.color?.toLowerCase())
+                                : null
+
+                              const finalColor = colorFromCodes || colorFromCustom || standardColorByHex || (isHex ? { name: variant.color, hex: variant.color } : null)
+
                               return (
                                 <>
                                   {finalColor && (
@@ -310,7 +327,7 @@ export function VariantsMatrix({
                           </div>
                         </td>
                         <td className="py-3 px-3 text-right font-semibold">
-                          {variant.price.toLocaleString()} VNĐ
+                          ${variant.price.toLocaleString()}
                         </td>
                         <td className="py-3 px-3 text-right">
                           <div className="flex items-center justify-end gap-2">

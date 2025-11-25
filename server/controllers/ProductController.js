@@ -61,7 +61,7 @@ export const getProductById = asyncHandler(async (req, res) => {
   }
 
   // Get variants for this product
-  const variants = await ProductVariant.find({ product: req.params.id });
+  const variants = await ProductVariant.find({ product_id: req.params.id });
 
   res.status(200).json({
     success: true,
@@ -81,26 +81,21 @@ export const createProduct = asyncHandler(async (req, res) => {
   const {
     name,
     description,
-    basePrice,
     category,
     brand,
-    images,
     tags,
     status,
     variants,
     seoTitle,
     seoDescription,
     urlSlug,
-    focusKeyword,
-    relatedProducts,
-    upsellProducts,
   } = req.body;
 
   // Validate required fields
-  if (!name || !description || !basePrice || !category) {
+  if (!name || !description || !category) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide all required fields: name, description, basePrice, category',
+      message: 'Please provide all required fields: name, description, category',
     });
   }
 
@@ -108,26 +103,28 @@ export const createProduct = asyncHandler(async (req, res) => {
   const product = await Product.create({
     name,
     description,
-    basePrice,
     category,
     brand,
-    images: images || [],
     tags: tags || [],
     status: status || 'draft',
     seoTitle,
     seoDescription,
     urlSlug,
-    focusKeyword,
-    relatedProducts,
-    upsellProducts,
   });
 
   // Create variants if provided
   if (variants && Array.isArray(variants) && variants.length > 0) {
     try {
       const variantDocs = variants.map((v) => ({
-        ...v,
-        product: product._id,
+        sku: v.sku,
+        color: v.color,
+        size: v.size,
+        price: v.price,
+        quantity: v.quantity,
+        mainImage: v.mainImage,
+        hoverImage: v.hoverImage,
+        images: v.images || [],
+        product_id: product._id,
       }));
       await ProductVariant.insertMany(variantDocs);
     } catch (variantError) {
@@ -154,19 +151,14 @@ export const updateProduct = asyncHandler(async (req, res) => {
   const {
     name,
     description,
-    basePrice,
     category,
     brand,
-    images,
     tags,
     status,
     variants,
     seoTitle,
     seoDescription,
     urlSlug,
-    focusKeyword,
-    relatedProducts,
-    upsellProducts,
   } = req.body;
 
   let product = await Product.findById(req.params.id);
@@ -178,18 +170,13 @@ export const updateProduct = asyncHandler(async (req, res) => {
   // Update fields
   if (name) product.name = name;
   if (description) product.description = description;
-  if (basePrice) product.basePrice = basePrice;
   if (category) product.category = category;
   if (brand) product.brand = brand;
-  if (images) product.images = images;
   if (tags) product.tags = tags;
   if (status) product.status = status;
   if (seoTitle) product.seoTitle = seoTitle;
   if (seoDescription) product.seoDescription = seoDescription;
   if (urlSlug) product.urlSlug = urlSlug;
-  if (focusKeyword) product.focusKeyword = focusKeyword;
-  if (relatedProducts) product.relatedProducts = relatedProducts;
-  if (upsellProducts) product.upsellProducts = upsellProducts;
 
   product = await product.save();
 
@@ -197,13 +184,20 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (variants && Array.isArray(variants)) {
     try {
       // Delete old variants for this product
-      await ProductVariant.deleteMany({ product: req.params.id });
-      
+      await ProductVariant.deleteMany({ product_id: req.params.id });
+
       // Create new variants
       if (variants.length > 0) {
         const variantDocs = variants.map((v) => ({
-          ...v,
-          product: product._id,
+          sku: v.sku,
+          color: v.color,
+          size: v.size,
+          price: v.price,
+          quantity: v.quantity,
+          mainImage: v.mainImage,
+          hoverImage: v.hoverImage,
+          images: v.images || [],
+          product_id: product._id,
         }));
         await ProductVariant.insertMany(variantDocs);
       }
@@ -233,7 +227,7 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   }
 
   // Delete associated variants
-  await ProductVariant.deleteMany({ product: req.params.id });
+  await ProductVariant.deleteMany({ product_id: req.params.id });
 
   res.status(200).json({
     success: true,
@@ -336,7 +330,7 @@ export const deleteVariant = asyncHandler(async (req, res) => {
  */
 export const getAllVariants = asyncHandler(async (req, res) => {
   const { page = 1, limit = 50, product, size, color, status } = req.query;
-  
+
   const pageNum = parseInt(page) || 1;
   const limitNum = parseInt(limit) || 50;
   const skip = (pageNum - 1) * limitNum;
@@ -399,7 +393,7 @@ export const getAllVariants = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const getProductVariants = asyncHandler(async (req, res) => {
-  const variants = await ProductVariant.find({ product: req.params.id });
+  const variants = await ProductVariant.find({ product_id: req.params.id });
 
   res.status(200).json({
     success: true,

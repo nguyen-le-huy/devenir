@@ -5,6 +5,8 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
+import colorRoutes from './routes/colorRoutes.js';
 
 
 dotenv.config();
@@ -32,7 +34,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // Cho phép requests không có origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     // Kiểm tra exact match hoặc wildcard pattern
     const isAllowed = allowedOrigins.some(allowedOrigin => {
       if (allowedOrigin.includes('*')) {
@@ -56,15 +58,18 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increased limit for large image uploads
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/colors', colorRoutes);
 
 app.get('/', (req, res) => {
-    res.send('API is running...');
+  res.send('API is running...');
 });
 
 // Error handling middleware
@@ -76,7 +81,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 3369;
+const PORT = process.env.PORT || 3111;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

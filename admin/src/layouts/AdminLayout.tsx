@@ -5,7 +5,12 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 
-export function AdminLayout({ children }: { children: React.ReactNode }) {
+interface AdminLayoutProps {
+  children: React.ReactNode
+  title?: string
+}
+
+export function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <SidebarProvider
       style={

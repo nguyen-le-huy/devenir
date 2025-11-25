@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ProductForm, type ProductFormData } from "@/components/ProductForm"
+import ProductFormSimplified, { type ProductFormData } from "@/components/ProductFormSimplified"
 import { useProducts } from "@/hooks/useProducts"
 
 export default function ProductsPage() {
@@ -53,7 +53,7 @@ export default function ProductsPage() {
   const fetchVariantsForProducts = async () => {
     try {
       const variantDataMap: { [key: string]: any[] } = {}
-      
+
       for (const product of products) {
         try {
           const response = await axiosInstance.get(`/products/${product._id}/variants`)
@@ -64,7 +64,7 @@ export default function ProductsPage() {
           variantDataMap[product._id] = []
         }
       }
-      
+
       setVariantsMap(variantDataMap)
     } catch (error) {
       console.error('Error fetching variants:', error)
@@ -77,7 +77,7 @@ export default function ProductsPage() {
 
   const getTotalStock = (productId: string) => {
     const variants = variantsMap[productId] || []
-    return variants.reduce((total: number, variant: any) => total + (variant.stock || 0), 0)
+    return variants.reduce((total: number, variant: any) => total + (variant.quantity || 0), 0)
   }
 
   const handleAddProduct = () => {
@@ -104,14 +104,8 @@ export default function ProductsPage() {
       const productData = {
         name: data.name,
         description: data.description,
-        basePrice: data.basePrice,
         category: data.category,
         brand: data.brand,
-        images: data.images.map(img => ({
-          url: img.url,
-          altText: img.altText,
-          isMain: img.isMain,
-        })),
         tags: data.tags,
         status: data.status,
         variants: data.variants.map(v => ({
@@ -119,32 +113,26 @@ export default function ProductsPage() {
           size: v.size,
           color: v.color,
           price: v.price,
-          comparePrice: v.comparePrice,
-          stock: v.stock,
-          lowStockThreshold: v.lowStockThreshold,
+          quantity: v.quantity,
+          mainImage: v.mainImage,
+          hoverImage: v.hoverImage,
           images: v.images || [],
-          weight: v.weight,
-          dimensions: v.dimensions,
-          barcode: v.barcode,
-        })) as any,
+        })),
         // SEO fields (optional)
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
         urlSlug: data.urlSlug,
-        focusKeyword: data.focusKeyword,
-        relatedProducts: data.relatedProducts || [],
-        upsellProducts: data.upsellProducts || [],
-      } as any
+      }
 
       let result
       if (editingProduct) {
         // Update mode
-        result = await updateProduct(editingProduct._id, productData)
+        result = await updateProduct(editingProduct._id, productData as any)
       } else {
         // Create mode
-        result = await createProduct(productData)
+        result = await createProduct(productData as any)
       }
-      
+
       if (result) {
         handleCloseForm()
         await loadProducts()
@@ -194,14 +182,16 @@ export default function ProductsPage() {
       const result = await createProduct({
         name: data.name,
         description: data.description,
-        basePrice: data.basePrice,
         category: data.category,
         brand: data.brand,
-        images: data.images.map(img => img.url),
         tags: data.tags,
         status: 'draft',
+        variants: data.variants,
+        seoTitle: data.seoTitle,
+        seoDescription: data.seoDescription,
+        urlSlug: data.urlSlug,
       } as any)
-      
+
       if (result) {
         setIsFormOpen(false)
         await loadProducts()
@@ -228,7 +218,7 @@ export default function ProductsPage() {
             <IconChevronLeft className="mr-2 h-4 w-4" />
             Back to Products
           </Button>
-          <ProductForm
+          <ProductFormSimplified
             initialData={editingProduct}
             onSave={handleSaveProduct}
             onDraft={handleDraftProduct}
@@ -300,8 +290,8 @@ export default function ProductsPage() {
                               product.status === 'published'
                                 ? 'default'
                                 : product.status === 'draft'
-                                ? 'secondary'
-                                : 'outline'
+                                  ? 'secondary'
+                                  : 'outline'
                             }
                           >
                             {product.status}
@@ -319,8 +309,8 @@ export default function ProductsPage() {
                           {new Date(product.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             onClick={() => handleEditProduct(product)}
                             disabled={deletingProductId === product._id}

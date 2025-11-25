@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const productVariantSchema = new mongoose.Schema(
   {
-    product: {
+    product_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
       required: [true, 'Please specify the product for this variant'],
@@ -14,52 +14,40 @@ const productVariantSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
+    color: {
+      type: String,
+      required: [true, 'Please select a color'],
+      trim: true,
+    },
     size: {
       type: String,
       required: [true, 'Please select a size'],
       enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', 'Free Size'],
-    },
-    color: {
-      type: String,
-      required: false,
-      trim: true,
-      default: null,
     },
     price: {
       type: Number,
       required: [true, 'Please enter the variant price'],
       min: [0, 'Price must not be negative'],
     },
-    stock: {
+    quantity: {
       type: Number,
       required: [true, 'Please enter the stock quantity'],
       min: [0, 'Stock must not be negative'],
       default: 0,
     },
+    mainImage: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    hoverImage: {
+      type: String,
+      required: false,
+      trim: true,
+    },
     images: {
       type: [String],
       default: [],
-    },
-    lowStockThreshold: {
-      type: Number,
-      default: 10,
-    },
-    weight: {
-      type: Number,
-      default: 0,
-    },
-    dimensions: {
-      length: { type: Number, default: 0 },
-      width: { type: Number, default: 0 },
-      height: { type: Number, default: 0 },
-    },
-    barcode: {
-      type: String,
-      trim: true,
-    },
-    comparePrice: {
-      type: Number,
-      default: null,
     },
     isActive: {
       type: Boolean,
@@ -77,34 +65,34 @@ const productVariantSchema = new mongoose.Schema(
  * Check if the variant is in stock
  */
 productVariantSchema.virtual('inStock').get(function () {
-  return this.stock > 0;
+  return this.quantity > 0;
 });
 
 // ============ INSTANCE METHODS ============
 
 /**
- * Decrease stock quantity
- * @param {Number} quantity - Quantity to decrease
+ * Decrease quantity
+ * @param {Number} qty - Quantity to decrease
  */
-productVariantSchema.methods.decreaseStock = async function (quantity) {
-  if (this.stock < quantity) {
+productVariantSchema.methods.decreaseQuantity = async function (qty) {
+  if (this.quantity < qty) {
     throw new Error('Insufficient stock quantity');
   }
-  
-  this.stock -= quantity;
+
+  this.quantity -= qty;
   await this.save();
-  
+
   return this;
 };
 
 /**
- * Increase stock quantity
- * @param {Number} quantity - Quantity to increase
+ * Increase quantity
+ * @param {Number} qty - Quantity to increase
  */
-productVariantSchema.methods.increaseStock = async function (quantity) {
-  this.stock += quantity;
+productVariantSchema.methods.increaseQuantity = async function (qty) {
+  this.quantity += qty;
   await this.save();
-  
+
   return this;
 };
 
@@ -115,26 +103,51 @@ productVariantSchema.methods.increaseStock = async function (quantity) {
  * @param {String} productId - ID of the product
  */
 productVariantSchema.statics.findByProduct = function (productId) {
-  return this.find({ product: productId, isActive: true })
-    .populate('product', 'name basePrice')
+  return this.find({ product_id: productId, isActive: true })
+    .populate('product_id', 'name category brand')
     .sort({ createdAt: -1 });
 };
 
 /**
- * Tìm variant theo SKU
- * @param {String} sku - Mã SKU
+ * Find variant by product ID, color and size
+ * @param {String} productId - Product ID
+ * @param {String} color - Color
+ * @param {String} size - Size
  */
-productVariantSchema.statics.findBySKU = function (sku) {
-  return this.findOne({ sku: sku.toUpperCase(), isActive: true })
-    .populate('product', 'name basePrice category brand');
+productVariantSchema.statics.findByProductAndVariant = function (productId, color, size) {
+  return this.findOne({ 
+    product_id: productId, 
+    color: color, 
+    size: size, 
+    isActive: true 
+  }).populate('product_id', 'name category brand');
 };
 
 /**
- * Find variants in stock
+ * Find variant by SKU
+ * @param {String} sku - SKU code
+ */
+productVariantSchema.statics.findBySKU = function (sku) {
+  return this.findOne({ sku: sku.toUpperCase(), isActive: true })
+    .populate('product_id', 'name category brand');
+};
+
+/**
+ * Find all variants in stock
  */
 productVariantSchema.statics.findInStock = function () {
-  return this.find({ stock: { $gt: 0 }, isActive: true })
-    .populate('product', 'name basePrice')
+  return this.find({ quantity: { $gt: 0 }, isActive: true })
+    .populate('product_id', 'name category brand')
+    .sort({ createdAt: -1 });
+};
+
+/**
+ * Find variants by color
+ * @param {String} color - Color name
+ */
+productVariantSchema.statics.findByColor = function (color) {
+  return this.find({ color: color, isActive: true })
+    .populate('product_id', 'name category brand')
     .sort({ createdAt: -1 });
 };
 
@@ -143,50 +156,44 @@ productVariantSchema.statics.findInStock = function () {
  * @param {String} size - Size
  */
 productVariantSchema.statics.findBySize = function (size) {
-  return this.find({ size, isActive: true })
-    .populate('product', 'name basePrice')
-    .sort({ createdAt: -1 });
-};
-
-/**
- * Find variants by color
- * @param {String} colorName - Color name
- */
-productVariantSchema.statics.findByColor = function (colorName) {
-  return this.find({ 'color.name': colorName, isActive: true })
-    .populate('product', 'name basePrice')
+  return this.find({ size: size, isActive: true })
+    .populate('product_id', 'name category brand')
     .sort({ createdAt: -1 });
 };
 
 // ============ MIDDLEWARE ============
 
 /**
- * Automatically generate SKU if not provided (optional)
+ * Automatically generate SKU if not provided
  */
 productVariantSchema.pre('save', async function (next) {
   if (!this.sku) {
-    // Format: PRODUCT_ID-SIZE-COLOR (e.g., DEVENIR-M-WHITE)
     const Product = mongoose.model('Product');
-    const product = await Product.findById(this.product);
-    
-    const colorCode = this.color.name
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase()
-      .replace(/\s+/g, '-');
-    
-    this.sku = `${product.name.substring(0, 3).toUpperCase()}-${this.size}-${colorCode}-${Date.now()}`;
+    const product = await Product.findById(this.product_id);
+
+    let colorCode = 'NOCOLOR';
+    if (this.color) {
+      colorCode = this.color
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .replace(/\s+/g, '-');
+    }
+
+    this.sku = `${product.name.substring(0, 3).toUpperCase()}-${this.size}-${colorCode}`;
   }
-  
+
   next();
 });
 
 // ============ INDEXES ============
 
-productVariantSchema.index({ product: 1 });
+productVariantSchema.index({ product_id: 1 });
+productVariantSchema.index({ sku: 1 });
+productVariantSchema.index({ color: 1 });
 productVariantSchema.index({ size: 1 });
-productVariantSchema.index({ 'color.name': 1 });
-productVariantSchema.index({ stock: 1 });
+productVariantSchema.index({ product_id: 1, color: 1, size: 1 });
+productVariantSchema.index({ quantity: 1 });
 productVariantSchema.index({ price: 1 });
 
 // ============ OPTIONS ============

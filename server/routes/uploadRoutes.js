@@ -9,7 +9,7 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max for large images
   fileFilter: (req, file, cb) => {
     console.log(`Multer fileFilter: ${file.originalname} (${file.mimetype})`);
     // Accept image files only
@@ -44,5 +44,35 @@ router.post('/images', authenticate, isAdmin, upload.array('images', 10), upload
  * Delete image
  */
 router.delete('/:publicId', authenticate, isAdmin, deleteImage);
+
+// Error handling middleware for multer errors
+router.use((err, req, res, next) => {
+  console.error('Upload route error:', err);
+
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large. Maximum size is 50MB',
+        error: err.message,
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'File upload error',
+      error: err.message,
+    });
+  }
+
+  if (err.message === 'Only image files are allowed') {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  // Pass to next error handler
+  next(err);
+});
 
 export default router;

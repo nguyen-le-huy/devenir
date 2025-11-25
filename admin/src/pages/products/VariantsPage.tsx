@@ -79,7 +79,7 @@ export default function VariantsPage() {
       const response = await axiosInstance.get("/products/admin/variants?limit=1000")
       console.log("Variants response:", response.data)
       const variantsList = response.data.data || []
-      
+
       // Enrich variants with product names if not already included
       const enrichedVariants = await Promise.all(
         variantsList.map(async (v: any) => {
@@ -94,7 +94,7 @@ export default function VariantsPage() {
           return v
         })
       )
-      
+
       console.log("Enriched variants:", enrichedVariants)
       setVariants(enrichedVariants)
       calculateStats(enrichedVariants)
@@ -205,7 +205,7 @@ export default function VariantsPage() {
 
   const getColorDisplay = (colorName: string | null) => {
     if (!colorName) return '-'
-    
+
     // Try to find in COLOR_CODES first (by checking values)
     let colorInfo = null
     for (const code of Object.values(COLOR_CODES)) {
@@ -214,14 +214,19 @@ export default function VariantsPage() {
         break
       }
     }
-    
+
+    // If not found, check if it's a hex string
+    if (!colorInfo && colorName.startsWith('#')) {
+      colorInfo = { name: colorName, hex: colorName }
+    }
+
     // Fallback to colorMap if not found in COLOR_CODES
     const hexCode = colorInfo?.hex || colorMap[colorName] || '#CCCCCC'
-    
+
     return (
       <div className="flex items-center gap-2">
-        <div 
-          className="w-5 h-5 rounded border border-gray-300" 
+        <div
+          className="w-5 h-5 rounded border border-gray-300"
           style={{ backgroundColor: hexCode }}
           title={`${colorName} (${hexCode})`}
         />
@@ -295,7 +300,7 @@ export default function VariantsPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm font-medium text-muted-foreground">Inventory Value</div>
-              <div className="text-2xl font-bold">{(quickStats.inventoryValue / 1000000).toFixed(1)}M VNĐ</div>
+              <div className="text-2xl font-bold">${quickStats.inventoryValue.toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
@@ -460,7 +465,7 @@ export default function VariantsPage() {
                         <TableCell>{variant.productName || "-"}</TableCell>
                         <TableCell>{variant.size}</TableCell>
                         <TableCell>{getColorDisplay(variant.color)}</TableCell>
-                        <TableCell className="text-right">{(variant.price / 1000).toFixed(0)}K VNĐ</TableCell>
+                        <TableCell className="text-right">${variant.price.toFixed(2)}</TableCell>
                         <TableCell className="text-right">
                           <span>
                             {getStockIcon(variant.stock, variant.lowStockThreshold)} {variant.stock}
