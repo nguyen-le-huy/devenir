@@ -148,6 +148,11 @@ export const createProduct = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const updateProduct = asyncHandler(async (req, res) => {
+  console.log('=== UPDATE PRODUCT REQUEST ===');
+  console.log('Product ID:', req.params.id);
+  console.log('Request body keys:', Object.keys(req.body));
+  console.log('Variants count:', req.body.variants?.length || 0);
+
   const {
     name,
     description,
@@ -164,8 +169,11 @@ export const updateProduct = asyncHandler(async (req, res) => {
   let product = await Product.findById(req.params.id);
 
   if (!product) {
+    console.log('ERROR: Product not found:', req.params.id);
     return res.status(404).json({ success: false, message: 'Product not found' });
   }
+
+  console.log('Found product:', product.name);
 
   // Update fields
   if (name) product.name = name;
@@ -178,13 +186,22 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (seoDescription) product.seoDescription = seoDescription;
   if (urlSlug) product.urlSlug = urlSlug;
 
-  product = await product.save();
+  try {
+    product = await product.save();
+    console.log('Product saved successfully');
+  } catch (saveError) {
+    console.error('ERROR saving product:', saveError);
+    throw saveError;
+  }
 
   // Handle variants update/replace if provided
   if (variants && Array.isArray(variants)) {
     try {
+      console.log(`Updating ${variants.length} variants...`);
+
       // Delete old variants for this product
-      await ProductVariant.deleteMany({ product_id: req.params.id });
+      const deleteResult = await ProductVariant.deleteMany({ product_id: req.params.id });
+      console.log(`Deleted ${deleteResult.deletedCount} old variants`);
 
       // Create new variants
       if (variants.length > 0) {
@@ -199,14 +216,26 @@ export const updateProduct = asyncHandler(async (req, res) => {
           images: v.images || [],
           product_id: product._id,
         }));
-        await ProductVariant.insertMany(variantDocs);
+
+        console.log('Creating variants with data:', JSON.stringify(variantDocs, null, 2));
+        const createdVariants = await ProductVariant.insertMany(variantDocs);
+        console.log(`Created ${createdVariants.length} new variants`);
       }
     } catch (variantError) {
-      console.error('Error updating variants:', variantError.message);
-      throw new Error(`Failed to update variants: ${variantError.message}`);
+      console.error('ERROR updating variants:', variantError);
+      console.error('Variant error stack:', variantError.stack);
+      console.error('First variant data:', JSON.stringify(variants[0], null, 2));
+
+      return res.status(500).json({
+        success: false,
+        message: `Failed to update variants: ${variantError.message}`,
+        error: variantError.message,
+        details: variantError.stack,
+      });
     }
   }
 
+  console.log('Product update completed successfully');
   res.status(200).json({
     success: true,
     message: 'Product updated successfully',
