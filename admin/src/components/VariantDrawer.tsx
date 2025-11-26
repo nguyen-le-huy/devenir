@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { IconTrash, IconUpload, IconX } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +17,7 @@ import { uploadImage } from '@/services/uploadService'
 interface VariantDrawerProps {
   isOpen: boolean
   variantId?: string
+  variantData?: any // Pass variant data directly to avoid fetch
   isEdit?: boolean
   onClose: () => void
   onSuccess: () => void
@@ -39,7 +41,7 @@ interface VariantImage {
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', 'Free Size']
 
-export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClose, onSuccess }: VariantDrawerProps) {
+export default function VariantDrawer({ isOpen, variantId, variantData, isEdit = false, onClose, onSuccess }: VariantDrawerProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [colors, setColors] = useState<Color[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -65,14 +67,25 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
     if (isOpen) {
       fetchProducts()
       fetchColors()
-      if (isEdit && variantId) {
+      document.documentElement.style.overflow = 'hidden'
+      
+      if (isEdit && variantData) {
+        // Use pre-loaded variant data (FAST!)
+        loadVariantData(variantData)
+      } else if (isEdit && variantId) {
+        // Fallback: fetch if data not provided
         fetchVariant()
       } else {
-        // Reset form for add mode
         resetForm()
       }
+    } else {
+      document.documentElement.style.overflow = 'unset'
     }
-  }, [isOpen, variantId, isEdit])
+
+    return () => {
+      document.documentElement.style.overflow = 'unset'
+    }
+  }, [isOpen, variantId, variantData, isEdit])
 
   const resetForm = () => {
     setFormData({
@@ -91,18 +104,47 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
   }
 
   const fetchProducts = async () => {
+    // Check cache first
+    const cached = sessionStorage.getItem('products_cache')
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached)
+        // Cache valid for 5 minutes
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          setProducts(data)
+          return
+        }
+      } catch (e) {}
+    }
+
     try {
-      const response = await axiosInstance.get('/products?limit=1000')
-      setProducts(response.data.data || [])
+      const response = await axiosInstance.get('/products?limit=500')
+      const data = response.data.data || []
+      setProducts(data)
+      sessionStorage.setItem('products_cache', JSON.stringify({ data, timestamp: Date.now() }))
     } catch (error) {
       console.error('Error fetching products:', error)
     }
   }
 
   const fetchColors = async () => {
+    // Check cache first
+    const cached = sessionStorage.getItem('colors_cache')
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached)
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          setColors(data)
+          return
+        }
+      } catch (e) {}
+    }
+
     try {
       const response = await axiosInstance.get('/colors')
-      setColors(response.data.data || [])
+      const data = response.data.data || []
+      setColors(data)
+      sessionStorage.setItem('colors_cache', JSON.stringify({ data, timestamp: Date.now() }))
     } catch (error) {
       console.error('Error fetching colors:', error)
     }
@@ -110,43 +152,48 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
 
   const fetchVariant = async () => {
     try {
-      const response = await axiosInstance.get('/products/admin/variants?limit=1000')
+      const response = await axiosInstance.get('/products/admin/variants?limit=500')
       const allVariants = response.data.data || []
       const variant = allVariants.find((v: any) => v._id === variantId)
 
       if (variant) {
-        setFormData({
-          product: variant.product || '',
-          sku: variant.sku || '',
-          size: variant.size || '',
-          color: variant.color || '',
-          price: variant.price || 0,
-          stock: variant.stock || 0,
-          lowStockThreshold: variant.lowStockThreshold || 10,
-        })
-
-        // Load variant images
-        const images: VariantImage[] = []
-        if (variant.mainImage) {
-          images.push({ url: variant.mainImage, id: 'main' })
-          setSelectedMainImage(variant.mainImage)
-        }
-        if (variant.hoverImage) {
-          images.push({ url: variant.hoverImage, id: 'hover' })
-          setSelectedHoverImage(variant.hoverImage)
-        }
-        if (variant.images && Array.isArray(variant.images)) {
-          variant.images.forEach((img: string, idx: number) => {
-            if (img !== variant.mainImage && img !== variant.hoverImage) {
-              images.push({ url: img, id: `img-${idx}` })
-            }
-          })
-        }
-        setVariantImages(images)
+        loadVariantData(variant)
       }
     } catch (error) {
       console.error('Error fetching variant:', error)
     }
+  }
+
+  // Helper function to load variant data into form
+  const loadVariantData = (variant: any) => {
+    setFormData({
+      product: variant.product_id || variant.product || '',
+      sku: variant.sku || '',
+      size: variant.size || '',
+      color: variant.color || '',
+      price: variant.price || 0,
+      stock: variant.stock || variant.quantity || 0,
+      lowStockThreshold: variant.lowStockThreshold || 10,
+    })
+
+    // Load variant images
+    const images: VariantImage[] = []
+    if (variant.mainImage) {
+      images.push({ url: variant.mainImage, id: 'main' })
+      setSelectedMainImage(variant.mainImage)
+    }
+    if (variant.hoverImage) {
+      images.push({ url: variant.hoverImage, id: 'hover' })
+      setSelectedHoverImage(variant.hoverImage)
+    }
+    if (variant.images && Array.isArray(variant.images)) {
+      variant.images.forEach((img: string, idx: number) => {
+        if (img !== variant.mainImage && img !== variant.hoverImage) {
+          images.push({ url: img, id: `img-${idx}` })
+        }
+      })
+    }
+    setVariantImages(images)
   }
 
   const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,6 +246,27 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
     ? products.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
     : products
 
+  // Auto-generate SKU based on product, color, and size
+  const generateSKU = (productId: string, color: string, size: string) => {
+    const product = products.find((p) => p._id === productId)
+    if (!product) return ''
+    
+    const productCode = product.name.substring(0, 3).toUpperCase()
+    const cleanColor = color.replace(/\s+/g, '-').toUpperCase()
+    const sizeCode = size.replace(/\s+/g, '-').toUpperCase()
+    return `${productCode}-${sizeCode}-${cleanColor}`
+  }
+
+  // Auto-update SKU when product, color, or size changes (add mode only)
+  useEffect(() => {
+    if (!isEdit && formData.product && formData.color && formData.size) {
+      const newSKU = generateSKU(formData.product, formData.color, formData.size)
+      if (newSKU) {
+        setFormData((prev) => ({ ...prev, sku: newSKU }))
+      }
+    }
+  }, [formData.product, formData.color, formData.size, isEdit, products])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -221,37 +289,37 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
     setLoading(true)
 
     try {
-      const colorObj = colors.find((c) => c.name === formData.color)
       const allImages = variantImages.map((img) => img.url)
+
+      const payload = {
+        sku: formData.sku,
+        size: formData.size,
+        color: formData.color, // Send color name as string, not colorId
+        price: formData.price,
+        stock: formData.stock,
+        mainImage: selectedMainImage,
+        hoverImage: selectedHoverImage,
+        images: allImages,
+        lowStockThreshold: formData.lowStockThreshold,
+      }
 
       if (isEdit) {
         // Update variant
-        await axiosInstance.put(`/products/admin/variants/${formData.sku}`, {
-          ...formData,
-          colorId: colorObj?._id,
-          mainImage: selectedMainImage,
-          hoverImage: selectedHoverImage,
-          images: allImages,
-        })
+        await axiosInstance.put(`/products/admin/variants/${formData.sku}`, payload)
         alert('Variant updated successfully')
       } else {
         // Create new variant
-        await axiosInstance.post(`/products/admin/${formData.product}/variants`, {
-          ...formData,
-          colorId: colorObj?._id,
-          mainImage: selectedMainImage,
-          hoverImage: selectedHoverImage,
-          images: allImages,
-        })
+        await axiosInstance.post(`/products/admin/${formData.product}/variants`, payload)
         alert('Variant created successfully')
       }
 
       onSuccess()
       resetForm()
       onClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving variant:', error)
-      alert('Failed to save variant')
+      const errorMsg = error?.response?.data?.message || error?.message || 'Failed to save variant'
+      alert(`Error: ${errorMsg}`)
     } finally {
       setLoading(false)
     }
@@ -259,7 +327,7 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
 
   if (!isOpen) return null
 
-  return (
+  return createPortal(
     <>
       {/* Overlay - Smooth fade in/out */}
       <div
@@ -269,7 +337,7 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
 
       {/* Drawer - Smooth slide in from right */}
       <div
-        className={`fixed right-0 top-0 bottom-0 z-50 w-96 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-50 w-96 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out overflow-hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -287,7 +355,7 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
         </div>
 
         {/* Scrollable Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-5">
           {/* Product Selection - Only show on Add mode */}
           {!isEdit && (
             <div className="space-y-2">
@@ -441,14 +509,18 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
           {/* SKU */}
           <div className="space-y-2">
             <Label htmlFor="sku" className="font-medium">
-              SKU *
+              SKU {!isEdit && <span className="text-xs text-gray-500">(Auto-generated)</span>}
             </Label>
             <Input
               id="sku"
               value={formData.sku}
-              onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-              disabled={isEdit}
-              placeholder="e.g., DEV-SM-W-M"
+              onChange={(e) => {
+                if (isEdit) {
+                  setFormData({ ...formData, sku: e.target.value })
+                }
+              }}
+              disabled={!isEdit}
+              placeholder="e.g., DEV-M-RED"
               required
               className="text-sm"
             />
@@ -562,6 +634,7 @@ export default function VariantDrawer({ isOpen, variantId, isEdit = false, onClo
           </Button>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }

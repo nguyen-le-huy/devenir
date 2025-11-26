@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/table"
 import { IconPlus, IconSearch, IconFileImport, IconFileExport, IconEdit, IconTrash, IconEye } from "@tabler/icons-react"
 import axiosInstance from "@/services/axiosConfig"
+import { useDebounce } from "@/hooks/useDebounce"
+import { apiCache } from "@/utils/performance"
 
 interface Variant {
   _id: string
@@ -58,8 +60,8 @@ interface QuickStats {
 
 export default function VariantsPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [variants, setVariants] = useState<Variant[]>([])
-  const [filteredVariants, setFilteredVariants] = useState<Variant[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterProduct, setFilterProduct] = useState("all")
@@ -68,17 +70,42 @@ export default function VariantsPage() {
   const [filterStockStatus, setFilterStockStatus] = useState("all")
   const [products, setProducts] = useState<any[]>([])
   const [colors, setColors] = useState<Color[]>([])
-  const [quickStats, setQuickStats] = useState<QuickStats>({
-    totalSkus: 0,
-    inStock: 0,
-    lowStock: 0,
-    outOfStock: 0,
-    inventoryValue: 0,
-  })
   const [page, setPage] = useState(1)
-  const [limit] = useState(50)
+  const [limit] = useState(10)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingVariantId, setEditingVariantId] = useState<string | undefined>()
+
+  // Debounce search for better performance
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  // Memoize quick stats calculation
+  const quickStats = useMemo(() => {
+    let inStock = 0
+    let lowStock = 0
+    let outOfStock = 0
+    let inventoryValue = 0
+
+    variants.forEach((v) => {
+      const stockQty = (v as any).stock ?? (v as any).quantity ?? 0
+      
+      if (stockQty === 0) {
+        outOfStock++
+      } else if (stockQty <= v.lowStockThreshold) {
+        lowStock++
+      } else {
+        inStock++
+      }
+      inventoryValue += (v.price || 0) * stockQty
+    })
+
+    return {
+      totalSkus: variants.length,
+      inStock,
+      lowStock,
+      outOfStock,
+      inventoryValue,
+    }
+  }, [variants])
 
   useEffect(() => {
     fetchVariants()
@@ -87,94 +114,126 @@ export default function VariantsPage() {
   }, [])
 
   useEffect(() => {
-    applyFilters()
-  }, [searchTerm, filterProduct, filterSize, filterColor, filterStockStatus, variants])
+    const editId = searchParams.get('edit')
+    if (editId) {
+      setEditingVariantId(editId)
+      setDrawerOpen(true)
+      navigate('/admin/variants', { replace: true })
+    }
+  }, [searchParams, navigate])
 
-  const fetchVariants = async () => {
+  const fetchVariants = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await axiosInstance.get("/products/admin/variants?limit=1000")
-      console.log("Variants response:", response.data)
+      const response = await axiosInstance.get("/products/admin/variants?limit=500")
       const variantsList = response.data.data || []
 
-      // Fetch all products once
-      let productsMap: { [key: string]: string } = {}
-      try {
-        const prodRes = await axiosInstance.get("/products?limit=1000")
-        const productsList = prodRes.data.data || []
-        productsList.forEach((p: any) => {
-          productsMap[p._id] = p.name
+      console.log('✅ Fetched variants count:', variantsList.length)
+      if (variantsList.length > 0) {
+        console.log('📦 First variant sample:', {
+          _id: variantsList[0]._id,
+          sku: variantsList[0].sku,
+          productName: variantsList[0].productName,
+          product_id: variantsList[0].product_id,
         })
-      } catch (err) {
-        console.error("Error fetching products:", err)
       }
 
-      // Enrich variants with product names
-      const enrichedVariants = variantsList.map((v: any) => ({
+      // If productName is missing from backend, fetch products and map manually
+      let enrichedVariants = variantsList
+
+      // Check if backend already includes productName
+      const hasProductName = variantsList.length > 0 && variantsList[0].productName
+      
+      if (!hasProductName) {
+        console.warn('⚠️ Backend missing productName, fetching products to enrich...')
+        
+        // Fetch all products
+        const productsRes = await axiosInstance.get('/products?limit=500')
+        const productsList = productsRes.data.data || []
+        
+        // Create product map for fast lookup
+        const productMap = new Map()
+        productsList.forEach((p: any) => {
+          productMap.set(p._id, p.name)
+        })
+        
+        // Enrich variants with product names
+        enrichedVariants = variantsList.map((v: any) => ({
+          ...v,
+          productName: productMap.get(v.product_id || v.product) || '',
+        }))
+        
+        console.log('✅ Enriched with product names:', enrichedVariants[0]?.productName)
+      }
+
+      const variantsWithStock = enrichedVariants.map((v: any) => ({
         ...v,
-        productName: productsMap[v.product] || '',
+        stock: v.stock ?? v.quantity ?? 0,
       }))
 
-      console.log("Enriched variants:", enrichedVariants)
-      setVariants(enrichedVariants)
-      calculateStats(enrichedVariants)
+      // Cache the variants
+      apiCache.set('variants', variantsWithStock)
+      setVariants(variantsWithStock)
     } catch (error) {
-      console.error("Error fetching variants:", error)
+      console.error("❌ Error fetching variants:", error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    // Check cache first
+    const cached = apiCache.get<any[]>('products')
+    if (cached) {
+      setProducts(cached)
+      return
+    }
+
     try {
-      const response = await axiosInstance.get("/products?limit=1000")
-      setProducts(response.data.data || [])
+      const response = await axiosInstance.get("/products?limit=500")
+      const productsData = response.data.data || []
+      setProducts(productsData)
+      apiCache.set('products', productsData)
     } catch (error) {
       console.error("Error fetching products:", error)
     }
-  }
+  }, [])
 
-  const fetchColors = async () => {
+  const fetchColors = useCallback(async () => {
+    // Check cache first
+    const cached = apiCache.get<Color[]>('colors')
+    if (cached) {
+      setColors(cached)
+      return
+    }
+
     try {
       const response = await axiosInstance.get("/colors")
-      setColors(response.data.data || [])
+      const colorsData = response.data.data || []
+      setColors(colorsData)
+      apiCache.set('colors', colorsData)
     } catch (error) {
       console.error("Error fetching colors:", error)
     }
+  }, [])
+
+  const getInventoryValueFontSize = () => {
+    const value = quickStats.inventoryValue.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    const length = value.length
+    
+    if (length <= 10) return 'text-2xl'
+    if (length <= 13) return 'text-xl'
+    if (length <= 16) return 'text-lg'
+    return 'text-base'
   }
 
-  const calculateStats = (variantsList: Variant[]) => {
-    let inStock = 0
-    let lowStock = 0
-    let outOfStock = 0
-    let inventoryValue = 0
-
-    variantsList.forEach((v) => {
-      if (v.stock === 0) {
-        outOfStock++
-      } else if (v.stock <= v.lowStockThreshold) {
-        lowStock++
-      } else {
-        inStock++
-      }
-      inventoryValue += v.price * v.stock
-    })
-
-    setQuickStats({
-      totalSkus: variantsList.length,
-      inStock,
-      lowStock,
-      outOfStock,
-      inventoryValue,
-    })
-  }
-
-  const applyFilters = () => {
+  // Memoize filtered variants to avoid recalculation on every render
+  const filteredVariants = useMemo(() => {
     let filtered = [...variants]
 
     // Search filter
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase()
+    if (debouncedSearchTerm.trim()) {
+      const term = debouncedSearchTerm.toLowerCase()
       filtered = filtered.filter(
         (v) =>
           v.sku.toLowerCase().includes(term) ||
@@ -186,7 +245,7 @@ export default function VariantsPage() {
 
     // Product filter
     if (filterProduct !== "all") {
-      filtered = filtered.filter((v) => v.product === filterProduct)
+      filtered = filtered.filter((v) => (v as any).product_id === filterProduct)
     }
 
     // Size filter
@@ -209,13 +268,22 @@ export default function VariantsPage() {
       })
     }
 
-    setFilteredVariants(filtered)
-  }
+    return filtered
+  }, [variants, debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus])
 
-  const getColorDisplay = (colorName: string | null) => {
+  // Memoize paginated variants
+  const paginatedVariants = useMemo(() => {
+    return filteredVariants.slice((page - 1) * limit, page * limit)
+  }, [filteredVariants, page, limit])
+
+  // Memoize total pages
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredVariants.length / limit)
+  }, [filteredVariants.length, limit])
+
+  const getColorDisplay = useCallback((colorName: string | null) => {
     if (!colorName) return '-'
 
-    // Find color hex from database colors array
     const colorInfo = colors.find((c) => c.name === colorName)
     const hexCode = colorInfo?.hex || '#CCCCCC'
 
@@ -229,31 +297,32 @@ export default function VariantsPage() {
         <span className="text-sm">{colorName}</span>
       </div>
     )
-  }
+  }, [colors])
 
-  const getStockBadgeVariant = (stock: number, threshold: number) => {
+  const getStockBadgeVariant = useCallback((stock: number, threshold: number) => {
     if (stock === 0) return "destructive"
     if (stock <= threshold) return "secondary"
     return "default"
-  }
+  }, [])
 
-  const getStockStatus = (stock: number, threshold: number) => {
+  const getStockStatus = useCallback((stock: number, threshold: number) => {
     if (stock === 0) return "Out of Stock"
     if (stock <= threshold) return "Low Stock"
     return "In Stock"
-  }
+  }, [])
 
-  const getStockIcon = (stock: number, threshold: number) => {
+  const getStockIcon = useCallback((stock: number, threshold: number) => {
     if (stock === 0) return "🔴"
     if (stock <= threshold) return "⚠️"
     return "✅"
-  }
+  }, [])
 
-  const sizes = [...new Set(variants.map((v) => v.size))].sort()
-  const colorOptions = colors.map((c) => c.name).sort()
+  // Memoize unique sizes and colors
+  const sizes = useMemo(() => [...new Set(variants.map((v) => v.size))].sort(), [variants])
+  const colorOptions = useMemo(() => colors.map((c) => c.name).sort(), [colors])
 
   // Handle CSV Export
-  const handleExportCSV = () => {
+  const handleExportCSV = useCallback(() => {
     try {
       const headers = ["SKU", "Product Name", "Size", "Color", "Price", "Stock", "Status"]
       const csvContent = [
@@ -264,7 +333,7 @@ export default function VariantsPage() {
             `"${v.productName || ''}"`,
             `"${v.size}"`,
             `"${v.color || ''}"`,
-            v.price.toFixed(2),
+            v.price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
             v.stock,
             getStockStatus(v.stock, v.lowStockThreshold),
           ].join(",")
@@ -285,10 +354,10 @@ export default function VariantsPage() {
       console.error("Error exporting CSV:", error)
       alert("Failed to export CSV")
     }
-  }
+  }, [filteredVariants, getStockStatus])
 
   // Handle CSV Import
-  const handleImportCSV = () => {
+  const handleImportCSV = useCallback(() => {
     const input = document.createElement("input")
     input.type = "file"
     input.accept = ".csv"
@@ -346,30 +415,24 @@ export default function VariantsPage() {
       reader.readAsText(file)
     }
     input.click()
-  }
+  }, [fetchVariants, colors])
 
   // Handle Delete Variant
-  const handleDeleteVariant = async (variantId: string) => {
+  const handleDeleteVariant = useCallback(async (variantId: string) => {
     if (confirm("Are you sure you want to delete this variant? This action cannot be undone.")) {
       try {
         await axiosInstance.delete(`/products/admin/variants/${variantId}`)
-        setVariants(variants.filter((v) => v._id !== variantId))
-        setFilteredVariants(filteredVariants.filter((v) => v._id !== variantId))
         const updatedVariants = variants.filter((v) => v._id !== variantId)
-        calculateStats(updatedVariants)
+        setVariants(updatedVariants)
+        // Clear cache to force refresh
+        apiCache.clear('variants')
         alert("Variant deleted successfully")
       } catch (error) {
         console.error("Error deleting variant:", error)
         alert("Failed to delete variant")
       }
     }
-  }
-
-  const paginatedVariants = filteredVariants.slice(
-    (page - 1) * limit,
-    page * limit
-  )
-  const totalPages = Math.ceil(filteredVariants.length / limit)
+  }, [variants])
 
   return (
     <AdminLayout>
@@ -381,7 +444,7 @@ export default function VariantsPage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm font-medium text-muted-foreground">Total SKUs</div>
@@ -409,7 +472,9 @@ export default function VariantsPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm font-medium text-muted-foreground">Inventory Value</div>
-              <div className="text-2xl font-bold">{quickStats.inventoryValue.toLocaleString()} VNĐ</div>
+              <div className={`${getInventoryValueFontSize()} font-bold`}>
+                ${quickStats.inventoryValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -417,11 +482,42 @@ export default function VariantsPage() {
         {/* Search & Filters */}
         <Card>
           <CardHeader>
-            <CardTitle>Filters & Search</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Filters & Search</CardTitle>
+              {/* Mobile Actions - Show on small screens */}
+              <div className="sm:hidden flex items-center gap-2">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImportCSV}
+                  title="Import CSV"
+                >
+                  <IconFileImport className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  title="Export CSV"
+                >
+                  <IconFileExport className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    setEditingVariantId(undefined)
+                    setDrawerOpen(true)
+                  }}
+                >
+                  <IconPlus className="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Search Bar */}
-            <div className="flex gap-2">
+            {/* Search Bar + Desktop Actions */}
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1 relative">
                 <IconSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -431,27 +527,33 @@ export default function VariantsPage() {
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline" onClick={handleImportCSV}>
-                <IconFileImport className="mr-2 h-4 w-4" />
-                Import CSV
-              </Button>
-              <Button variant="outline" onClick={handleExportCSV}>
-                <IconFileExport className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-              <Button onClick={() => {
-                setEditingVariantId(undefined)
-                setDrawerOpen(true)
-              }}>
-                <IconPlus className="mr-2 h-4 w-4" />
-                Add Variant
-              </Button>
+              <div className="hidden sm:flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleImportCSV}>
+                  <IconFileImport className="mr-1 h-4 w-4" />
+                  Import
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                  <IconFileExport className="mr-1 h-4 w-4" />
+                  Export
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => {
+                    setEditingVariantId(undefined)
+                    setDrawerOpen(true)
+                  }}
+                >
+                  <IconPlus className="mr-1 h-4 w-4" />
+                  Add Variant
+                </Button>
+              </div>
             </div>
 
-            {/* Filter Row */}
-            <div className="grid grid-cols-5 gap-3">
+            {/* Filters - Desktop: 5 cols, Mobile: Custom Layout */}
+            {/* Desktop Layout (lg+) */}
+            <div className="hidden lg:grid grid-cols-5 gap-3">
               <div>
-                <label className="text-sm font-medium mb-1 block">Product</label>
+                <label className="text-sm font-medium mb-2 block">Product</label>
                 <Select value={filterProduct} onValueChange={setFilterProduct}>
                   <SelectTrigger>
                     <SelectValue />
@@ -468,7 +570,7 @@ export default function VariantsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-1 block">Size</label>
+                <label className="text-sm font-medium mb-2 block">Size</label>
                 <Select value={filterSize} onValueChange={setFilterSize}>
                   <SelectTrigger>
                     <SelectValue />
@@ -485,24 +587,34 @@ export default function VariantsPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-1 block">Color</label>
+                <label className="text-sm font-medium mb-2 block">Color</label>
                 <Select value={filterColor} onValueChange={setFilterColor}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Colors</SelectItem>
-                    {colorOptions.map((colorName) => (
-                      <SelectItem key={colorName} value={colorName}>
-                        {colorName}
-                      </SelectItem>
-                    ))}
+                    {colorOptions.map((colorName) => {
+                      const colorInfo = colors.find((c) => c.name === colorName)
+                      const hexCode = colorInfo?.hex || '#CCCCCC'
+                      return (
+                        <SelectItem key={colorName} value={colorName}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded border border-gray-300"
+                              style={{ backgroundColor: hexCode }}
+                            />
+                            <span>{colorName}</span>
+                          </div>
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-1 block">Stock Status</label>
+                <label className="text-sm font-medium mb-2 block">Stock Status</label>
                 <Select value={filterStockStatus} onValueChange={setFilterStockStatus}>
                   <SelectTrigger>
                     <SelectValue />
@@ -516,7 +628,7 @@ export default function VariantsPage() {
                 </Select>
               </div>
 
-              <div>
+              <div className="flex items-end">
                 <Button
                   variant="outline"
                   className="w-full"
@@ -528,8 +640,110 @@ export default function VariantsPage() {
                     setFilterStockStatus("all")
                   }}
                 >
-                  Reset Filters
+                  Reset
                 </Button>
+              </div>
+            </div>
+
+            {/* Tablet/Mobile Layout */}
+            <div className="lg:hidden space-y-3">
+              {/* Row 2: Product (full width) */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Product</label>
+                <Select value={filterProduct} onValueChange={setFilterProduct}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    {products.map((p) => (
+                      <SelectItem key={p._id} value={p._id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Row 3: Size + Color */}
+              <div className="grid grid-cols-2 gap-3 overflow-x-auto">
+                <div className="min-w-max">
+                  <label className="text-sm font-medium mb-2 block">Size</label>
+                  <Select value={filterSize} onValueChange={setFilterSize}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sizes</SelectItem>
+                      {sizes.map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Color</label>
+                  <Select value={filterColor} onValueChange={setFilterColor}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Colors</SelectItem>
+                      {colorOptions.map((colorName) => {
+                        const colorInfo = colors.find((c) => c.name === colorName)
+                        const hexCode = colorInfo?.hex || '#CCCCCC'
+                        return (
+                          <SelectItem key={colorName} value={colorName}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-4 h-4 rounded border border-gray-300"
+                                style={{ backgroundColor: hexCode }}
+                              />
+                              <span>{colorName}</span>
+                            </div>
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Row 4: Stock Status + Reset */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Stock</label>
+                  <Select value={filterStockStatus} onValueChange={setFilterStockStatus}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="inStock">In Stock</SelectItem>
+                      <SelectItem value="low">Low Stock</SelectItem>
+                      <SelectItem value="out">Out of Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    className="w-full text-sm"
+                    onClick={() => {
+                      setSearchTerm("")
+                      setFilterProduct("all")
+                      setFilterSize("all")
+                      setFilterColor("all")
+                      setFilterStockStatus("all")
+                    }}
+                  >
+                    Reset
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -554,16 +768,16 @@ export default function VariantsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
+                      <TableHead>
                         <input type="checkbox" />
                       </TableHead>
                       <TableHead>SKU</TableHead>
                       <TableHead>Product Name</TableHead>
+                      <TableHead className="text-right">Stock</TableHead>
                       <TableHead>Size</TableHead>
                       <TableHead>Color</TableHead>
                       <TableHead>Image</TableHead>
                       <TableHead className="text-right">Price</TableHead>
-                      <TableHead className="text-right">Stock</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -576,6 +790,7 @@ export default function VariantsPage() {
                         </TableCell>
                         <TableCell className="font-mono font-semibold">{variant.sku}</TableCell>
                         <TableCell>{variant.productName || "-"}</TableCell>
+                        <TableCell className="text-right font-semibold">{variant.stock ?? 0}</TableCell>
                         <TableCell>{variant.size}</TableCell>
                         <TableCell>{getColorDisplay(variant.color)}</TableCell>
                         <TableCell>
@@ -591,7 +806,7 @@ export default function VariantsPage() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">${variant.price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${variant.price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
                         <TableCell className="text-right">
                           <span>
                             {getStockIcon(variant.stock, variant.lowStockThreshold)} {variant.stock}
@@ -614,7 +829,9 @@ export default function VariantsPage() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => navigate(`/admin/variants/view/${variant._id}`)}
+                            onClick={() => navigate(`/admin/variants/view/${variant._id}`, { 
+                              state: { variantData: variant } 
+                            })}
                             title="View Details"
                           >
                             <IconEye className="h-4 w-4" />
@@ -689,6 +906,7 @@ export default function VariantsPage() {
       <VariantDrawer
         isOpen={drawerOpen}
         variantId={editingVariantId}
+        variantData={editingVariantId ? variants.find(v => v._id === editingVariantId) : undefined}
         isEdit={!!editingVariantId}
         onClose={() => {
           setDrawerOpen(false)

@@ -6,7 +6,7 @@ export interface Product {
   name: string
   description: string
   basePrice: number
-  category: string
+  category: string | { _id: string; name: string; [key: string]: any }
   brand?: string
   images: string[]
   tags: string[]

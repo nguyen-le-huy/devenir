@@ -62,6 +62,15 @@ const productVariantSchema = new mongoose.Schema(
 // ============ VIRTUAL FIELDS ============
 
 /**
+ * Virtual: stock (alias for quantity)
+ */
+productVariantSchema.virtual('stock').get(function () {
+  return this.quantity;
+}).set(function (value) {
+  this.quantity = value;
+});
+
+/**
  * Check if the variant is in stock
  */
 productVariantSchema.virtual('inStock').get(function () {

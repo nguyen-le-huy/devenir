@@ -27,7 +27,6 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 
   const products = await Product.find(filter)
     .populate('category')
-    .populate('brand')
     .limit(limit)
     .skip(skip)
     .sort({ createdAt: -1 });
@@ -53,8 +52,7 @@ export const getAllProducts = asyncHandler(async (req, res) => {
  */
 export const getProductById = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id)
-    .populate('category')
-    .populate('brand');
+    .populate('category');
 
   if (!product) {
     return res.status(404).json({ success: false, message: 'Product not found' });
@@ -275,34 +273,56 @@ export const deleteProduct = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const createVariant = asyncHandler(async (req, res) => {
-  const { sku, size, color, price, stock, images } = req.body;
+  try {
+    const { sku, size, color, price, stock, images, mainImage, hoverImage, lowStockThreshold } = req.body;
 
-  const product = await Product.findById(req.params.id);
-  if (!product) {
-    return res.status(404).json({ success: false, message: 'Product not found' });
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    // Validate required fields
+    if (!sku || !size || !color) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide all required fields: sku, size, color' 
+      });
+    }
+
+    // Check if SKU already exists
+    const existingSKU = await ProductVariant.findOne({ sku: sku.toUpperCase() });
+    if (existingSKU) {
+      return res.status(400).json({ success: false, message: 'SKU already exists' });
+    }
+
+    const variant = await ProductVariant.create({
+      product_id: req.params.id,
+      sku: sku.toUpperCase(),
+      size,
+      color,
+      price: price || product.basePrice || 0,
+      quantity: stock ?? 0,
+      images: images || [],
+      mainImage: mainImage || '',
+      hoverImage: hoverImage || '',
+      lowStockThreshold: lowStockThreshold || 10,
+    });
+
+    const variantObj = variant.toObject();
+
+    res.status(201).json({
+      success: true,
+      message: 'Variant created successfully',
+      data: {
+        ...variantObj,
+        quantity: variantObj.quantity ?? 0,
+        stock: variantObj.quantity ?? 0,
+      },
+    });
+  } catch (error) {
+    console.error('Create variant error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
-
-  // Check if SKU already exists
-  const existingSKU = await ProductVariant.findOne({ sku });
-  if (existingSKU) {
-    return res.status(400).json({ success: false, message: 'SKU already exists' });
-  }
-
-  const variant = await ProductVariant.create({
-    productId: req.params.id,
-    sku,
-    size,
-    color,
-    price: price || product.basePrice,
-    stock: stock || 0,
-    images: images || [],
-  });
-
-  res.status(201).json({
-    success: true,
-    message: 'Variant created successfully',
-    data: variant,
-  });
 });
 
 /**
@@ -311,30 +331,59 @@ export const createVariant = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const updateVariant = asyncHandler(async (req, res) => {
-  const { price, stock, images, lowStockThreshold, weight, barcode } = req.body;
+  try {
+    const { price, stock, images, lowStockThreshold, weight, barcode, sku, size, color, mainImage, hoverImage } = req.body;
+    const skuOrId = req.params.skuOrId;
 
-  let variant = await ProductVariant.findOne({
-    $or: [{ _id: req.params.skuOrId }, { sku: req.params.skuOrId }],
-  });
+    // Try to find by SKU first (case-insensitive), then by ID
+    let variant;
+    
+    // Check if it's a valid ObjectId format
+    const isValidObjectId = skuOrId.length === 24 && /^[0-9a-fA-F]{24}$/.test(skuOrId);
+    
+    if (isValidObjectId) {
+      // Try by ID first if it looks like an ObjectId
+      variant = await ProductVariant.findById(skuOrId);
+    }
+    
+    // If not found by ID or not an ObjectId format, try by SKU
+    if (!variant) {
+      variant = await ProductVariant.findOne({ sku: skuOrId.toUpperCase() });
+    }
 
-  if (!variant) {
-    return res.status(404).json({ success: false, message: 'Variant not found' });
+    if (!variant) {
+      return res.status(404).json({ success: false, message: 'Variant not found' });
+    }
+
+    // Update fields
+    if (sku !== undefined && sku !== null) variant.sku = sku.toUpperCase();
+    if (size !== undefined && size !== null) variant.size = size;
+    if (color !== undefined && color !== null) variant.color = color;
+    if (price !== undefined && price !== null) variant.price = price;
+    if (stock !== undefined && stock !== null) variant.quantity = stock;
+    if (images !== undefined && images !== null) variant.images = images;
+    if (lowStockThreshold !== undefined && lowStockThreshold !== null) variant.lowStockThreshold = lowStockThreshold;
+    if (weight !== undefined && weight !== null) variant.weight = weight;
+    if (barcode !== undefined && barcode !== null) variant.barcode = barcode;
+    if (mainImage !== undefined && mainImage !== null) variant.mainImage = mainImage;
+    if (hoverImage !== undefined && hoverImage !== null) variant.hoverImage = hoverImage;
+
+    variant = await variant.save();
+    const variantObj = variant.toObject();
+
+    res.status(200).json({
+      success: true,
+      message: 'Variant updated successfully',
+      data: {
+        ...variantObj,
+        quantity: variantObj.quantity ?? 0,
+        stock: variantObj.quantity ?? 0,
+      },
+    });
+  } catch (error) {
+    console.error('Update variant error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
-
-  if (price !== undefined) variant.price = price;
-  if (stock !== undefined) variant.stock = stock;
-  if (images) variant.images = images;
-  if (lowStockThreshold !== undefined) variant.lowStockThreshold = lowStockThreshold;
-  if (weight !== undefined) variant.weight = weight;
-  if (barcode) variant.barcode = barcode;
-
-  variant = await variant.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Variant updated successfully',
-    data: variant,
-  });
 });
 
 /**
@@ -343,9 +392,19 @@ export const updateVariant = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const deleteVariant = asyncHandler(async (req, res) => {
-  const variant = await ProductVariant.findOneAndDelete({
-    $or: [{ _id: req.params.skuOrId }, { sku: req.params.skuOrId }],
-  });
+  const skuOrId = req.params.skuOrId;
+  
+  // Check if it's a valid ObjectId format
+  const isValidObjectId = skuOrId.length === 24 && /^[0-9a-fA-F]{24}$/.test(skuOrId);
+  
+  let variant;
+  if (isValidObjectId) {
+    // Try by ID first if it looks like an ObjectId
+    variant = await ProductVariant.findByIdAndDelete(skuOrId);
+  } else {
+    // Delete by SKU
+    variant = await ProductVariant.findOneAndDelete({ sku: skuOrId.toUpperCase() });
+  }
 
   if (!variant) {
     return res.status(404).json({ success: false, message: 'Variant not found' });
@@ -369,9 +428,9 @@ export const getAllVariants = asyncHandler(async (req, res) => {
   const limitNum = parseInt(limit) || 50;
   const skip = (pageNum - 1) * limitNum;
 
-  // Build filter
+  // Build filter - use product_id for filtering (not product)
   const filter = {};
-  if (product) filter.product = product;
+  if (product) filter.product_id = product;
   if (size) filter.size = size;
   if (color) filter.color = color;
 
@@ -381,19 +440,36 @@ export const getAllVariants = asyncHandler(async (req, res) => {
       .limit(limitNum)
       .sort({ createdAt: -1 });
 
+    // Ensure all variants have quantity field (migration for old data)
+    for (let variant of variants) {
+      if (variant.quantity === undefined || variant.quantity === null) {
+        variant.quantity = 0;
+        await variant.save();
+      }
+    }
+
     // Enrich with product info
     const enrichedVariants = await Promise.all(
       variants.map(async (variant) => {
         try {
-          const prod = await Product.findById(variant.product);
+          // Use product_id field to fetch product name
+          const prod = await Product.findById(variant.product_id);
+          const variantObj = variant.toObject();
+          
+          // Ensure quantity and stock are always in response
           return {
-            ...variant.toObject(),
+            ...variantObj,
             productName: prod?.name || '',
+            quantity: variantObj.quantity ?? 0,
+            stock: variantObj.quantity ?? 0,
           };
         } catch (err) {
+          const variantObj = variant.toObject();
           return {
-            ...variant.toObject(),
+            ...variantObj,
             productName: '',
+            quantity: variantObj.quantity ?? 0,
+            stock: variantObj.quantity ?? 0,
           };
         }
       })
@@ -429,9 +505,19 @@ export const getAllVariants = asyncHandler(async (req, res) => {
 export const getProductVariants = asyncHandler(async (req, res) => {
   const variants = await ProductVariant.find({ product_id: req.params.id });
 
+  // Ensure all variants have quantity/stock fields
+  const enrichedVariants = variants.map((v) => {
+    const variantObj = v.toObject();
+    return {
+      ...variantObj,
+      quantity: variantObj.quantity ?? 0,
+      stock: variantObj.quantity ?? 0,
+    };
+  });
+
   res.status(200).json({
     success: true,
-    data: variants,
+    data: enrichedVariants,
   });
 });
 
@@ -465,12 +551,26 @@ export const getVariantById = asyncHandler(async (req, res) => {
   // Get all sibling variants (same product)
   const siblingVariants = await ProductVariant.find({ product_id: variant.product_id });
 
+  const variantObj = variant.toObject();
+  const enrichedSiblingVariants = siblingVariants.map((v) => {
+    const vObj = v.toObject();
+    return {
+      ...vObj,
+      quantity: vObj.quantity ?? 0,
+      stock: vObj.quantity ?? 0,
+    };
+  });
+
   res.status(200).json({
     success: true,
     data: {
-      variant,
+      variant: {
+        ...variantObj,
+        quantity: variantObj.quantity ?? 0,
+        stock: variantObj.quantity ?? 0,
+      },
       product,
-      siblingVariants,
+      siblingVariants: enrichedSiblingVariants,
     },
   });
 });

@@ -17,9 +17,9 @@ const productSchema = new mongoose.Schema(
       maxlength: [2000, 'Product description must not exceed 2000 characters'],
     },
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
       required: [true, 'Please choose category'],
-      trim: true,
     },
     brand: {
       type: String,

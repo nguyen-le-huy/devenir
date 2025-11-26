@@ -41,7 +41,6 @@ function App() {
           <Route path="/admin/variants" element={<ProtectedRoute><VariantsPage /></ProtectedRoute>} />
           <Route path="/admin/variants/new" element={<ProtectedRoute><AddVariantPage /></ProtectedRoute>} />
           <Route path="/admin/variants/view/:id" element={<ProtectedRoute><ViewVariantPage /></ProtectedRoute>} />
-          <Route path="/admin/variants/edit/:id" element={<ProtectedRoute><AddVariantPage /></ProtectedRoute>} />
           <Route path="/admin/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
           <Route path="/admin/categories/new" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
           <Route path="/admin/categories/:id" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />

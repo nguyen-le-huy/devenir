@@ -105,6 +105,8 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedVariants, setSelectedVariants] = useState<Set<number>>(new Set())
   const [viewDetailIndex, setViewDetailIndex] = useState<number | null>(null)
+  const [variantPage, setVariantPage] = useState(1)
+  const [variantItemsPerPage] = useState(10)
 
   // Fetch categories
   useEffect(() => {
@@ -668,16 +670,34 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                             id={`size-${size}`}
                             checked={selectedSizes.includes(size)}
                             onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedSizes((prev) => [...prev, size])
+                              if (size === "Free Size") {
+                                // Free Size is exclusive
+                                if (checked) {
+                                  setSelectedSizes(["Free Size"])
+                                } else {
+                                  setSelectedSizes([])
+                                }
                               } else {
-                                setSelectedSizes((prev) => prev.filter((s) => s !== size))
+                                // Other sizes
+                                if (checked) {
+                                  // Remove Free Size if it was selected
+                                  setSelectedSizes((prev) =>
+                                    prev.filter((s) => s !== "Free Size")
+                                  )
+                                  // Add this size
+                                  setSelectedSizes((prev) => [...prev, size])
+                                } else {
+                                  // Remove this size
+                                  setSelectedSizes((prev) => prev.filter((s) => s !== size))
+                                }
                               }
                             }}
                           />
                           <Label 
                             htmlFor={`size-${size}`} 
-                            className="font-normal cursor-pointer"
+                            className={`font-normal cursor-pointer ${
+                              size === "Free Size" ? "font-semibold text-blue-600" : ""
+                            }`}
                           >
                             {size}
                           </Label>
@@ -687,6 +707,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                     {selectedSizes.length > 0 && (
                       <p className="text-xs text-blue-600">
                         ℹ️ {selectedSizes.length} size(s) selected
+                        {selectedSizes.includes("Free Size") && " (Free Size - exclusive)"}
                       </p>
                     )}
                   </div>
@@ -1050,115 +1071,177 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                                   </td>
                                 </tr>
                               ) : (
-                                formData.variants.map((variant, index) => {
-                                  // Check if this variant is in filtered results
-                                  const isFiltered = filteredVariants.some((v) => v.sku === variant.sku)
-                                  if (!isFiltered) return null
-
-                                  const stockStatus = getStockStatus(variant.quantity)
-                                  const isSelected = selectedVariants.has(index)
-
-                                  return (
-                                    <tr
-                                      key={`${variant.sku}-${index}`}
-                                      className={`border-b hover:bg-muted/50 transition ${
-                                        isSelected ? "bg-muted/70" : ""
-                                      }`}
-                                    >
-                                      <td className="py-3 px-3">
-                                        <Checkbox
-                                          checked={isSelected}
-                                          onCheckedChange={() => toggleVariantSelection(index)}
-                                        />
-                                      </td>
-                                      <td className="py-3 px-3 font-mono text-xs font-semibold">
-                                        <div className="flex flex-col gap-1">
-                                          <span className="text-lg font-bold text-foreground">{variant.sku}</span>
-                                          <span className="text-xs text-muted-foreground font-medium">Size: {variant.size}</span>
-                                        </div>
-                                      </td>
-                                      <td className="py-3 px-3">
-                                      </td>
-                                      <td className="py-3 px-3">
-                                        <div className="flex items-center gap-2">
-                                          {(() => {
-                                            const colorObj = colors.find(c => c._id === variant.colorId || c.name === variant.color)
-                                            const hexColor = colorObj?.hex || "#CCCCCC"
-                                            return (
-                                              <>
-                                                <div
-                                                  className="w-5 h-5 rounded border border-gray-400 shadow-sm"
-                                                  style={{
-                                                    backgroundColor: hexColor,
-                                                  }}
-                                                  title={`${colorObj?.name || variant.color} (${hexColor})`}
-                                                />
-                                                <span className="text-sm font-medium">{colorObj?.name || variant.color}</span>
-                                              </>
-                                            )
-                                          })()}
-                                        </div>
-                                      </td>
-                                      <td className="py-3 px-3 text-right font-semibold">
-                                        ${variant.price.toFixed(2)}
-                                      </td>
-                                      <td className="py-3 px-3 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                          <span className="font-semibold">{variant.quantity}</span>
-                                          <span
-                                            className={`${stockStatus.color} text-white text-xs font-bold px-2 py-1 rounded`}
-                                          >
-                                            {stockStatus.label}
-                                          </span>
-                                        </div>
-                                      </td>
-                                      <td className="py-3 px-3 text-center">
-                                        <span className="text-xs text-muted-foreground">
-                                          {variant.images.length} 📎
-                                        </span>
-                                      </td>
-                                      <td className="py-3 px-3">
-                                        <div className="flex justify-center gap-1">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => setViewDetailIndex(index)}
-                                            className="h-8 w-8 p-0"
-                                            title="View details"
-                                          >
-                                            <IconEye className="w-4 h-4" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => handleEditVariant(index)}
-                                            className="h-8 w-8 p-0"
-                                            title="Edit variant"
-                                          >
-                                            <IconEdit className="w-4 h-4" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="destructive"
-                                            onClick={() => {
-                                              if (confirm("Delete this variant?")) {
-                                                handleDeleteVariant(index)
-                                              }
-                                            }}
-                                            className="h-8 w-8 p-0"
-                                            title="Delete variant"
-                                          >
-                                            <IconTrash className="w-4 h-4" />
-                                          </Button>
-                                        </div>
-                                      </td>
-                                    </tr>
+                                (() => {
+                                  const paginatedVariants = filteredVariants.slice(
+                                    (variantPage - 1) * variantItemsPerPage,
+                                    variantPage * variantItemsPerPage
                                   )
-                                })
+                                  return paginatedVariants.map((filteredVariant) => {
+                                    const index = formData.variants.findIndex(
+                                      (v) => v.sku === filteredVariant.sku
+                                    )
+                                    if (index === -1) return null
+
+                                    const variant = formData.variants[index]
+                                    const stockStatus = getStockStatus(variant.quantity)
+                                    const isSelected = selectedVariants.has(index)
+
+                                    return (
+                                      <tr
+                                        key={`${variant.sku}-${index}`}
+                                        className={`border-b hover:bg-muted/50 transition ${
+                                          isSelected ? "bg-muted/70" : ""
+                                        }`}
+                                      >
+                                        <td className="py-3 px-3">
+                                          <Checkbox
+                                            checked={isSelected}
+                                            onCheckedChange={() => toggleVariantSelection(index)}
+                                          />
+                                        </td>
+                                        <td className="py-3 px-3 font-mono text-xs font-semibold">
+                                          <div className="flex flex-col gap-1">
+                                            <span className="text-lg font-bold text-foreground">{variant.sku}</span>
+                                            <span className="text-xs text-muted-foreground font-medium">Size: {variant.size}</span>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-3">
+                                        </td>
+                                        <td className="py-3 px-3">
+                                          <div className="flex items-center gap-2">
+                                            {(() => {
+                                              const colorObj = colors.find(c => c._id === variant.colorId || c.name === variant.color)
+                                              const hexColor = colorObj?.hex || "#CCCCCC"
+                                              return (
+                                                <>
+                                                  <div
+                                                    className="w-5 h-5 rounded border border-gray-400 shadow-sm"
+                                                    style={{
+                                                      backgroundColor: hexColor,
+                                                    }}
+                                                    title={`${colorObj?.name || variant.color} (${hexColor})`}
+                                                  />
+                                                  <span className="text-sm font-medium">{colorObj?.name || variant.color}</span>
+                                                </>
+                                              )
+                                            })()}
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-3 text-right font-semibold">
+                                          ${variant.price.toFixed(2)}
+                                        </td>
+                                        <td className="py-3 px-3 text-right">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <span className="font-semibold">{variant.quantity}</span>
+                                            <span
+                                              className={`${stockStatus.color} text-white text-xs font-bold px-2 py-1 rounded`}
+                                            >
+                                              {stockStatus.label}
+                                            </span>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-3 text-center">
+                                          <div className="flex flex-col items-center gap-2">
+                                            {variant.mainImage ? (
+                                              <img
+                                                src={variant.mainImage}
+                                                alt="variant main"
+                                                className="h-12 w-12 object-cover rounded border border-gray-300"
+                                              />
+                                            ) : (
+                                              <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                                                No img
+                                              </div>
+                                            )}
+                                            <span className="text-xs text-muted-foreground font-medium">
+                                              +{variant.images.length}
+                                            </span>
+                                          </div>
+                                        </td>
+                                        <td className="py-3 px-3">
+                                          <div className="flex justify-center gap-1">
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => setViewDetailIndex(index)}
+                                              className="h-8 w-8 p-0"
+                                              title="View details"
+                                            >
+                                              <IconEye className="w-4 h-4" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => handleEditVariant(index)}
+                                              className="h-8 w-8 p-0"
+                                              title="Edit variant"
+                                            >
+                                              <IconEdit className="w-4 h-4" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="destructive"
+                                              onClick={() => {
+                                                if (confirm("Delete this variant?")) {
+                                                  handleDeleteVariant(index)
+                                                }
+                                              }}
+                                              className="h-8 w-8 p-0"
+                                              title="Delete variant"
+                                            >
+                                              <IconTrash className="w-4 h-4" />
+                                            </Button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })
+                                })()
                               )}
                             </tbody>
                           </table>
                         </div>
+
+                        {/* Pagination Controls */}
+                        {Math.ceil(filteredVariants.length / variantItemsPerPage) > 1 && (
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                            <div className="text-sm text-muted-foreground">
+                              Showing {(variantPage - 1) * variantItemsPerPage + 1}-{Math.min(variantPage * variantItemsPerPage, filteredVariants.length)} of{" "}
+                              {filteredVariants.length} variants
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setVariantPage(Math.max(1, variantPage - 1))}
+                                disabled={variantPage === 1}
+                              >
+                                ← Previous
+                              </Button>
+                              <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.ceil(filteredVariants.length / variantItemsPerPage) }).map((_, idx) => (
+                                  <Button
+                                    key={idx + 1}
+                                    variant={variantPage === idx + 1 ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setVariantPage(idx + 1)}
+                                    className="w-8"
+                                  >
+                                    {idx + 1}
+                                  </Button>
+                                ))}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setVariantPage(Math.min(Math.ceil(filteredVariants.length / variantItemsPerPage), variantPage + 1))}
+                                disabled={variantPage === Math.ceil(filteredVariants.length / variantItemsPerPage)}
+                              >
+                                Next →
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
 
