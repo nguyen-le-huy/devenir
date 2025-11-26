@@ -170,8 +170,9 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   // Auto-generate SKU
   const generateSKU = (color: string, size: string) => {
     const productName = formData.name.substring(0, 3).toUpperCase()
+    const cleanSize = size.replace(/\s+/g, "-").toUpperCase()
     const cleanColor = color.replace(/\s+/g, "-").toUpperCase()
-    return `${productName}-${size}-${cleanColor}`
+    return `${productName}-${cleanSize}-${cleanColor}`
   }
 
   // Handle add/edit variant
