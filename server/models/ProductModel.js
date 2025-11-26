@@ -241,6 +241,7 @@ productSchema.pre('remove', async function (next) {
 /**
  * Create indexes to optimize queries
  */
+// Single field indexes
 productSchema.index({ name: 1 });
 productSchema.index({ category: 1 });
 productSchema.index({ brand: 1 });
@@ -248,6 +249,12 @@ productSchema.index({ tags: 1 });
 productSchema.index({ averageRating: -1 });
 productSchema.index({ basePrice: 1 });
 productSchema.index({ createdAt: -1 });
+productSchema.index({ status: 1 });
+
+// Compound indexes for common query patterns (order matters!)
+productSchema.index({ isActive: 1, category: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, brand: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, status: 1, createdAt: -1 });
 
 // Text index cho full-text search
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });

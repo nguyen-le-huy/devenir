@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import compression from 'compression';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -15,6 +16,19 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// ============ PERFORMANCE MIDDLEWARE ============
+
+// Compression middleware - compress all responses
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6, // Compression level (0-9, higher = more compression but slower)
+}));
 
 // Middleware - CORS configuration cho nhiều origins
 const allowedOrigins = [

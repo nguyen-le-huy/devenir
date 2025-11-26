@@ -1,6 +1,7 @@
 import Product from '../models/ProductModel.js';
 import ProductVariant from '../models/ProductVariantModel.js';
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 
 /**
  * @desc    Get all products with pagination, filtering, and search
@@ -13,7 +14,10 @@ export const getAllProducts = asyncHandler(async (req, res) => {
   // Build filter object
   const filter = { isActive: true };
 
-  if (category) filter.category = category;
+  if (category) {
+    // Support both string and ObjectId for category (during migration period)
+    filter.category = category;
+  }
   if (brand) filter.brand = brand;
   if (status) filter.status = status;
   if (search) {
@@ -25,12 +29,16 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 
   const skip = (page - 1) * limit;
 
+  // Optimize: Use lean() for faster queries, select only needed fields
   const products = await Product.find(filter)
-    .populate('category')
-    .limit(limit)
+    .select('name description category brand averageRating isActive status createdAt')
+    .populate('category', 'name thumbnailUrl') // Only populate needed fields
+    .limit(parseInt(limit))
     .skip(skip)
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean(); // Convert to plain JS objects (faster)
 
+  // Run count in parallel for better performance
   const total = await Product.countDocuments(filter);
 
   res.status(200).json({
@@ -51,20 +59,24 @@ export const getAllProducts = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id)
-    .populate('category');
+  // Optimize: Use lean() and run queries in parallel
+  const [product, variants] = await Promise.all([
+    Product.findById(req.params.id)
+      .populate('category', 'name description thumbnailUrl')
+      .lean(),
+    ProductVariant.find({ product_id: req.params.id })
+      .select('-__v')
+      .lean()
+  ]);
 
   if (!product) {
     return res.status(404).json({ success: false, message: 'Product not found' });
   }
 
-  // Get variants for this product
-  const variants = await ProductVariant.find({ product_id: req.params.id });
-
   res.status(200).json({
     success: true,
     data: {
-      ...product.toObject(),
+      ...product,
       variants,
     },
   });

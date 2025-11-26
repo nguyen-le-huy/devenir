@@ -13,6 +13,7 @@ import {
   bulkUpdateVariants,
 } from '../controllers/ProductController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
+import { cacheMiddleware } from '../middleware/cacheMiddleware.js';
 
 const router = express.Router();
 
@@ -22,8 +23,9 @@ const router = express.Router();
  * GET /api/products
  * Get all products with pagination and filtering
  * Query params: page, limit, category, brand, status, search
+ * Cache: 5 minutes
  */
-router.get('/', getAllProducts);
+router.get('/', cacheMiddleware(300), getAllProducts);
 
 // ============ ADMIN ROUTES (Must be before :id routes) ============
 
@@ -82,13 +84,15 @@ router.put('/admin/variants/bulk-update', authenticate, isAdmin, bulkUpdateVaria
 /**
  * GET /api/products/:id
  * Get single product with variants
+ * Cache: 10 minutes
  */
-router.get('/:id', getProductById);
+router.get('/:id', cacheMiddleware(600), getProductById);
 
 /**
  * GET /api/products/:id/variants
  * Get all variants for a product
+ * Cache: 5 minutes
  */
-router.get('/:id/variants', getProductVariants);
+router.get('/:id/variants', cacheMiddleware(300), getProductVariants);
 
 export default router;

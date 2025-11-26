@@ -76,18 +76,26 @@ export const getVariantsByCategory = async (categoryId) => {
             }
         });
 
-        if (!productsResponse.data || productsResponse.data.length === 0) {
+        // apiClient interceptor đã unwrap response.data
+        // Nên productsResponse = { success: true, data: [...], pagination: {...} }
+        const products = productsResponse.data || [];
+        
+        if (!products || products.length === 0) {
             return [];
         }
 
         // Lấy variants cho từng product
         const allVariants = [];
-        for (const product of productsResponse.data) {
+        for (const product of products) {
             try {
                 const variantsResponse = await apiClient.get(`/products/${product._id}/variants`);
-                if (variantsResponse.data && variantsResponse.data.length > 0) {
+                
+                // apiClient đã unwrap, nên variantsResponse = { success: true, data: [...] }
+                const variants = variantsResponse.data || [];
+                
+                if (variants.length > 0) {
                     // Thêm thông tin product vào mỗi variant
-                    const enrichedVariants = variantsResponse.data.map(variant => ({
+                    const enrichedVariants = variants.map(variant => ({
                         ...variant,
                         productInfo: {
                             _id: product._id,

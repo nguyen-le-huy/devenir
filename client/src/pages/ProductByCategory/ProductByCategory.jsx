@@ -1,27 +1,21 @@
-import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import styles from './ProductByCategory.module.css';
 import Filter from '../../components/Filter/Filter.jsx';
 import ScarfCard from '../../components/ProductCard/ScarfCard.jsx';
 import Loading from '../../components/Loading/Loading.jsx';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight.js';
-import { getVariantsByCategory } from '../../services/productService.js';
-import { getCategoryById } from '../../services/categoryService.js';
-import { getAllColors, createColorMap } from '../../services/colorService.js';
+import { useVariantsByCategory } from '../../hooks/useProducts.js';
+import { useCategoryById } from '../../hooks/useCategories.js';
+import { useColors } from '../../hooks/useColors.js';
+import { createColorMap } from '../../services/colorService.js';
 
 const ProductByCategory = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [variants, setVariants] = useState([]);
-    const [category, setCategory] = useState(null);
-    const [loading, setLoading] = useState(true);
 
     // Filter states
     const [selectedSort, setSelectedSort] = useState('Default');
     const [selectedColors, setSelectedColors] = useState([]);
-
-    // Color data từ DB
-    const [colors, setColors] = useState([]);
-    const [colorMap, setColorMap] = useState({});
 
     const headerHeight = useHeaderHeight();
 
@@ -29,52 +23,21 @@ const ProductByCategory = () => {
     const [searchParams] = useSearchParams();
     const categoryId = searchParams.get('category');
 
-    // Fetch colors từ DB
+    // Fetch data using React Query hooks
+    const { data: categoryData, isLoading: categoryLoading } = useCategoryById(categoryId);
+    const { data: variantsData = [], isLoading: variantsLoading, error } = useVariantsByCategory(categoryId);
+    const { data: colorsData } = useColors();
+
+    // Memoize expensive calculations
+    const colors = useMemo(() => colorsData?.data || colorsData || [], [colorsData]);
+    const colorMap = useMemo(() => createColorMap(colors), [colors]);
+    const category = useMemo(() => categoryData?.data || null, [categoryData]);
+    const variants = useMemo(() => variantsData || [], [variantsData]);
+
+    const loading = categoryLoading || variantsLoading;
+
+    // Reset filters khi category thay đổi
     useEffect(() => {
-        const fetchColors = async () => {
-            try {
-                const response = await getAllColors();
-                const colorsData = response.data || response;
-                setColors(colorsData);
-                setColorMap(createColorMap(colorsData));
-            } catch (error) {
-                console.error('Error fetching colors:', error);
-            }
-        };
-
-        fetchColors();
-    }, []);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!categoryId) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-
-                // Fetch category info
-                const categoryResponse = await getCategoryById(categoryId);
-                if (categoryResponse.data) {
-                    setCategory(categoryResponse.data);
-                }
-
-                // Fetch variants by category
-                const variantsData = await getVariantsByCategory(categoryId);
-                setVariants(variantsData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                setVariants([]);
-                setCategory(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-        // Reset filters khi category thay đổi
         setSelectedSort('Default');
         setSelectedColors([]);
     }, [categoryId]);
@@ -87,19 +50,20 @@ const ProductByCategory = () => {
         setIsFilterOpen(false);
     };
 
-    // Extract unique colors from variants
-    const availableColors = [...new Set(variants.map(v => v.color))].filter(Boolean);
+    // Memoize filtered data calculations
+    const { availableColors, colorCounts, filteredVariants } = useMemo(() => {
+        // Extract unique colors from variants
+        const availableColors = [...new Set(variants.map(v => v.color))].filter(Boolean);
 
-    // Count variants per color
-    const colorCounts = {};
-    variants.forEach(variant => {
-        if (variant.color) {
-            colorCounts[variant.color] = (colorCounts[variant.color] || 0) + 1;
-        }
-    });
+        // Count variants per color
+        const colorCounts = {};
+        variants.forEach(variant => {
+            if (variant.color) {
+                colorCounts[variant.color] = (colorCounts[variant.color] || 0) + 1;
+            }
+        });
 
-    // Apply filters and sorting
-    const getFilteredAndSortedVariants = () => {
+        // Apply filters and sorting
         let filtered = [...variants];
 
         // 1. Apply color filter
@@ -116,7 +80,6 @@ const ProductByCategory = () => {
                 filtered.sort((a, b) => a.price - b.price);
                 break;
             case 'New In':
-                // Sort by createdAt if available, otherwise by _id (MongoDB ObjectId contains timestamp)
                 filtered.sort((a, b) => {
                     const dateA = a.createdAt || a._id;
                     const dateB = b.createdAt || b._id;
@@ -128,10 +91,8 @@ const ProductByCategory = () => {
                 break;
         }
 
-        return filtered;
-    };
-
-    const filteredVariants = getFilteredAndSortedVariants();
+        return { availableColors, colorCounts, filteredVariants: filtered };
+    }, [variants, selectedColors, selectedSort]);
 
     // Check if filters are active
     const isFiltering = selectedSort !== 'Default' || selectedColors.length > 0;
