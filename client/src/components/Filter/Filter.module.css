@@ -256,10 +256,6 @@
     transition: opacity 0.2s ease;
 }
 
-.colourOption:hover {
-    opacity: 0.7;
-}
-
 .colourSwatchWrapper {
     flex-shrink: 0;
 }
@@ -286,6 +282,10 @@
     font-size: 15px;
     font-weight: 500;
     color: var(--black);
+    position: relative;
+    white-space: nowrap;
+    display: inline-block;
+    width: fit-content;
 }
 
 .colourCount {
@@ -351,6 +351,48 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+.buttonList {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.clearAll {
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--black);
+    position: relative;
+    white-space: nowrap;
+    display: inline-block;
+    width: fit-content;
+}
+
+.clearAll::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    top: 100%;
+    left: 0;
+    pointer-events: none;
+}
+
+.clearAll::before {
+    transform-origin: 100% 50%;
+    transform: scale3d(0, 1, 1);
+    transition: transform 0.3s;
+}
+
+.clearAll:hover::before {
+    transform-origin: 0% 50%;
+    transform: scale3d(1, 1, 1);
+}
+
+
+
 
 @media (max-width: 480px) {
     .overlayFilter {

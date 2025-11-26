@@ -4,13 +4,13 @@ const ScarfCard = ({ scarf }) => {
     return (
         <div className={styles.scarfCard}>
             <div className={styles.imageWrapper}>
-                <img 
-                    src={scarf.image} 
+                <img
+                    src={scarf.image}
                     alt={scarf.name}
                     className={styles.imageDefault}
                 />
-                <img 
-                    src={scarf.imageHover} 
+                <img
+                    src={scarf.imageHover}
                     alt={`${scarf.name} hover`}
                     className={styles.imageHover}
                 />
