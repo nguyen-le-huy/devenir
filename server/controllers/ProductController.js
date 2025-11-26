@@ -199,9 +199,14 @@ export const updateProduct = asyncHandler(async (req, res) => {
     try {
       console.log(`Updating ${variants.length} variants...`);
 
-      // Delete old variants for this product
+      // Delete old variants for this product (by product_id)
       const deleteResult = await ProductVariant.deleteMany({ product_id: req.params.id });
-      console.log(`Deleted ${deleteResult.deletedCount} old variants`);
+      console.log(`Deleted ${deleteResult.deletedCount} old variants by product_id`);
+
+      // Also delete any existing variants with the new SKUs (to handle orphaned/duplicate SKUs)
+      const newSKUs = variants.map(v => v.sku);
+      const deleteDuplicates = await ProductVariant.deleteMany({ sku: { $in: newSKUs } });
+      console.log(`Deleted ${deleteDuplicates.deletedCount} existing variants with duplicate SKUs`);
 
       // Create new variants
       if (variants.length > 0) {

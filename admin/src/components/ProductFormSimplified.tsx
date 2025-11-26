@@ -168,11 +168,13 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   }
 
   // Auto-generate SKU
+  // NOTE: Size must match enum exactly, so we don't clean it
   const generateSKU = (color: string, size: string) => {
     const productName = formData.name.substring(0, 3).toUpperCase()
-    const cleanSize = size.replace(/\s+/g, "-").toUpperCase()
     const cleanColor = color.replace(/\s+/g, "-").toUpperCase()
-    return `${productName}-${cleanSize}-${cleanColor}`
+    // Size kept as-is for URL-friendly SKU (spaces replaced with dashes for SKU only, not for DB)
+    const sizeForSKU = size.replace(/\s+/g, "-").toUpperCase()
+    return `${productName}-${sizeForSKU}-${cleanColor}`
   }
 
   // Handle add/edit variant
