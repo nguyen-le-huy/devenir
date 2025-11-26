@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard'
 import ProductsPage from './pages/products/ProductsPage'
 import EditProductPage from './pages/products/EditProductPage'
 import VariantsPage from './pages/products/VariantsPage'
+import AddVariantPage from './pages/variants/AddVariantPage'
+import ViewVariantPage from './pages/variants/ViewVariantPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import CustomersPage from './pages/customers/CustomersPage'
 import InventoryPage from './pages/inventory/InventoryPage'
@@ -37,6 +39,9 @@ function App() {
           <Route path="/admin/products/edit/:id" element={<ProtectedRoute><EditProductPage /></ProtectedRoute>} />
           <Route path="/admin/products/:id" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
           <Route path="/admin/variants" element={<ProtectedRoute><VariantsPage /></ProtectedRoute>} />
+          <Route path="/admin/variants/new" element={<ProtectedRoute><AddVariantPage /></ProtectedRoute>} />
+          <Route path="/admin/variants/view/:id" element={<ProtectedRoute><ViewVariantPage /></ProtectedRoute>} />
+          <Route path="/admin/variants/edit/:id" element={<ProtectedRoute><AddVariantPage /></ProtectedRoute>} />
           <Route path="/admin/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
           <Route path="/admin/categories/new" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
           <Route path="/admin/categories/:id" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />

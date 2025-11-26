@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { COLOR_CODES } from "@/utils/skuGenerator"
+import VariantDrawer from "@/components/VariantDrawer"
 import {
   Select,
   SelectContent,
@@ -30,10 +31,21 @@ interface Variant {
   productName?: string
   size: string
   color: string | null
+  colorId?: string
   price: number
   stock: number
   lowStockThreshold: number
+  mainImage?: string
+  hoverImage?: string
+  images?: string[]
   createdAt: string
+}
+
+interface Color {
+  _id: string
+  name: string
+  hex: string
+  isActive: boolean
 }
 
 interface QuickStats {
@@ -45,6 +57,7 @@ interface QuickStats {
 }
 
 export default function VariantsPage() {
+  const navigate = useNavigate()
   const [variants, setVariants] = useState<Variant[]>([])
   const [filteredVariants, setFilteredVariants] = useState<Variant[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,6 +67,7 @@ export default function VariantsPage() {
   const [filterColor, setFilterColor] = useState("all")
   const [filterStockStatus, setFilterStockStatus] = useState("all")
   const [products, setProducts] = useState<any[]>([])
+  const [colors, setColors] = useState<Color[]>([])
   const [quickStats, setQuickStats] = useState<QuickStats>({
     totalSkus: 0,
     inStock: 0,
@@ -63,10 +77,13 @@ export default function VariantsPage() {
   })
   const [page, setPage] = useState(1)
   const [limit] = useState(50)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [editingVariantId, setEditingVariantId] = useState<string | undefined>()
 
   useEffect(() => {
     fetchVariants()
     fetchProducts()
+    fetchColors()
   }, [])
 
   useEffect(() => {
@@ -80,20 +97,23 @@ export default function VariantsPage() {
       console.log("Variants response:", response.data)
       const variantsList = response.data.data || []
 
-      // Enrich variants with product names if not already included
-      const enrichedVariants = await Promise.all(
-        variantsList.map(async (v: any) => {
-          if (!v.productName && v.product) {
-            try {
-              const prodRes = await axiosInstance.get(`/products/${v.product}`)
-              return { ...v, productName: prodRes.data.data?.name || '' }
-            } catch {
-              return v
-            }
-          }
-          return v
+      // Fetch all products once
+      let productsMap: { [key: string]: string } = {}
+      try {
+        const prodRes = await axiosInstance.get("/products?limit=1000")
+        const productsList = prodRes.data.data || []
+        productsList.forEach((p: any) => {
+          productsMap[p._id] = p.name
         })
-      )
+      } catch (err) {
+        console.error("Error fetching products:", err)
+      }
+
+      // Enrich variants with product names
+      const enrichedVariants = variantsList.map((v: any) => ({
+        ...v,
+        productName: productsMap[v.product] || '',
+      }))
 
       console.log("Enriched variants:", enrichedVariants)
       setVariants(enrichedVariants)
@@ -111,6 +131,15 @@ export default function VariantsPage() {
       setProducts(response.data.data || [])
     } catch (error) {
       console.error("Error fetching products:", error)
+    }
+  }
+
+  const fetchColors = async () => {
+    try {
+      const response = await axiosInstance.get("/colors")
+      setColors(response.data.data || [])
+    } catch (error) {
+      console.error("Error fetching colors:", error)
     }
   }
 
@@ -183,45 +212,12 @@ export default function VariantsPage() {
     setFilteredVariants(filtered)
   }
 
-  const colorMap: { [key: string]: string } = {
-    'Trắng': '#FFFFFF',
-    'Đen': '#000000',
-    'Navy': '#000080',
-    'Xám': '#808080',
-    'Đỏ': '#FF0000',
-    'Xanh': '#0000FF',
-    'Xanh Lá': '#00FF00',
-    'Vàng': '#FFFF00',
-    'Cam': '#FFA500',
-    'Tím': '#800080',
-    'Hồng': '#FFC0CB',
-    'Nâu': '#A52A2A',
-    'Beige': '#F5F5DC',
-    'Kem': '#FFFDD0',
-    'Gray': '#808080',
-    'White': '#FFFFFF',
-    'Black': '#000000',
-  }
-
   const getColorDisplay = (colorName: string | null) => {
     if (!colorName) return '-'
 
-    // Try to find in COLOR_CODES first (by checking values)
-    let colorInfo = null
-    for (const code of Object.values(COLOR_CODES)) {
-      if (code.name === colorName) {
-        colorInfo = code
-        break
-      }
-    }
-
-    // If not found, check if it's a hex string
-    if (!colorInfo && colorName.startsWith('#')) {
-      colorInfo = { name: colorName, hex: colorName }
-    }
-
-    // Fallback to colorMap if not found in COLOR_CODES
-    const hexCode = colorInfo?.hex || colorMap[colorName] || '#CCCCCC'
+    // Find color hex from database colors array
+    const colorInfo = colors.find((c) => c.name === colorName)
+    const hexCode = colorInfo?.hex || '#CCCCCC'
 
     return (
       <div className="flex items-center gap-2">
@@ -254,7 +250,120 @@ export default function VariantsPage() {
   }
 
   const sizes = [...new Set(variants.map((v) => v.size))].sort()
-  const colors = [...new Set(variants.map((v) => v.color).filter((c) => c !== null))].sort() as string[]
+  const colorOptions = colors.map((c) => c.name).sort()
+
+  // Handle CSV Export
+  const handleExportCSV = () => {
+    try {
+      const headers = ["SKU", "Product Name", "Size", "Color", "Price", "Stock", "Status"]
+      const csvContent = [
+        headers.join(","),
+        ...filteredVariants.map((v) =>
+          [
+            `"${v.sku}"`,
+            `"${v.productName || ''}"`,
+            `"${v.size}"`,
+            `"${v.color || ''}"`,
+            v.price.toFixed(2),
+            v.stock,
+            getStockStatus(v.stock, v.lowStockThreshold),
+          ].join(",")
+        ),
+      ].join("\n")
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      link.setAttribute("href", url)
+      link.setAttribute("download", `variants_${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = "hidden"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      alert("CSV exported successfully!")
+    } catch (error) {
+      console.error("Error exporting CSV:", error)
+      alert("Failed to export CSV")
+    }
+  }
+
+  // Handle CSV Import
+  const handleImportCSV = () => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = ".csv"
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = async (event: any) => {
+        try {
+          const csv = event.target.result
+          const lines = csv.split("\n").filter((line: string) => line.trim())
+          const headers = lines[0].split(",").map((h: string) => h.trim().toLowerCase())
+          
+          const requiredColumns = ["sku", "size", "color", "price", "stock"]
+          const missingCols = requiredColumns.filter((col) => !headers.includes(col))
+          
+          if (missingCols.length > 0) {
+            alert(`Missing required columns: ${missingCols.join(", ")}`)
+            return
+          }
+
+          const importedVariants = lines.slice(1).map((line: string) => {
+            const values = line.split(",").map((v: string) => v.trim().replace(/^"|"$/g, ""))
+            const row: { [key: string]: any } = {}
+            headers.forEach((header: string, index: number) => {
+              row[header] = values[index]
+            })
+            return row
+          })
+
+          // Validate and create variants
+          for (const variant of importedVariants) {
+            try {
+              const colorObj = colors.find((c) => c.name === variant.color)
+              await axiosInstance.post("/products/admin/variants", {
+                sku: variant.sku,
+                size: variant.size,
+                colorId: colorObj?._id,
+                price: parseFloat(variant.price),
+                stock: parseInt(variant.stock),
+              })
+            } catch (error) {
+              console.error("Error importing variant:", variant.sku, error)
+            }
+          }
+
+          alert(`Imported ${importedVariants.length} variants successfully!`)
+          fetchVariants()
+        } catch (error) {
+          console.error("Error reading CSV:", error)
+          alert("Failed to import CSV")
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
+
+  // Handle Delete Variant
+  const handleDeleteVariant = async (variantId: string) => {
+    if (confirm("Are you sure you want to delete this variant? This action cannot be undone.")) {
+      try {
+        await axiosInstance.delete(`/products/admin/variants/${variantId}`)
+        setVariants(variants.filter((v) => v._id !== variantId))
+        setFilteredVariants(filteredVariants.filter((v) => v._id !== variantId))
+        const updatedVariants = variants.filter((v) => v._id !== variantId)
+        calculateStats(updatedVariants)
+        alert("Variant deleted successfully")
+      } catch (error) {
+        console.error("Error deleting variant:", error)
+        alert("Failed to delete variant")
+      }
+    }
+  }
 
   const paginatedVariants = filteredVariants.slice(
     (page - 1) * limit,
@@ -300,7 +409,7 @@ export default function VariantsPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm font-medium text-muted-foreground">Inventory Value</div>
-              <div className="text-2xl font-bold">${quickStats.inventoryValue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{quickStats.inventoryValue.toLocaleString()} VNĐ</div>
             </CardContent>
           </Card>
         </div>
@@ -322,15 +431,18 @@ export default function VariantsPage() {
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleImportCSV}>
                 <IconFileImport className="mr-2 h-4 w-4" />
                 Import CSV
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleExportCSV}>
                 <IconFileExport className="mr-2 h-4 w-4" />
                 Export
               </Button>
-              <Button>
+              <Button onClick={() => {
+                setEditingVariantId(undefined)
+                setDrawerOpen(true)
+              }}>
                 <IconPlus className="mr-2 h-4 w-4" />
                 Add Variant
               </Button>
@@ -380,9 +492,9 @@ export default function VariantsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Colors</SelectItem>
-                    {colors.map((color) => (
-                      <SelectItem key={color} value={color}>
-                        {color}
+                    {colorOptions.map((colorName) => (
+                      <SelectItem key={colorName} value={colorName}>
+                        {colorName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -449,6 +561,7 @@ export default function VariantsPage() {
                       <TableHead>Product Name</TableHead>
                       <TableHead>Size</TableHead>
                       <TableHead>Color</TableHead>
+                      <TableHead>Image</TableHead>
                       <TableHead className="text-right">Price</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
                       <TableHead>Status</TableHead>
@@ -465,6 +578,19 @@ export default function VariantsPage() {
                         <TableCell>{variant.productName || "-"}</TableCell>
                         <TableCell>{variant.size}</TableCell>
                         <TableCell>{getColorDisplay(variant.color)}</TableCell>
+                        <TableCell>
+                          {variant.mainImage ? (
+                            <img
+                              src={variant.mainImage}
+                              alt="variant"
+                              className="h-12 w-12 object-cover rounded border"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                              No image
+                            </div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">${variant.price.toFixed(2)}</TableCell>
                         <TableCell className="text-right">
                           <span>
@@ -485,13 +611,31 @@ export default function VariantsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right space-x-1">
-                          <Button size="sm" variant="ghost">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => navigate(`/admin/variants/view/${variant._id}`)}
+                            title="View Details"
+                          >
                             <IconEye className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingVariantId(variant._id)
+                              setDrawerOpen(true)
+                            }}
+                            title="Edit Variant"
+                          >
                             <IconEdit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="text-red-600">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="text-red-600"
+                            onClick={() => handleDeleteVariant(variant._id)}
+                          >
                             <IconTrash className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -540,6 +684,20 @@ export default function VariantsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Variant Drawer */}
+      <VariantDrawer
+        isOpen={drawerOpen}
+        variantId={editingVariantId}
+        isEdit={!!editingVariantId}
+        onClose={() => {
+          setDrawerOpen(false)
+          setEditingVariantId(undefined)
+        }}
+        onSuccess={() => {
+          fetchVariants()
+        }}
+      />
     </AdminLayout>
   )
 }

@@ -5,8 +5,8 @@ export type { MetricCardProps } from "./metric-card"
 export { StatusBadge } from "./status-badge"
 export type { OrderStatus, InventoryStatus, ProductStatus } from "./status-badge"
 
-export { ProductForm } from "./ProductForm"
-export type { ProductFormData } from "./ProductForm"
+export { ProductFormSimplified } from "./ProductFormSimplified"
+export type { ProductFormData } from "./ProductFormSimplified"
 
 export { VariantsMatrix } from "./VariantsMatrix"
 export type { Variant } from "./VariantsMatrix"
