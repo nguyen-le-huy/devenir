@@ -111,3 +111,27 @@ export const getVariantsByCategory = async (categoryId) => {
         throw error;
     }
 };
+
+/**
+ * Lấy thông tin chi tiết của một variant theo ID
+ * Bao gồm thông tin product cha và tất cả variants cùng cha
+ * @param {string} variantId - Variant ID
+ * @returns {Promise} Object chứa variant detail, product info, và sibling variants
+ */
+export const getVariantById = async (variantId) => {
+    try {
+        // Gọi single endpoint từ backend
+        // apiClient đã unwrap response.data, nên response ở đây chính là body từ backend
+        const response = await apiClient.get(`/variants/${variantId}`);
+
+        // Backend trả về: { success: true, data: { variant, product, siblingVariants } }
+        if (response.success && response.data) {
+            return response.data;
+        }
+
+        return response;
+    } catch (error) {
+        console.error('Error fetching variant detail:', error);
+        throw error;
+    }
+};

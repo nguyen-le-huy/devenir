@@ -1,8 +1,13 @@
 import styles from './ScarfCard.module.css';
+import { Link } from 'react-router-dom';
 
 const ScarfCard = ({ scarf }) => {
     return (
-        <div className={styles.scarfCard}>
+        <Link
+            to={`/product-detail?variant=${scarf.id}`}
+            className={styles.scarfCard}
+            style={{ textDecoration: 'none', color: 'inherit' }}
+        >
             <div className={styles.imageWrapper}>
                 <img
                     src={scarf.image}
@@ -19,7 +24,7 @@ const ScarfCard = ({ scarf }) => {
                 <h4 className={styles.scarfName}>{scarf.name}</h4>
                 <p className={styles.scarfPrice}>${scarf.price}</p>
             </div>
-        </div>
+        </Link>
     );
 };
 

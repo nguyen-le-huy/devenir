@@ -436,6 +436,46 @@ export const getProductVariants = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Get variant by ID with product info and sibling variants
+ * @route   GET /api/variants/:id
+ * @access  Public
+ */
+export const getVariantById = asyncHandler(async (req, res) => {
+  const variant = await ProductVariant.findById(req.params.id);
+
+  if (!variant) {
+    return res.status(404).json({ success: false, message: 'Variant not found' });
+  }
+
+  // Get product info with nested populate for parent category
+  const product = await Product.findById(variant.product_id)
+    .populate({
+      path: 'category',
+      populate: {
+        path: 'parentCategory',
+        select: 'name'
+      }
+    })
+    .populate('brand');
+
+  if (!product) {
+    return res.status(404).json({ success: false, message: 'Product not found for this variant' });
+  }
+
+  // Get all sibling variants (same product)
+  const siblingVariants = await ProductVariant.find({ product_id: variant.product_id });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      variant,
+      product,
+      siblingVariants,
+    },
+  });
+});
+
+/**
  * @desc    Bulk update variants (Admin only)
  * @route   PUT /api/admin/variants/bulk-update
  * @access  Private/Admin
