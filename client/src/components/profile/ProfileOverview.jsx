@@ -10,9 +10,10 @@ export default function ProfileOverview({ user, onEditProfile }) {
       {/* Welcome Banner */}
       <div className={styles.welcomeBanner}>
         <div className={styles.bannerIcon}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 6V12L16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <svg width="250" height="250" viewBox="0 0 250 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="250" height="250" fill="#5C4439" />
+            <path d="M132.432 54.464C137.637 58.1333 141.691 63.168 144.592 69.568C147.493 75.968 148.944 83.2213 148.944 91.328C148.944 99.4347 147.493 106.816 144.592 113.472C141.691 120.128 137.637 125.333 132.432 129.088C129.104 131.477 125.264 133.227 120.912 134.336C116.645 135.445 111.397 136 105.168 136H71.12V134.976L81.616 133.952V49.728L71.12 48.704V47.68H105.168C116.773 47.68 125.861 49.9413 132.432 54.464ZM127.824 126.912C130.555 123.413 132.688 118.464 134.224 112.064C135.845 105.579 136.656 98.4533 136.656 90.688C136.656 83.0933 135.888 76.3947 134.352 70.592C132.901 64.7893 130.725 60.1813 127.824 56.768C125.435 53.952 122.491 51.9893 118.992 50.88C115.493 49.7707 110.501 49.216 104.016 49.216H91.472V134.464H104.016C110.843 134.464 115.963 133.909 119.376 132.8C122.789 131.691 125.605 129.728 127.824 126.912Z" fill="white" />
+            <path d="M171.192 119.112C170.595 118.685 169.613 118.429 168.248 118.344L160.44 117.704V116.68H187.704V117.704L180.536 118.344C178.403 118.515 176.867 118.941 175.928 119.624C175.075 120.221 174.307 121.501 173.624 123.464L142.264 207.048H139.96L107.576 118.728L97.08 117.704V116.68H129.08V117.704L117.944 118.728L145.08 192.84H145.592L171.576 123.464C171.917 122.611 172.088 121.8 172.088 121.032C172.088 120.179 171.789 119.539 171.192 119.112Z" fill="white" />
           </svg>
         </div>
         <div className={styles.bannerContent}>
@@ -57,7 +58,7 @@ export default function ProfileOverview({ user, onEditProfile }) {
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
           <h3 className={styles.sectionTitle}>Communication Preferences</h3>
-          <button className={styles.editBtn} onClick={() => {}}>
+          <button className={styles.editBtn} onClick={() => { }}>
             Edit
           </button>
         </div>

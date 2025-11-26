@@ -14,7 +14,13 @@ cloudinary.config({
  * @access  Private/Admin
  */
 export const uploadImage = asyncHandler(async (req, res) => {
+  console.log('=== UPLOAD IMAGE REQUEST ===');
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('File present:', !!req.file);
+  console.log('Body:', req.body);
+
   if (!req.file) {
+    console.log('ERROR: No file in request');
     return res.status(400).json({
       success: false,
       message: 'No file provided',
@@ -22,7 +28,13 @@ export const uploadImage = asyncHandler(async (req, res) => {
   }
 
   // Check Cloudinary config
-  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  const hasConfig = !!(process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET);
+
+  console.log('Cloudinary config present:', hasConfig);
+
+  if (!hasConfig) {
     console.error('Cloudinary credentials missing!');
     return res.status(500).json({
       success: false,

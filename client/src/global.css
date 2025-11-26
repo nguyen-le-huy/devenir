@@ -61,7 +61,8 @@ body {
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--light-gray);
+  scrollbar-color: #666 #2c2c2c;
+  /* thumb màu xám, track màu đen */
 }
 
 
@@ -71,7 +72,7 @@ body {
 html {
   scrollbar-width: thin;
   /* Firefox */
-  scrollbar-color: #aaa transparent;
+  scrollbar-color: #666 #2c2c2c;
 }
 
 /* Chrome, Edge, Safari */
@@ -80,20 +81,22 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
-  margin-block: 10px;
-  /* tạo khoảng cách trên/dưới để nhìn như nằm trong */
+  background: #2c2c2c;
+  /* Nền màu đen */
+  margin-block: 0px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #aaa;
+  background-color: #666;
+  /* Thumb màu xám */
   border-radius: 10px;
-  border: 2px solid transparent;
-  /* tạo khoảng cách giữa thumb và track */
+  border: 2px solid #2c2c2c;
+  /* Border màu đen để có khoảng cách */
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #666;
+  background-color: #888;
+  /* Sáng hơn khi hover */
 }
 
 

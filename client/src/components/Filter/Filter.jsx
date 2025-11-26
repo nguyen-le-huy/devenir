@@ -3,30 +3,30 @@ import styles from './Filter.module.css';
 import { lenisInstance } from '../../App'; // Import Lenis
 import { useLenisControl } from '../../hooks/useLenisControl';
 
-const Filter = ({ isOpen, onClose }) => {
+const Filter = ({
+    isOpen,
+    onClose,
+    availableColors = [],
+    colorMap = {}, // Color hex codes từ DB
+    colorCounts = {}, // Number of products per color
+    selectedSort,
+    setSelectedSort,
+    selectedColors,
+    setSelectedColors,
+    totalResults = 0
+}) => {
     const overlayRef = useRef(null);
     const [isSortByOpen, setIsSortByOpen] = useState(false);
     const [isColourOpen, setIsColourOpen] = useState(false);
-    const [selectedSort, setSelectedSort] = useState('Default');
-    const [selectedColours, setSelectedColours] = useState([]);
 
     const sortOptions = ['Default', 'Price High', 'Price Low', 'New In'];
 
-    const colourOptions = [
-        { name: 'Pink', code: '#D4A5A5', count: 9 },
-        { name: 'Purple', code: '#4A3F5C', count: 6 },
-        { name: 'Multicoloured', code: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)', count: 3 },
-        { name: 'Orange', code: '#C85A3F', count: 1 },
-        { name: 'Yellow', code: '#E8C547', count: 1 },
-        { name: 'Black', code: '#000000', count: 20 },
-        { name: 'Beige', code: '#C4A68A', count: 15 },
-        { name: 'Blue', code: '#2E4057', count: 25 },
-        { name: 'Brown', code: '#6B4423', count: 34 },
-        { name: 'Green', code: '#3F5F3F', count: 17 },
-        { name: 'Grey', code: '#6B6B6B', count: 41 },
-        { name: 'Red', code: '#8B3A3A', count: 27 },
-        { name: 'White', code: '#FFFFFF', count: 2 },
-    ];
+    // Generate color options từ availableColors + colorMap từ DB
+    const colourOptions = availableColors.map(colorName => ({
+        name: colorName,
+        code: colorMap[colorName] || '#CCCCCC', // Lấy hex từ DB hoặc default
+        count: colorCounts[colorName] || 0, // Số lượng sản phẩm
+    }));
 
     // Handle click outside to close filter
     useEffect(() => {
@@ -84,17 +84,48 @@ const Filter = ({ isOpen, onClose }) => {
     // Handle sort option selection
     const handleSelectSort = (option) => {
         setSelectedSort(option);
+        // Scroll to top để xem kết quả filter
+        scrollToTop();
     };
 
     // Handle colour selection (multi-select)
     const handleSelectColour = (colourName) => {
-        setSelectedColours(prev => {
+        setSelectedColors(prev => {
             if (prev.includes(colourName)) {
                 return prev.filter(c => c !== colourName);
             } else {
                 return [...prev, colourName];
             }
         });
+        // Scroll to top để xem kết quả filter
+        scrollToTop();
+    };
+
+    // Handle clear all filters
+    const handleClearAll = () => {
+        setSelectedSort('Default');
+        setSelectedColors([]);
+        // Scroll to top khi clear
+        scrollToTop();
+    };
+
+    // Scroll to top helper
+    const scrollToTop = () => {
+        // Use Lenis if available, otherwise fallback to window.scrollTo
+        if (lenisInstance) {
+            lenisInstance.scrollTo(0, { immediate: true, force: true });
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
+        // Fallback after small delay
+        setTimeout(() => {
+            if (lenisInstance) {
+                lenisInstance.scrollTo(0, { immediate: true, force: true });
+            }
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        }, 0);
     };
 
     if (!isOpen) return null;
@@ -105,7 +136,7 @@ const Filter = ({ isOpen, onClose }) => {
             <div className={styles.backdrop} onClick={onClose}></div>
 
             {/* Filter Panel */}
-            <div ref={overlayRef} className={`${styles.overlayFilter} ${isOpen ? styles.show : ''}`}>
+            <div ref={overlayRef} className={`${styles.overlayFilter} ${isOpen ? styles.show : ''} `}>
                 <div className={styles.box}>
                     <div className={styles.header}>
                         <span>Filter & Sort</span>
@@ -188,7 +219,7 @@ const Filter = ({ isOpen, onClose }) => {
                                             >
                                                 <div className={styles.colourSwatchWrapper}>
                                                     <div
-                                                        className={`${styles.colourSwatch} ${colour.name === 'White' ? styles.whiteSwatch : ''}`}
+                                                        className={`${styles.colourSwatch} ${colour.name === 'White' ? styles.whiteSwatch : ''} `}
                                                         style={{
                                                             background: colour.code.includes('gradient')
                                                                 ? colour.code
@@ -198,7 +229,10 @@ const Filter = ({ isOpen, onClose }) => {
                                                 </div>
                                                 <div className={styles.colourInfo}>
                                                     <span className={styles.colourName}>{colour.name}</span>
-                                                    <span className={styles.colourCount}>{colour.count}</span>
+                                                    <span className={styles.colourCount}>
+                                                        {colour.count}
+                                                        {selectedColors.includes(colour.name) && ' ✓'}
+                                                    </span>
                                                 </div>
                                             </label>
                                         ))}
@@ -208,9 +242,12 @@ const Filter = ({ isOpen, onClose }) => {
                         </div>
                     </div>
                 </div>
-                <button className={styles.showButton}>
-                    Show 210 results
-                </button>
+                <div className={styles.buttonList}>
+                    <span className={styles.clearAll} onClick={handleClearAll}>Clear All</span>
+                    <button className={styles.showButton} onClick={onClose}>
+                        Show {totalResults} results
+                    </button>
+                </div>
             </div>
         </>
     );

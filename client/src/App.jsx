@@ -18,6 +18,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import ProductDetail from './pages/ProductDetail/ProductDetail.jsx';
 import Checkout from './pages/Checkout/Checkout';
+import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -66,6 +67,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <Routes>
             {/* ✅ Routes KHÔNG cần Layout */}
@@ -78,7 +80,7 @@ function App() {
               <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
               <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
               <Route path="/" element={<HomePage />} />
-              <Route path="/scarves" element={<ProductByCategory />} />
+              <Route path="/products" element={<ProductByCategory />} />
               <Route path="/product-detail" element={<ProductDetail />} />
               <Route path="*" element={<HomePage />} />
             </Route>

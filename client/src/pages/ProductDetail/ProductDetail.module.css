@@ -101,6 +101,7 @@
 .colourSquare {
     width: 20px;
     height: 20px;
+    border: 1px solid var(--black);
 }
 
 .colourVarients {

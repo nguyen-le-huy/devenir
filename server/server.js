@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
+import variantRoutes from './routes/variantRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import colorRoutes from './routes/colorRoutes.js';
@@ -25,6 +26,7 @@ const allowedOrigins = [
   'http://127.0.0.1:5174',
   'https://devenir-demo.vercel.app',
   'https://devenir-demo-*.vercel.app', // Preview deployments với wildcard
+  'https://devenir-admin.vercel.app',
   'https://devenir.shop', // Domain chính
   'https://www.devenir.shop', // Subdomain www
   'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net' // Thêm Tailscale domain
@@ -64,6 +66,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/variants', variantRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/colors', colorRoutes);

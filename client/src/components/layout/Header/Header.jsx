@@ -1,10 +1,11 @@
 import styles from "./Header.module.css";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import UserMenu from "../../UserMenu/UserMenu";
 import Search from "../../Search/Search";
 import Bag from "../../Bag/Bag";
+import { getMainCategories } from "../../../services/categoryService";
 
 const Header = () => {
     const navigate = useNavigate();
@@ -14,6 +15,25 @@ const Header = () => {
     const [isBagOpen, setIsBagOpen] = useState(false);
     const bagTimeoutRef = useRef(null);
     const [bagCount, setBagCount] = useState(2);
+    const [categories, setCategories] = useState([]);
+
+    // Fetch categories khi component mount
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await getMainCategories();
+                if (response.data) {
+                    setCategories(response.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch categories:', error);
+                // Nếu có lỗi, giữ categories là mảng rỗng
+                setCategories([]);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     const handleBagMouseEnter = () => {
         if (bagTimeoutRef.current) {
@@ -58,6 +78,11 @@ const Header = () => {
         setIsSearchOpen(false);
     };
 
+    const handleCategoryClick = (categoryId) => {
+        navigate(`/products?category=${categoryId}`);
+    };
+
+
     return (
         <>
             <div className={`${styles.topBar} container`}>
@@ -86,11 +111,18 @@ const Header = () => {
                         <path d="M19.1599 2.12001C20.7866 3.26667 22.0532 4.84 22.9599 6.84C23.8666 8.84 24.3199 11.1067 24.3199 13.64C24.3199 16.1733 23.8666 18.48 22.9599 20.56C22.0532 22.64 20.7866 24.2667 19.1599 25.44C18.1199 26.1867 16.9199 26.7333 15.5599 27.08C14.2266 27.4267 12.5866 27.6 10.6399 27.6H-9.7543e-05V27.28L3.2799 26.96V0.640005L-9.7543e-05 0.320004V3.8147e-06H10.6399C14.2666 3.8147e-06 17.1066 0.706671 19.1599 2.12001ZM17.7199 24.76C18.5732 23.6667 19.2399 22.12 19.7199 20.12C20.2266 18.0933 20.4799 15.8667 20.4799 13.44C20.4799 11.0667 20.2399 8.97334 19.7599 7.16C19.3066 5.34667 18.6266 3.90667 17.7199 2.84001C16.9732 1.96001 16.0532 1.34667 14.9599 1.00001C13.8666 0.653338 12.3066 0.480005 10.2799 0.480005H6.3599V27.12H10.2799C12.4132 27.12 14.0132 26.9467 15.0799 26.6C16.1466 26.2533 17.0266 25.64 17.7199 24.76ZM48.4905 19.2L47.4905 27.6H27.8905V27.28L31.1705 26.96V0.640005L27.8905 0.320004V3.8147e-06H47.5305L48.0905 7.52L47.6905 7.56L45.4505 1.96C45.2105 1.34667 44.9439 0.946672 44.6505 0.760006C44.3839 0.573339 43.9305 0.480005 43.2905 0.480005H34.2505V12.76H40.1705C40.8105 12.76 41.2639 12.6533 41.5305 12.44C41.7972 12.2267 41.9839 11.8133 42.0905 11.2L42.7705 7.96001H43.2505V18.2H42.7705L42.0905 14.96C41.9839 14.3467 41.7972 13.9333 41.5305 13.72C41.2639 13.5067 40.8105 13.4 40.1705 13.4H34.2505V27.12H43.2105C43.8505 27.12 44.3172 27.0267 44.6105 26.84C44.9039 26.6267 45.1705 26.2267 45.4105 25.64L48.0505 19.16L48.4905 19.2ZM73.2255 0.760006C73.0389 0.626671 72.7322 0.546671 72.3055 0.520004L69.8655 0.320004V3.8147e-06H78.3855V0.320004L76.1455 0.520004C75.4789 0.573339 74.9989 0.706672 74.7055 0.920004C74.4389 1.10667 74.1989 1.50667 73.9855 2.12001L64.1855 28.24H63.4655L53.3455 0.640005L50.0655 0.320004V3.8147e-06H60.0655V0.320004L56.5855 0.640005L65.0655 23.8H65.2255L73.3455 2.12001C73.4522 1.85334 73.5055 1.60001 73.5055 1.36001C73.5055 1.09334 73.4122 0.893339 73.2255 0.760006ZM99.1937 19.2L98.1937 27.6H78.5937V27.28L81.8737 26.96V0.640005L78.5937 0.320004V3.8147e-06H98.2337L98.7937 7.52L98.3937 7.56L96.1537 1.96C95.9137 1.34667 95.647 0.946672 95.3537 0.760006C95.087 0.573339 94.6337 0.480005 93.9937 0.480005H84.9537V12.76H90.8737C91.5137 12.76 91.967 12.6533 92.2337 12.44C92.5003 12.2267 92.687 11.8133 92.7937 11.2L93.4737 7.96001H93.9537V18.2H93.4737L92.7937 14.96C92.687 14.3467 92.5003 13.9333 92.2337 13.72C91.967 13.5067 91.5137 13.4 90.8737 13.4H84.9537V27.12H93.9137C94.5537 27.12 95.0203 27.0267 95.3137 26.84C95.607 26.6267 95.8737 26.2267 96.1137 25.64L98.7537 19.16L99.1937 19.2ZM130.284 3.8147e-06V0.320004L127.404 0.640005C126.764 0.720006 126.337 0.880005 126.124 1.12C125.911 1.36 125.804 1.8 125.804 2.44001V28.24H125.404L107.444 2.76H107.284V25.16C107.284 25.8 107.364 26.2533 107.524 26.52C107.684 26.76 108.004 26.9067 108.484 26.96L111.324 27.28V27.6H102.564V27.28L105.444 26.96C105.924 26.9067 106.244 26.76 106.404 26.52C106.564 26.2533 106.644 25.8 106.644 25.16V1.88001L106.484 1.64C106.111 1.10667 105.751 0.760005 105.404 0.600006C105.084 0.413338 104.604 0.320004 103.964 0.320004H103.284V3.8147e-06H109.244L125.004 22.08H125.164V2.44001C125.164 1.8 125.084 1.34667 124.924 1.08C124.764 0.813338 124.444 0.666671 123.964 0.640005L120.724 0.320004V3.8147e-06H130.284ZM132.539 3.8147e-06H142.179V0.320004L138.899 0.640005V26.96L142.179 27.28V27.6H132.539V27.28L135.819 26.96V0.640005L132.539 0.320004V3.8147e-06ZM169.671 27.28V27.6H165.551C164.911 27.6 164.431 27.5067 164.111 27.32C163.791 27.1333 163.457 26.7733 163.111 26.24L156.991 16.36C156.617 15.7467 156.297 15.3733 156.031 15.24C155.791 15.08 155.351 15 154.711 15H151.751V26.96L155.231 27.28V27.6H145.391V27.28L148.671 26.96V0.640005L145.391 0.320004V3.8147e-06H155.511C158.657 3.8147e-06 161.057 0.640004 162.711 1.92001C164.364 3.17334 165.191 5.00001 165.191 7.40001C165.191 9.26667 164.684 10.8 163.671 12C162.657 13.2 161.191 14.0267 159.271 14.48H159.311L166.631 25.92C166.977 26.4533 167.311 26.8133 167.631 27C167.977 27.1867 168.471 27.28 169.111 27.28H169.671ZM151.751 0.480005V14.4H155.391C157.524 14.4 159.097 13.84 160.111 12.72C161.151 11.5733 161.671 9.82667 161.671 7.48001C161.671 5.10667 161.151 3.34667 160.111 2.2C159.071 1.05334 157.497 0.480005 155.391 0.480005H151.751Z" fill="#0E0E0E" />
                     </svg>
                     <ul className={styles.links}>
-                        <li className={styles.link}>Jackets</li>
-                        <li className={styles.link}>Pants</li>
-                        <li className={styles.link}>Sweaters</li>
-                        <li className={styles.link}>Shirts</li>
-                        <li className={styles.link}><a href="/scarves">Scarves</a></li>
+                        {/* Render categories từ API */}
+                        {categories.map((category) => (
+                            <li
+                                key={category._id}
+                                className={styles.link}
+                                onClick={() => handleCategoryClick(category._id)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                {category.name}
+                            </li>
+                        ))}
+                        {/* Giữ nguyên Gallery và Contact */}
                         <li className={styles.link}>Gallery</li>
                         <li className={styles.link}>Contact</li>
                     </ul>
@@ -137,11 +169,21 @@ const Header = () => {
                             </svg>
                         </div>
                         <ul className={styles.overlayTopLinks}>
-                            <li className={styles.overlayTopLink}>Jackets</li>
-                            <li className={styles.overlayTopLink}>Pants</li>
-                            <li className={styles.overlayTopLink}>Sweaters</li>
-                            <li className={styles.overlayTopLink}>Shirts</li>
-                            <li className={styles.overlayTopLink}><a href="/scarves">Scarves</a></li>
+                            {/* Render categories từ API */}
+                            {categories.map((category) => (
+                                <li
+                                    key={category._id}
+                                    className={styles.overlayTopLink}
+                                    onClick={() => {
+                                        handleCategoryClick(category._id);
+                                        handleCloseMenu();
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {category.name}
+                                </li>
+                            ))}
+                            {/* Giữ nguyên Gallery và Contact */}
                             <li className={styles.overlayTopLink}>Gallery</li>
                             <li className={styles.overlayTopLink}>Contact</li>
                         </ul>
