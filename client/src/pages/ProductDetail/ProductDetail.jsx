@@ -195,7 +195,7 @@ export default function ProductDetail() {
                 >
                     <div className={styles.box1}>
                         <div className={styles.productInfo}>
-                            <p className={styles.type}>{variant?.category?.parentCategory?.name || variant?.category?.name || product.category?.parentCategory?.name || product.category?.name || 'Product'}</p>
+                            <p className={styles.type}>New In</p>
                             <div className={styles.nameAndPrice}>
                                 <h2 className={styles.name}>{product.name}</h2>
                                 <p className={styles.price}>${variant.price}</p>
