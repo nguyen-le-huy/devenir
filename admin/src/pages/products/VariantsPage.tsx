@@ -50,14 +50,6 @@ interface Color {
   isActive: boolean
 }
 
-interface QuickStats {
-  totalSkus: number
-  inStock: number
-  lowStock: number
-  outOfStock: number
-  inventoryValue: number
-}
-
 export default function VariantsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -87,7 +79,7 @@ export default function VariantsPage() {
 
     variants.forEach((v) => {
       const stockQty = (v as any).stock ?? (v as any).quantity ?? 0
-      
+
       if (stockQty === 0) {
         outOfStock++
       } else if (stockQty <= v.lowStockThreshold) {
@@ -143,26 +135,26 @@ export default function VariantsPage() {
 
       // Check if backend already includes productName
       const hasProductName = variantsList.length > 0 && variantsList[0].productName
-      
+
       if (!hasProductName) {
         console.warn('⚠️ Backend missing productName, fetching products to enrich...')
-        
+
         // Fetch all products
         const productsRes = await axiosInstance.get('/products?limit=500')
         const productsList = productsRes.data.data || []
-        
+
         // Create product map for fast lookup
         const productMap = new Map()
         productsList.forEach((p: any) => {
           productMap.set(p._id, p.name)
         })
-        
+
         // Enrich variants with product names
         enrichedVariants = variantsList.map((v: any) => ({
           ...v,
           productName: productMap.get(v.product_id || v.product) || '',
         }))
-        
+
         console.log('✅ Enriched with product names:', enrichedVariants[0]?.productName)
       }
 
@@ -220,7 +212,7 @@ export default function VariantsPage() {
   const getInventoryValueFontSize = () => {
     const value = quickStats.inventoryValue.toLocaleString('en-US', { maximumFractionDigits: 0 })
     const length = value.length
-    
+
     if (length <= 10) return 'text-2xl'
     if (length <= 13) return 'text-xl'
     if (length <= 16) return 'text-lg'
@@ -371,10 +363,10 @@ export default function VariantsPage() {
           const csv = event.target.result
           const lines = csv.split("\n").filter((line: string) => line.trim())
           const headers = lines[0].split(",").map((h: string) => h.trim().toLowerCase())
-          
+
           const requiredColumns = ["sku", "size", "color", "price", "stock"]
           const missingCols = requiredColumns.filter((col) => !headers.includes(col))
-          
+
           if (missingCols.length > 0) {
             alert(`Missing required columns: ${missingCols.join(", ")}`)
             return
@@ -486,7 +478,7 @@ export default function VariantsPage() {
               <CardTitle>Filters & Search</CardTitle>
               {/* Mobile Actions - Show on small screens */}
               <div className="sm:hidden flex items-center gap-2">
-                <Button 
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={handleImportCSV}
@@ -494,7 +486,7 @@ export default function VariantsPage() {
                 >
                   <IconFileImport className="h-4 w-4" />
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   size="sm"
                   onClick={handleExportCSV}
@@ -502,7 +494,7 @@ export default function VariantsPage() {
                 >
                   <IconFileExport className="h-4 w-4" />
                 </Button>
-                <Button 
+                <Button
                   size="sm"
                   onClick={() => {
                     setEditingVariantId(undefined)
@@ -536,7 +528,7 @@ export default function VariantsPage() {
                   <IconFileExport className="mr-1 h-4 w-4" />
                   Export
                 </Button>
-                <Button 
+                <Button
                   size="sm"
                   onClick={() => {
                     setEditingVariantId(undefined)
@@ -826,18 +818,18 @@ export default function VariantsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right space-x-1">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="ghost"
-                            onClick={() => navigate(`/admin/variants/view/${variant._id}`, { 
-                              state: { variantData: variant } 
+                            onClick={() => navigate(`/admin/variants/view/${variant._id}`, {
+                              state: { variantData: variant }
                             })}
                             title="View Details"
                           >
                             <IconEye className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="ghost"
                             onClick={() => {
                               setEditingVariantId(variant._id)
@@ -847,9 +839,9 @@ export default function VariantsPage() {
                           >
                             <IconEdit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             className="text-red-600"
                             onClick={() => handleDeleteVariant(variant._id)}
                           >

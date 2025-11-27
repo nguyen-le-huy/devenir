@@ -6,9 +6,7 @@ import { defineConfig } from "vite"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react({
-      fastRefresh: true,
-    }), 
+    react(),
     tailwindcss()
   ],
   resolve: {
@@ -41,7 +39,10 @@ export default defineConfig({
         drop_console: true,
         drop_debugger: true,
       },
-    },
+      format: {
+        comments: false,
+      },
+    } as any,
     sourcemap: false,
   },
   optimizeDeps: {
