@@ -9,6 +9,7 @@ import { getAllColors, createColorMap } from '../../services/colorService.js';
 import Loading from '../../components/Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
+import ColourVarients from '../../components/ColourVarients/ColourVarients.jsx';
 
 export default function ProductDetail() {
     const [searchParams] = useSearchParams();
@@ -19,6 +20,7 @@ export default function ProductDetail() {
     const [isMobile, setIsMobile] = useState(false);
     const [activeSlide, setActiveSlide] = useState(0);
     const [totalSlides, setTotalSlides] = useState(4);
+    const [isColourVariantsOpen, setIsColourVariantsOpen] = useState(false);
 
     // Product data states
     const [loading, setLoading] = useState(true);
@@ -206,7 +208,7 @@ export default function ProductDetail() {
                                 <span className={styles.colourSquare} style={{ backgroundColor: currentColorHex }}></span>
                                 <p>{currentColorName}</p>
                             </div>
-                            <div className={styles.colourVarients}>
+                            <div className={styles.colourVarients} onClick={() => setIsColourVariantsOpen(true)} style={{ cursor: 'pointer' }}>
                                 <p>{colorCount} {colorCount === 1 ? 'colour' : 'colours'}</p>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="9" viewBox="0 0 14 9" fill="none">
                                     <path d="M11.5625 1.5625L6.5625 6.5625L1.5625 1.5625" stroke="#0E0E0E" strokeWidth="3.125" strokeLinecap="round" strokeLinejoin="round" />
@@ -291,6 +293,13 @@ export default function ProductDetail() {
                 viewAllLink="#"
                 products={relatedProducts}
                 showViewAll={false}
+            />
+            <ColourVarients
+                isOpen={isColourVariantsOpen}
+                onClose={() => setIsColourVariantsOpen(false)}
+                siblingVariants={siblingVariants}
+                currentVariantId={variantId}
+                colorMap={colorMap}
             />
         </div>
     );
