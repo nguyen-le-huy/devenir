@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import React, { useState, useMemo, useCallback } from "react"
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom"
+import axiosInstance from "@/services/axiosConfig"
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,9 +23,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconPlus, IconSearch, IconFileImport, IconFileExport, IconEdit, IconTrash, IconEye } from "@tabler/icons-react"
-import axiosInstance from "@/services/axiosConfig"
 import { useDebounce } from "@/hooks/useDebounce"
-import { apiCache } from "@/utils/performance"
+import { useVariantsQuery, useDeleteVariant } from "@/hooks/useVariantsQuery"
+import { useProductsQuery } from "@/hooks/useProductsQuery"
+import { useColorsQuery } from "@/hooks/useColorsQuery"
 
 interface Variant {
   _id: string
@@ -52,23 +54,37 @@ interface Color {
 
 export default function VariantsPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const [variants, setVariants] = useState<Variant[]>([])
-  const [loading, setLoading] = useState(true)
+  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [searchTerm, setSearchTerm] = useState("")
   const [filterProduct, setFilterProduct] = useState("all")
   const [filterSize, setFilterSize] = useState("all")
   const [filterColor, setFilterColor] = useState("all")
   const [filterStockStatus, setFilterStockStatus] = useState("all")
-  const [products, setProducts] = useState<any[]>([])
-  const [colors, setColors] = useState<Color[]>([])
-  const [page, setPage] = useState(1)
+  
+  // Initialize page from URL search params (preserves state on navigation)
+  const initialPage = parseInt(searchParams.get('page') || '1', 10)
+  const [page, setPage] = useState(initialPage)
   const [limit] = useState(10)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingVariantId, setEditingVariantId] = useState<string | undefined>()
 
   // Debounce search for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  // Fetch data with React Query - STABLE CACHE KEY (no filters in query)
+  // All filtering happens client-side to maintain cache stability
+  const { data: variantsData, isLoading: variantsLoading } = useVariantsQuery({
+    limit: 500, // Fetch all variants once
+  })
+
+  const { data: productsData } = useProductsQuery({ limit: 100 })
+  const { data: colors = [] } = useColorsQuery()
+  const deleteVariantMutation = useDeleteVariant()
+
+  const variants = variantsData?.data || []
+  const products = productsData?.data || []
+  const loading = variantsLoading
 
   // Memoize quick stats calculation
   const quickStats = useMemo(() => {
@@ -99,115 +115,13 @@ export default function VariantsPage() {
     }
   }, [variants])
 
-  useEffect(() => {
-    fetchVariants()
-    fetchProducts()
-    fetchColors()
-  }, [])
-
-  useEffect(() => {
-    const editId = searchParams.get('edit')
-    if (editId) {
-      setEditingVariantId(editId)
-      setDrawerOpen(true)
-      navigate('/admin/variants', { replace: true })
-    }
-  }, [searchParams, navigate])
-
-  const fetchVariants = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await axiosInstance.get("/products/admin/variants?limit=500")
-      const variantsList = response.data.data || []
-
-      console.log('✅ Fetched variants count:', variantsList.length)
-      if (variantsList.length > 0) {
-        console.log('📦 First variant sample:', {
-          _id: variantsList[0]._id,
-          sku: variantsList[0].sku,
-          productName: variantsList[0].productName,
-          product_id: variantsList[0].product_id,
-        })
-      }
-
-      // If productName is missing from backend, fetch products and map manually
-      let enrichedVariants = variantsList
-
-      // Check if backend already includes productName
-      const hasProductName = variantsList.length > 0 && variantsList[0].productName
-
-      if (!hasProductName) {
-        console.warn('⚠️ Backend missing productName, fetching products to enrich...')
-
-        // Fetch all products
-        const productsRes = await axiosInstance.get('/products?limit=500')
-        const productsList = productsRes.data.data || []
-
-        // Create product map for fast lookup
-        const productMap = new Map()
-        productsList.forEach((p: any) => {
-          productMap.set(p._id, p.name)
-        })
-
-        // Enrich variants with product names
-        enrichedVariants = variantsList.map((v: any) => ({
-          ...v,
-          productName: productMap.get(v.product_id || v.product) || '',
-        }))
-
-        console.log('✅ Enriched with product names:', enrichedVariants[0]?.productName)
-      }
-
-      const variantsWithStock = enrichedVariants.map((v: any) => ({
-        ...v,
-        stock: v.stock ?? v.quantity ?? 0,
-      }))
-
-      // Cache the variants
-      apiCache.set('variants', variantsWithStock)
-      setVariants(variantsWithStock)
-    } catch (error) {
-      console.error("❌ Error fetching variants:", error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const fetchProducts = useCallback(async () => {
-    // Check cache first
-    const cached = apiCache.get<any[]>('products')
-    if (cached) {
-      setProducts(cached)
-      return
-    }
-
-    try {
-      const response = await axiosInstance.get("/products?limit=500")
-      const productsData = response.data.data || []
-      setProducts(productsData)
-      apiCache.set('products', productsData)
-    } catch (error) {
-      console.error("Error fetching products:", error)
-    }
-  }, [])
-
-  const fetchColors = useCallback(async () => {
-    // Check cache first
-    const cached = apiCache.get<Color[]>('colors')
-    if (cached) {
-      setColors(cached)
-      return
-    }
-
-    try {
-      const response = await axiosInstance.get("/colors")
-      const colorsData = response.data.data || []
-      setColors(colorsData)
-      apiCache.set('colors', colorsData)
-    } catch (error) {
-      console.error("Error fetching colors:", error)
-    }
-  }, [])
+  // Auto-open drawer if edit param exists (without resetting page)
+  const editId = searchParams.get('edit')
+  if (editId && !drawerOpen) {
+    setEditingVariantId(editId)
+    setDrawerOpen(true)
+    // Don't navigate - preserve URL params including page
+  }
 
   const getInventoryValueFontSize = () => {
     const value = quickStats.inventoryValue.toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -218,6 +132,46 @@ export default function VariantsPage() {
     if (length <= 16) return 'text-lg'
     return 'text-base'
   }
+
+  // Sync page to URL search params
+  React.useEffect(() => {
+    const currentPage = searchParams.get('page')
+    if (currentPage !== page.toString()) {
+      setSearchParams({ page: page.toString() }, { replace: true })
+    }
+  }, [page, searchParams, setSearchParams])
+
+  // Reset page to 1 when filters change
+  const prevFiltersRef = React.useRef({ debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus })
+  React.useEffect(() => {
+    const prev = prevFiltersRef.current
+    const hasFilterChanged = 
+      prev.debouncedSearchTerm !== debouncedSearchTerm ||
+      prev.filterProduct !== filterProduct ||
+      prev.filterSize !== filterSize ||
+      prev.filterColor !== filterColor ||
+      prev.filterStockStatus !== filterStockStatus
+    
+    if (hasFilterChanged) {
+      setPage(1) // Only reset page when filters actually change
+      prevFiltersRef.current = { debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus }
+    }
+  }, [debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus])
+
+  // Handle direct URL navigation to edit variant
+  React.useEffect(() => {
+    const editMatch = location.pathname.match(/\/admin\/variants\/edit\/([a-fA-F0-9]+)/)
+    if (editMatch && variants.length > 0) {
+      const variantId = editMatch[1]
+      const variant = variants.find((v) => v._id === variantId)
+      if (variant) {
+        setEditingVariantId(variantId)
+        setDrawerOpen(true)
+      } else {
+        console.warn(`Variant with ID ${variantId} not found in cache`)
+      }
+    }
+  }, [location.pathname, variants])
 
   // Memoize filtered variants to avoid recalculation on every render
   const filteredVariants = useMemo(() => {
@@ -276,7 +230,7 @@ export default function VariantsPage() {
   const getColorDisplay = useCallback((colorName: string | null) => {
     if (!colorName) return '-'
 
-    const colorInfo = colors.find((c) => c.name === colorName)
+    const colorInfo = colors.find((c: Color) => c.name === colorName)
     const hexCode = colorInfo?.hex || '#CCCCCC'
 
     return (
@@ -311,7 +265,7 @@ export default function VariantsPage() {
 
   // Memoize unique sizes and colors
   const sizes = useMemo(() => [...new Set(variants.map((v) => v.size))].sort(), [variants])
-  const colorOptions = useMemo(() => colors.map((c) => c.name).sort(), [colors])
+  const colorOptions = useMemo(() => colors.map((c: Color) => c.name).sort(), [colors])
 
   // Handle CSV Export
   const handleExportCSV = useCallback(() => {
@@ -384,7 +338,7 @@ export default function VariantsPage() {
           // Validate and create variants
           for (const variant of importedVariants) {
             try {
-              const colorObj = colors.find((c) => c.name === variant.color)
+              const colorObj = colors.find((c: Color) => c.name === variant.color)
               await axiosInstance.post("/products/admin/variants", {
                 sku: variant.sku,
                 size: variant.size,
@@ -398,7 +352,7 @@ export default function VariantsPage() {
           }
 
           alert(`Imported ${importedVariants.length} variants successfully!`)
-          fetchVariants()
+          // React Query will auto-refetch after mutation
         } catch (error) {
           console.error("Error reading CSV:", error)
           alert("Failed to import CSV")
@@ -407,24 +361,20 @@ export default function VariantsPage() {
       reader.readAsText(file)
     }
     input.click()
-  }, [fetchVariants, colors])
+  }, [colors])
 
-  // Handle Delete Variant
-  const handleDeleteVariant = useCallback(async (variantId: string) => {
+  // Handle Delete Variant with React Query mutation
+  const handleDeleteVariant = async (variantId: string) => {
     if (confirm("Are you sure you want to delete this variant? This action cannot be undone.")) {
       try {
-        await axiosInstance.delete(`/products/admin/variants/${variantId}`)
-        const updatedVariants = variants.filter((v) => v._id !== variantId)
-        setVariants(updatedVariants)
-        // Clear cache to force refresh
-        apiCache.clear('variants')
+        await deleteVariantMutation.mutateAsync(variantId)
         alert("Variant deleted successfully")
       } catch (error) {
         console.error("Error deleting variant:", error)
         alert("Failed to delete variant")
       }
     }
-  }, [variants])
+  }
 
   return (
     <AdminLayout>
@@ -586,8 +536,8 @@ export default function VariantsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Colors</SelectItem>
-                    {colorOptions.map((colorName) => {
-                      const colorInfo = colors.find((c) => c.name === colorName)
+                    {colorOptions.map((colorName: string) => {
+                      const colorInfo = colors.find((c: Color) => c.name === colorName)
                       const hexCode = colorInfo?.hex || '#CCCCCC'
                       return (
                         <SelectItem key={colorName} value={colorName}>
@@ -684,8 +634,8 @@ export default function VariantsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Colors</SelectItem>
-                      {colorOptions.map((colorName) => {
-                        const colorInfo = colors.find((c) => c.name === colorName)
+                      {colorOptions.map((colorName: string) => {
+                        const colorInfo = colors.find((c: Color) => c.name === colorName)
                         const hexCode = colorInfo?.hex || '#CCCCCC'
                         return (
                           <SelectItem key={colorName} value={colorName}>
@@ -821,7 +771,7 @@ export default function VariantsPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => navigate(`/admin/variants/view/${variant._id}`, {
+                            onClick={() => navigate(`/admin/variants/view/${variant._id}?page=${page}`, {
                               state: { variantData: variant }
                             })}
                             title="View Details"
@@ -834,6 +784,8 @@ export default function VariantsPage() {
                             onClick={() => {
                               setEditingVariantId(variant._id)
                               setDrawerOpen(true)
+                              // Update URL to preserve page when navigating to edit
+                              navigate(`/admin/variants/edit/${variant._id}?page=${page}`)
                             }}
                             title="Edit Variant"
                           >
@@ -903,9 +855,15 @@ export default function VariantsPage() {
         onClose={() => {
           setDrawerOpen(false)
           setEditingVariantId(undefined)
+          // Navigate back to list with preserved page
+          navigate(`/admin/variants?page=${page}`)
         }}
         onSuccess={() => {
-          fetchVariants()
+          // React Query will auto-refetch after mutation
+          setDrawerOpen(false)
+          setEditingVariantId(undefined)
+          // Navigate back to list with preserved page
+          navigate(`/admin/variants?page=${page}`)
         }}
       />
     </AdminLayout>

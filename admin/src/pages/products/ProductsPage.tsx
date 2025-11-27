@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
-import axiosInstance from "@/services/axiosConfig"
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,96 +23,83 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import ProductFormSimplified, { type ProductFormData } from "@/components/ProductFormSimplified"
-import { useProducts } from "@/hooks/useProducts"
+import { useProductsQuery, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/useProductsQuery"
+import { useVariantsQuery } from "@/hooks/useVariantsQuery"
+import { useCategoriesQuery } from "@/hooks/useCategoriesQuery"
 import { useDebounce } from "@/hooks/useDebounce"
-import { apiCache } from "@/utils/performance"
 
 export default function ProductsPage() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
-  const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
-  const [variantsMap, setVariantsMap] = useState<{ [key: string]: any[] }>({})
-  const [page, setPage] = useState(1)
+  
+  // Initialize page from URL search params (preserves state on navigation)
+  const initialPage = parseInt(searchParams.get('page') || '1', 10)
+  const [page, setPage] = useState(initialPage)
   const [itemsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [categories, setCategories] = useState<any[]>([])
-  const { products, loading, fetchProducts, createProduct, updateProduct, deleteProduct } = useProducts()
 
   // Debounce search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  // Fetch data with React Query - PERSISTENT CACHE!
+  const { data: productsData, isLoading: productsLoading } = useProductsQuery({ limit: 100 })
+  const { data: variantsData } = useVariantsQuery({ limit: 500 })
+  const { data: categories = [] } = useCategoriesQuery()
+  const createProductMutation = useCreateProduct()
+  const updateProductMutation = useUpdateProduct()
+  const deleteProductMutation = useDeleteProduct()
+
+  const products = productsData?.data || []
+  const allVariants = variantsData?.data || []
+  const loading = productsLoading
+
+  // Group variants by product_id for easy lookup
+  const variantsMap = useMemo(() => {
+    const map: { [key: string]: any[] } = {}
+    allVariants.forEach((variant: any) => {
+      const productId = variant.product_id || variant.product
+      if (!map[productId]) {
+        map[productId] = []
+      }
+      map[productId].push(variant)
+    })
+    return map
+  }, [allVariants])
+
+  // Sync page to URL search params
+  useEffect(() => {
+    const currentPage = searchParams.get('page')
+    if (currentPage !== page.toString()) {
+      setSearchParams({ page: page.toString() }, { replace: true })
+    }
+  }, [page, searchParams, setSearchParams])
 
   useEffect(() => {
     // Auto-open form if URL is /new
     if (location.pathname === '/admin/products/new') {
       setIsFormOpen(true)
       setEditingProduct(null)
-    }
-    loadProducts()
-    loadCategories()
-  }, [location.pathname])
-
-  const loadCategories = useCallback(async () => {
-    // Check cache first
-    const cached = apiCache.get<any[]>('categories')
-    if (cached) {
-      setCategories(cached)
       return
     }
 
-    try {
-      const response = await axiosInstance.get('/categories?limit=100&isActive=true')
-      const categoriesData = response.data?.data || response.data || []
-      setCategories(categoriesData)
-      apiCache.set('categories', categoriesData)
-    } catch (error) {
-      console.error('Error loading categories:', error)
+    // Handle edit URL: /admin/products/edit/:id
+    const editMatch = location.pathname.match(/\/admin\/products\/edit\/([a-fA-F0-9]+)/)
+    if (editMatch && products.length > 0) {
+      const productId = editMatch[1]
+      const product = products.find((p) => p._id === productId)
+      if (product) {
+        setEditingProduct(product)
+        setIsFormOpen(true)
+      } else {
+        console.warn(`Product with ID ${productId} not found in cache`)
+      }
     }
-  }, [])
-
-  // Optimize: Only fetch variants when products change AND not already loaded
-  useEffect(() => {
-    if (products.length > 0 && Object.keys(variantsMap).length === 0) {
-      fetchVariantsForProducts()
-    }
-  }, [products])
-
-  const loadProducts = useCallback(async () => {
-    try {
-      await fetchProducts(1, 100) // Reduced from loading all variants individually
-    } catch (error) {
-      console.error('Error loading products:', error)
-    }
-  }, [fetchProducts])
-
-  // OPTIMIZED: Batch fetch variants in single request instead of N+1 queries
-  const fetchVariantsForProducts = useCallback(async () => {
-    if (products.length === 0) return
-
-    try {
-      // Instead of fetching variants per product, fetch ALL variants once
-      const response = await axiosInstance.get('/products/admin/variants?limit=500')
-      const allVariants = response.data.data || []
-
-      // Group variants by product_id
-      const variantDataMap: { [key: string]: any[] } = {}
-      
-      allVariants.forEach((variant: any) => {
-        const productId = variant.product_id || variant.product
-        if (!variantDataMap[productId]) {
-          variantDataMap[productId] = []
-        }
-        variantDataMap[productId].push(variant)
-      })
-
-      setVariantsMap(variantDataMap)
-    } catch (error) {
-      console.error('Error fetching variants:', error)
-    }
-  }, [products])
+  }, [location.pathname, products])
 
   const getVariantCount = useCallback((productId: string) => {
     return (variantsMap[productId] || []).length
@@ -128,7 +114,7 @@ export default function ProductsPage() {
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesSearch = product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        (product.description || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       const matchesStatus = statusFilter === 'all' || product.status === statusFilter
       const categoryId = typeof product.category === 'object' ? product.category?._id : product.category
       const matchesCategory = categoryFilter === 'all' || categoryId === categoryFilter
@@ -152,13 +138,19 @@ export default function ProductsPage() {
   }, [])
 
   const handleEditProduct = useCallback((product: any) => {
-    navigate(`/admin/products/edit/${product._id}`)
-  }, [navigate])
+    // Set product from cache immediately - no loading!
+    setEditingProduct(product)
+    setIsFormOpen(true)
+    // Preserve current page in URL when navigating to edit
+    navigate(`/admin/products/edit/${product._id}?page=${page}`)
+  }, [navigate, page])
 
   const handleCloseForm = useCallback(() => {
     setIsFormOpen(false)
     setEditingProduct(null)
-  }, [])
+    // Navigate back to list with preserved page
+    navigate(`/admin/products?page=${page}`)
+  }, [navigate, page])
 
   const handleSaveProduct = useCallback(async (data: ProductFormData) => {
     try {
@@ -189,28 +181,21 @@ export default function ProductsPage() {
         urlSlug: data.urlSlug,
       }
 
-      let result
       if (editingProduct) {
-        result = await updateProduct(editingProduct._id, productData as any)
+        await updateProductMutation.mutateAsync({ id: editingProduct._id, data: productData as any })
+        alert('Product updated successfully!')
       } else {
-        result = await createProduct(productData as any)
+        await createProductMutation.mutateAsync(productData as any)
+        alert('Product created successfully!')
       }
-
-      if (result) {
-        handleCloseForm()
-        // Clear cache to force refresh
-        apiCache.clear('products')
-        await loadProducts()
-        alert(editingProduct ? 'Product updated successfully!' : 'Product created successfully!')
-      } else {
-        alert('Failed to save product')
-      }
+      
+      handleCloseForm()
     } catch (error: any) {
       console.error('Error saving product:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error saving product'
       alert(`Error: ${errorMsg}`)
     }
-  }, [editingProduct, updateProduct, createProduct, handleCloseForm, loadProducts])
+  }, [editingProduct, updateProductMutation, createProductMutation, handleCloseForm])
 
   const handleDeleteProduct = useCallback(async (productId: string) => {
     const confirmed = window.confirm(
@@ -218,26 +203,15 @@ export default function ProductsPage() {
     )
     if (!confirmed) return
 
-    setDeletingProductId(productId)
     try {
-      const result = await deleteProduct(productId)
-      if (result) {
-        setDeletingProductId(null)
-        alert('✅ Product deleted successfully!')
-        // Clear cache to force refresh
-        apiCache.clear('products')
-        await loadProducts()
-      } else {
-        alert('❌ Failed to delete product')
-        setDeletingProductId(null)
-      }
+      await deleteProductMutation.mutateAsync(productId)
+      alert('✅ Product deleted successfully!')
     } catch (error: any) {
       console.error('Error deleting product:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting product'
       alert(`❌ Error: ${errorMsg}`)
-      setDeletingProductId(null)
     }
-  }, [deleteProduct, loadProducts])
+  }, [deleteProductMutation])
 
   const handleDraftProduct = useCallback(async (data: ProductFormData) => {
     try {
@@ -246,7 +220,7 @@ export default function ProductsPage() {
         return
       }
 
-      const result = await createProduct({
+      await createProductMutation.mutateAsync({
         name: data.name,
         description: data.description,
         category: data.category,
@@ -259,21 +233,14 @@ export default function ProductsPage() {
         urlSlug: data.urlSlug,
       } as any)
 
-      if (result) {
-        setIsFormOpen(false)
-        // Clear cache to force refresh
-        apiCache.clear('products')
-        await loadProducts()
-        alert('Product saved as draft!')
-      } else {
-        alert('Failed to save draft')
-      }
+      setIsFormOpen(false)
+      alert('Product saved as draft!')
     } catch (error: any) {
       console.error('Error saving draft:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error saving draft'
       alert(`Error: ${errorMsg}`)
     }
-  }, [createProduct, loadProducts])
+  }, [createProductMutation])
 
   if (isFormOpen) {
     return (
@@ -358,7 +325,7 @@ export default function ProductsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((cat) => (
+                    {categories.map((cat: any) => (
                       <SelectItem key={cat._id} value={cat._id}>
                         {cat.name}
                       </SelectItem>
@@ -438,7 +405,7 @@ export default function ProductsPage() {
                                 return product.category.name || '—'
                               } else if (typeof product.category === 'string') {
                                 // Find category name from categories state
-                                const cat = categories.find(c => c._id === product.category)
+                                const cat = categories.find((c: any) => c._id === product.category)
                                 return cat?.name || product.category
                               }
                               return '—'
@@ -475,7 +442,7 @@ export default function ProductsPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleEditProduct(product)}
-                              disabled={deletingProductId === product._id}
+                              disabled={deleteProductMutation.isPending}
                             >
                               <IconEdit className="h-4 w-4" />
                             </Button>
@@ -483,9 +450,9 @@ export default function ProductsPage() {
                               size="sm"
                               variant="destructive"
                               onClick={() => handleDeleteProduct(product._id)}
-                              disabled={deletingProductId === product._id}
+                              disabled={deleteProductMutation.isPending}
                             >
-                              {deletingProductId === product._id ? (
+                              {deleteProductMutation.isPending ? (
                                 <>
                                   <span className="animate-spin mr-2">⏳</span>
                                   Deleting...

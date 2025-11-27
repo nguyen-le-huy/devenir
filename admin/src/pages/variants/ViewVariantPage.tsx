@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,9 +28,13 @@ export default function ViewVariantPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [variant, setVariant] = useState<Variant | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  
+  // Get preserved page from URL params
+  const preservedPage = searchParams.get('page') || '1'
 
   useEffect(() => {
     // Check if variant data was passed via navigation state (instant load!)
@@ -77,7 +81,7 @@ export default function ViewVariantPage() {
 
       if (!variantData) {
         alert('Variant not found')
-        navigate('/admin/variants')
+        navigate(`/admin/variants?page=${preservedPage}`)
         return
       }
 
@@ -95,7 +99,7 @@ export default function ViewVariantPage() {
     } catch (error) {
       console.error('Error fetching variant:', error)
       alert('Failed to load variant')
-      navigate('/admin/variants')
+      navigate(`/admin/variants?page=${preservedPage}`)
     } finally {
       setLoading(false)
     }
@@ -122,7 +126,7 @@ export default function ViewVariantPage() {
       <AdminLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Variant not found</p>
-          <Button onClick={() => navigate('/admin/variants')} className="mt-4">
+          <Button onClick={() => navigate(`/admin/variants?page=${preservedPage}`)} className="mt-4">
             Back to Variants
           </Button>
         </div>
@@ -141,7 +145,7 @@ export default function ViewVariantPage() {
             <p className="text-muted-foreground">SKU: {variant.sku}</p>
           </div>
           <div className="space-x-2">
-            <Button variant="outline" onClick={() => navigate('/admin/variants')}>
+            <Button variant="outline" onClick={() => navigate(`/admin/variants?page=${preservedPage}`)}>
               ← Back
             </Button>
             <Button onClick={() => setDrawerOpen(true)}>
@@ -296,7 +300,7 @@ export default function ViewVariantPage() {
           <Button onClick={() => setDrawerOpen(true)}>
             ✏️ Edit Variant
           </Button>
-          <Button variant="outline" onClick={() => navigate('/admin/variants')}>
+          <Button variant="outline" onClick={() => navigate(`/admin/variants?page=${preservedPage}`)}>
             ← Back to List
           </Button>
         </div>

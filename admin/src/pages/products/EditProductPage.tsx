@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useSearchParams } from "react-router-dom"
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { IconChevronLeft } from "@tabler/icons-react"
@@ -10,14 +10,18 @@ import { api } from "@/services/api"
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [editingProduct, setEditingProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const { updateProduct } = useProducts()
+  
+  // Get preserved page from URL params
+  const preservedPage = searchParams.get('page') || '1'
 
   useEffect(() => {
     const loadProduct = async () => {
       if (!id) {
-        navigate('/admin/products')
+        navigate(`/admin/products?page=${preservedPage}`)
         return
       }
 
@@ -29,12 +33,12 @@ export default function EditProductPage() {
           setEditingProduct(data.data)
         } else {
           alert('Product not found')
-          navigate('/admin/products')
+          navigate(`/admin/products?page=${preservedPage}`)
         }
       } catch (error) {
         console.error('Error loading product:', error)
         alert('Error loading product')
-        navigate('/admin/products')
+        navigate(`/admin/products?page=${preservedPage}`)
       } finally {
         setLoading(false)
       }
@@ -77,7 +81,7 @@ export default function EditProductPage() {
 
       if (result) {
         alert('Product updated successfully!')
-        navigate('/admin/products')
+        navigate(`/admin/products?page=${preservedPage}`)
       } else {
         alert('Failed to update product')
       }
@@ -108,7 +112,7 @@ export default function EditProductPage() {
       <AdminLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Product not found</p>
-          <Button onClick={() => navigate('/admin/products')} className="mt-4">
+          <Button onClick={() => navigate(`/admin/products?page=${preservedPage}`)} className="mt-4">
             Back to Products
           </Button>
         </div>
@@ -121,7 +125,7 @@ export default function EditProductPage() {
       <div className="space-y-4">
         <Button
           variant="ghost"
-          onClick={() => navigate('/admin/products')}
+          onClick={() => navigate(`/admin/products?page=${preservedPage}`)}
           className="mb-4"
         >
           <IconChevronLeft className="mr-2 h-4 w-4" />
