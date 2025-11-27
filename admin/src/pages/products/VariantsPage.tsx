@@ -28,7 +28,8 @@ import { useVariantsQuery, useDeleteVariant } from "@/hooks/useVariantsQuery"
 import { useProductsQuery } from "@/hooks/useProductsQuery"
 import { useColorsQuery } from "@/hooks/useColorsQuery"
 
-interface Variant {
+// Import types from hook files
+type Variant = {
   _id: string
   sku: string
   product: string
@@ -43,6 +44,21 @@ interface Variant {
   hoverImage?: string
   images?: string[]
   createdAt: string
+}
+
+type Product = {
+  _id: string
+  name: string
+  slug: string
+  description?: string
+  category: any
+  brand?: any
+  basePrice: number
+  status: 'draft' | 'published' | 'archived'
+  isActive: boolean
+  images?: string[]
+  createdAt: string
+  updatedAt: string
 }
 
 interface Color {
@@ -61,7 +77,7 @@ export default function VariantsPage() {
   const [filterSize, setFilterSize] = useState("all")
   const [filterColor, setFilterColor] = useState("all")
   const [filterStockStatus, setFilterStockStatus] = useState("all")
-  
+
   // Initialize page from URL search params (preserves state on navigation)
   const initialPage = parseInt(searchParams.get('page') || '1', 10)
   const [page, setPage] = useState(initialPage)
@@ -82,8 +98,8 @@ export default function VariantsPage() {
   const { data: colors = [] } = useColorsQuery()
   const deleteVariantMutation = useDeleteVariant()
 
-  const variants = variantsData?.data || []
-  const products = productsData?.data || []
+  const variants: Variant[] = variantsData?.data || []
+  const products: Product[] = productsData?.data || []
   const loading = variantsLoading
 
   // Memoize quick stats calculation
@@ -93,8 +109,8 @@ export default function VariantsPage() {
     let outOfStock = 0
     let inventoryValue = 0
 
-    variants.forEach((v) => {
-      const stockQty = (v as any).stock ?? (v as any).quantity ?? 0
+    variants.forEach((v: Variant) => {
+      const stockQty = v.stock ?? 0
 
       if (stockQty === 0) {
         outOfStock++
@@ -145,13 +161,13 @@ export default function VariantsPage() {
   const prevFiltersRef = React.useRef({ debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus })
   React.useEffect(() => {
     const prev = prevFiltersRef.current
-    const hasFilterChanged = 
+    const hasFilterChanged =
       prev.debouncedSearchTerm !== debouncedSearchTerm ||
       prev.filterProduct !== filterProduct ||
       prev.filterSize !== filterSize ||
       prev.filterColor !== filterColor ||
       prev.filterStockStatus !== filterStockStatus
-    
+
     if (hasFilterChanged) {
       setPage(1) // Only reset page when filters actually change
       prevFiltersRef.current = { debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus }
@@ -181,7 +197,7 @@ export default function VariantsPage() {
     if (debouncedSearchTerm.trim()) {
       const term = debouncedSearchTerm.toLowerCase()
       filtered = filtered.filter(
-        (v) =>
+        (v: Variant) =>
           v.sku.toLowerCase().includes(term) ||
           (v.productName || "").toLowerCase().includes(term) ||
           (v.color || "").toLowerCase().includes(term) ||
@@ -191,22 +207,22 @@ export default function VariantsPage() {
 
     // Product filter
     if (filterProduct !== "all") {
-      filtered = filtered.filter((v) => (v as any).product_id === filterProduct)
+      filtered = filtered.filter((v: Variant) => v.product === filterProduct)
     }
 
     // Size filter
     if (filterSize !== "all") {
-      filtered = filtered.filter((v) => v.size === filterSize)
+      filtered = filtered.filter((v: Variant) => v.size === filterSize)
     }
 
     // Color filter
     if (filterColor !== "all") {
-      filtered = filtered.filter((v) => v.color === filterColor)
+      filtered = filtered.filter((v: Variant) => v.color === filterColor)
     }
 
     // Stock status filter
     if (filterStockStatus !== "all") {
-      filtered = filtered.filter((v) => {
+      filtered = filtered.filter((v: Variant) => {
         if (filterStockStatus === "inStock") return v.stock > v.lowStockThreshold
         if (filterStockStatus === "low") return v.stock > 0 && v.stock <= v.lowStockThreshold
         if (filterStockStatus === "out") return v.stock === 0
@@ -502,7 +518,7 @@ export default function VariantsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Products</SelectItem>
-                    {products.map((p) => (
+                    {products.map((p: Product) => (
                       <SelectItem key={p._id} value={p._id}>
                         {p.name}
                       </SelectItem>
@@ -598,7 +614,7 @@ export default function VariantsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Products</SelectItem>
-                    {products.map((p) => (
+                    {products.map((p: Product) => (
                       <SelectItem key={p._id} value={p._id}>
                         {p.name}
                       </SelectItem>
@@ -850,7 +866,7 @@ export default function VariantsPage() {
       <VariantDrawer
         isOpen={drawerOpen}
         variantId={editingVariantId}
-        variantData={editingVariantId ? variants.find(v => v._id === editingVariantId) : undefined}
+        variantData={editingVariantId ? variants.find((v: Variant) => v._id === editingVariantId) : undefined}
         isEdit={!!editingVariantId}
         onClose={() => {
           setDrawerOpen(false)
