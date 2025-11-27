@@ -1,67 +1,38 @@
 import styles from './NewArrivals.module.css';
-import ProductCard from '../../components/ProductCard/ProductCard';
+import ScarfCard from '../../components/ProductCard/ScarfCard.jsx';
+import Loading from '../../components/Loading/Loading.jsx';
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
-
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
-import { MotionPathHelper } from "gsap/MotionPathHelper"
+import { MotionPathHelper } from "gsap/MotionPathHelper";
+import { useLatestVariants } from '../../hooks/useProducts.js';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, MotionPathPlugin, MotionPathHelper);
 
-
-const products = [
-    {
-        id: '1',
-        name: 'Bi-Swing Jacket',
-        price: 748.99,
-        images: ['/images/newArr1.png', '/images/newArrHover1.png'],
-        colors: [
-            { name: 'Black', hex: 'var(--black)' },
-            { name: 'Brown', hex: 'var(--brown)' },
-            { name: 'Beige', hex: '#A99E8A' }
-        ],
-        tag: 'New'
-    },
-    {
-        id: '2',
-        name: 'Wool Cardigan',
-        price: 2499.99,
-        images: ['/images/newArr2.png', '/images/newArrHover2.png'],
-        colors: [
-            { name: 'Black', hex: 'var(--black)' },
-            { name: 'Navy', hex: 'var(--midnight)' }
-        ],
-        tag: 'Limited Edition'
-    },
-    {
-        id: '3',
-        name: 'Donegal Tweed Coat',
-        price: 3499.00,
-        images: ['/images/newArr3.png', '/images/newArrHover3.png'],
-        colors: [
-            { name: 'Charcoal', hex: '#36454f' },
-            { name: 'Camel', hex: '#C19A6B' }
-        ],
-        tag: 'Hot'
-    },
-    {
-        id: '4',
-        name: 'Donegal Tweed Coat',
-        price: 3499.00,
-        images: ['/images/newArr3.png', '/images/newArrHover3.png'],
-        colors: [
-            { name: 'Charcoal', hex: '#36454f' },
-            { name: 'Camel', hex: '#C19A6B' }
-        ],
-        tag: 'Hot'
-    }
-];
-
 const NewArrivals = () => {
     const newArrContainerRef = useRef(null);
+
+    // Fetch 4 latest variants
+    const { data: variantsData, isLoading } = useLatestVariants(4);
+
+    // Transform variant data to match ScarfCard expected format
+    const products = useMemo(() => {
+        if (!variantsData || variantsData.length === 0) return [];
+
+        return variantsData.map(variant => ({
+            id: variant._id,
+            name: variant.productInfo?.name || 'Unknown Product',
+            price: variant.price,
+            image: variant.mainImage || '/images/placeholder.png',
+            imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
+            color: variant.color,
+            size: variant.size,
+            sku: variant.sku,
+        }));
+    }, [variantsData]);
 
     useGSAP(() => {
         const container = newArrContainerRef.current;
@@ -107,7 +78,15 @@ const NewArrivals = () => {
                 ease: "power2.in",
             }, "-=0.5");
 
-    }, { scope: newArrContainerRef });
+    }, { scope: newArrContainerRef, dependencies: [products] });
+
+    if (isLoading) {
+        return (
+            <div className={`${styles.newArrivals} container`}>
+                <Loading />
+            </div>
+        );
+    }
 
     return (
         <div className={`${styles.newArrivals} container`} ref={newArrContainerRef}>
@@ -118,9 +97,13 @@ const NewArrivals = () => {
                 </a>
             </div>
             <div className={styles.productList}>
-                {products.map(product => (
-                    <ProductCard key={product.id} product={product} />
-                ))}
+                {products.length > 0 ? (
+                    products.map(product => (
+                        <ScarfCard key={product.id} scarf={product} />
+                    ))
+                ) : (
+                    <p>No new arrivals yet.</p>
+                )}
             </div>
         </div>
     );

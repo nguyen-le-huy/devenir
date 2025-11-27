@@ -1,12 +1,9 @@
 import styles from './ScarfCard.module.css';
 import { Link } from 'react-router-dom';
-import { getOptimizedImageUrl, ImagePresets, getLazyLoadProps } from '../../utils/imageOptimization.js';
+import { getLazyLoadProps } from '../../utils/imageOptimization.js';
 
 const ScarfCard = ({ scarf }) => {
-    // Optimize images with Cloudinary transformations
-    const optimizedMainImage = getOptimizedImageUrl(scarf.image, ImagePresets.thumbnail);
-    const optimizedHoverImage = getOptimizedImageUrl(scarf.imageHover, ImagePresets.thumbnail);
-
+    // Use original images without optimization for 100% quality
     return (
         <Link
             to={`/product-detail?variant=${scarf.id}`}
@@ -15,13 +12,13 @@ const ScarfCard = ({ scarf }) => {
         >
             <div className={styles.imageWrapper}>
                 <img
-                    src={optimizedMainImage}
+                    src={scarf.image}
                     alt={scarf.name}
                     className={styles.imageDefault}
                     {...getLazyLoadProps()}
                 />
                 <img
-                    src={optimizedHoverImage}
+                    src={scarf.imageHover}
                     alt={`${scarf.name} hover`}
                     className={styles.imageHover}
                     {...getLazyLoadProps()}

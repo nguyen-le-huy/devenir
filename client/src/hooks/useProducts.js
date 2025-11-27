@@ -62,3 +62,27 @@ export const useVariantById = (variantId) => {
     enabled: !!variantId,
   });
 };
+
+/**
+ * Hook to fetch latest variants (for homepage/new arrivals)
+ * @param {number} limit - Number of variants to fetch
+ */
+export const useLatestVariants = (limit = 4) => {
+  return useQuery({
+    queryKey: queryKeys.variants.latest(limit),
+    queryFn: () => productService.getLatestVariants(limit),
+    staleTime: 5 * 60 * 1000, // 5 minutes - new arrivals don't change that often
+  });
+};
+
+/**
+ * Hook to fetch all variants with optional filtering
+ * @param {Object} params - Query parameters (color, size, etc)
+ */
+export const useAllVariants = (params = {}) => {
+  return useQuery({
+    queryKey: queryKeys.variants.list(params),
+    queryFn: () => productService.getAllVariants(params),
+    staleTime: 3 * 60 * 1000, // 3 minutes
+  });
+};

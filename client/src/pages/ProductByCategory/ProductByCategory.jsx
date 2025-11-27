@@ -71,7 +71,17 @@ const ProductByCategory = () => {
             filtered = filtered.filter(v => selectedColors.includes(v.color));
         }
 
-        // 2. Apply sorting
+        // 2. Remove duplicate colors (keep only one variant per color)
+        const colorMap = new Map();
+        filtered = filtered.filter(variant => {
+            if (variant.color && !colorMap.has(variant.color)) {
+                colorMap.set(variant.color, true);
+                return true;
+            }
+            return false;
+        });
+
+        // 3. Apply sorting
         switch (selectedSort) {
             case 'Price High':
                 filtered.sort((a, b) => b.price - a.price);

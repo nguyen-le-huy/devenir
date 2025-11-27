@@ -62,9 +62,9 @@ export const getOptimizedImageUrl = (
 export const ImagePresets = {
   // Product thumbnails in grids
   thumbnail: {
-    width: 400,
-    height: 500,
-    quality: 'auto:good',
+    width: 600,
+    height: 750,
+    quality: 'auto:best',
     crop: 'fill',
   },
 

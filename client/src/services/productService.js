@@ -79,7 +79,7 @@ export const getVariantsByCategory = async (categoryId) => {
         // apiClient interceptor đã unwrap response.data
         // Nên productsResponse = { success: true, data: [...], pagination: {...} }
         const products = productsResponse.data || [];
-        
+
         if (!products || products.length === 0) {
             return [];
         }
@@ -89,10 +89,10 @@ export const getVariantsByCategory = async (categoryId) => {
         for (const product of products) {
             try {
                 const variantsResponse = await apiClient.get(`/products/${product._id}/variants`);
-                
+
                 // apiClient đã unwrap, nên variantsResponse = { success: true, data: [...] }
                 const variants = variantsResponse.data || [];
-                
+
                 if (variants.length > 0) {
                     // Thêm thông tin product vào mỗi variant
                     const enrichedVariants = variants.map(variant => ({
@@ -140,6 +140,69 @@ export const getVariantById = async (variantId) => {
         return response;
     } catch (error) {
         console.error('Error fetching variant detail:', error);
+        throw error;
+    }
+};
+
+/**
+ * Lấy các variants mới nhất (sorted by createdAt)
+ * @param {number} limit - Số lượng variants cần lấy
+ * @returns {Promise} Array of latest variants với thông tin product
+ */
+export const getLatestVariants = async (limit = 4) => {
+    try {
+        // Lấy tất cả products mới nhất
+        const productsResponse = await apiClient.get('/products', {
+            params: {
+                limit: 50, // Lấy 50 products gần nhất
+                sort: '-createdAt'
+            }
+        });
+
+        const products = productsResponse.data || [];
+
+        if (!products || products.length === 0) {
+            return [];
+        }
+
+        // Lấy variants và flatten
+        const allVariants = [];
+        for (const product of products) {
+            try {
+                const variantsResponse = await apiClient.get(`/products/${product._id}/variants`);
+                const variants = variantsResponse.data || [];
+
+                if (variants.length > 0) {
+                    const enrichedVariants = variants.map(variant => ({
+                        ...variant,
+                        productInfo: {
+                            _id: product._id,
+                            name: product.name,
+                            description: product.description,
+                            category: product.category,
+                            brand: product.brand,
+                            averageRating: product.averageRating,
+                        }
+                    }));
+                    allVariants.push(...enrichedVariants);
+                }
+            } catch (err) {
+                console.error(`Error fetching variants for product ${product._id}:`, err);
+            }
+        }
+
+        // Sort by createdAt (newest first) và lấy limit số lượng
+        const sortedVariants = allVariants
+            .sort((a, b) => {
+                const dateA = new Date(a.createdAt || a._id);
+                const dateB = new Date(b.createdAt || b._id);
+                return dateB - dateA;
+            })
+            .slice(0, limit);
+
+        return sortedVariants;
+    } catch (error) {
+        console.error('Error fetching latest variants:', error);
         throw error;
     }
 };
