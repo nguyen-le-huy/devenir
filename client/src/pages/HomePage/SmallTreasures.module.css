@@ -14,7 +14,7 @@
     z-index: 99;
 }
 
-.title > h1 {
+.title>h1 {
     font-size: 96px;
     text-transform: uppercase;
     text-align: center;
@@ -80,7 +80,7 @@
 
 
 @media (max-width: 768px) {
-    .title > h1 {
+    .title>h1 {
         font-size: 48px;
     }
 
@@ -89,8 +89,9 @@
         max-width: 200px;
         height: 225px;
     }
-    
-    .image3, .image5 {
+
+    .image3,
+    .image5 {
         display: none;
     }
 
@@ -120,5 +121,3 @@
     }
 
 }
-
-

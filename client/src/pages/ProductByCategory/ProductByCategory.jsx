@@ -71,11 +71,15 @@ const ProductByCategory = () => {
             filtered = filtered.filter(v => selectedColors.includes(v.color));
         }
 
-        // 2. Remove duplicate colors (keep only one variant per color)
-        const colorMap = new Map();
+        // 2. Remove duplicate product+color combinations (keep only one variant per product-color)
+        // Group by productId + color, only show one variant even if there are multiple sizes
+        const uniqueMap = new Map();
         filtered = filtered.filter(variant => {
-            if (variant.color && !colorMap.has(variant.color)) {
-                colorMap.set(variant.color, true);
+            const productId = variant.productInfo?._id || variant.product;
+            const key = `${productId}_${variant.color}`;
+
+            if (!uniqueMap.has(key)) {
+                uniqueMap.set(key, true);
                 return true;
             }
             return false;
@@ -132,6 +136,17 @@ const ProductByCategory = () => {
         return (
             <div className={styles.productByCategory}>
                 <Loading />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className={styles.productByCategory}>
+                <div className={styles.noProducts}>
+                    <h2>Error loading products</h2>
+                    <p>{error.message || 'Something went wrong. Please try again later.'}</p>
+                </div>
             </div>
         );
     }
@@ -224,7 +239,28 @@ const ProductByCategory = () => {
                     ))}
                 </div>
 
-                {/* Hiển thị message nếu không có products */}
+                {/* Hiển thị message nếu không có products sau khi filter */}
+                {filteredVariants.length === 0 && variants.length > 0 && (
+                    <div className={styles.noProducts}>
+                        <p>No products match your current filters.</p>
+                        <p>Try adjusting your filters or <button
+                            onClick={() => {
+                                setSelectedSort('Default');
+                                setSelectedColors([]);
+                            }}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                                padding: 0,
+                                color: 'inherit'
+                            }}
+                        >clear all filters</button>.</p>
+                    </div>
+                )}
+
+                {/* Hiển thị message nếu category không có products */}
                 {variants.length === 0 && (
                     <div className={styles.noProducts}>
                         <p>No products found in this category.</p>
