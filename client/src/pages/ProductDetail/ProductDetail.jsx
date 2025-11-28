@@ -135,7 +135,7 @@ export default function ProductDetail() {
         return (
             <div className={styles.productDetail}>
                 <div style={{ padding: '2rem', textAlign: 'center' }}>
-                    <h2>Product not found</h2>
+                    <h3>Product not found</h3>
                     <p>The product you are looking for does not exist.</p>
                 </div>
             </div>
