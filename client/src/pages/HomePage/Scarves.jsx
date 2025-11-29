@@ -62,7 +62,7 @@ const Scarves = () => {
     return (
         <ProductCarousel
             title="Scarves Collection"
-            viewAllLink="#"
+            viewAllLink={`/products?category=${scarvesCategory._id}`}
             products={scarves}
             showViewAll={true}
         />
