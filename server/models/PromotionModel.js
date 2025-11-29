@@ -28,6 +28,16 @@ const promotionSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'Discount value is required'],
       min: [0, 'Discount value cannot be negative'],
+      validate: {
+        validator: function(v) {
+          // If percentage discount, value must be <= 100
+          if (this.discountType === 'percentage') {
+            return v <= 100;
+          }
+          return true;
+        },
+        message: 'Percentage discount cannot exceed 100%'
+      }
     },
     minOrderValue: {
       type: Number,
@@ -42,10 +52,20 @@ const promotionSchema = new mongoose.Schema(
       type: Number,
       min: [1, 'Usage limit must be at least 1'],
     },
+    userUsageLimit: {
+      type: Number,
+      default: 1,
+      min: [1, 'User usage limit must be at least 1'],
+    },
     usedCount: {
       type: Number,
       default: 0,
       min: [0, 'Used count cannot be negative'],
+    },
+    userUsageTracking: {
+      type: Map,
+      of: Number,
+      default: new Map(),
     },
     startDate: {
       type: Date,
@@ -136,8 +156,9 @@ promotionSchema.methods.calculateDiscount = function (orderTotal) {
 
 /**
  * Apply promotion (increment usage count)
+ * @param {String} userId - User ID applying the promotion
  */
-promotionSchema.methods.applyPromotion = async function () {
+promotionSchema.methods.applyPromotion = async function (userId) {
   if (!this.isValid) {
     throw new Error('Promotion is not valid or has expired');
   }
@@ -146,10 +167,33 @@ promotionSchema.methods.applyPromotion = async function () {
     throw new Error('Promotion usage limit reached');
   }
   
+  // Check user-specific usage limit
+  if (userId) {
+    const userUsageCount = this.userUsageTracking.get(userId) || 0;
+    if (userUsageCount >= this.userUsageLimit) {
+      throw new Error('You have already used this promotion code');
+    }
+    
+    // Increment user usage tracking
+    this.userUsageTracking.set(userId, userUsageCount + 1);
+  }
+  
   this.usedCount += 1;
   await this.save();
   
   return this;
+};
+
+/**
+ * Check if user can use this promotion
+ * @param {String} userId - User ID
+ * @returns {Boolean}
+ */
+promotionSchema.methods.canUserUse = function (userId) {
+  if (!userId) return true;
+  
+  const userUsageCount = this.userUsageTracking.get(userId) || 0;
+  return userUsageCount < this.userUsageLimit;
 };
 
 /**

@@ -77,14 +77,14 @@ cartSchema.methods.addItem = async function (productVariantId, quantity = 1) {
     // Update quantity if item exists
     const newQuantity = this.items[existingItemIndex].quantity + quantity;
     
-    if (newQuantity > variant.stock) {
+    if (newQuantity > variant.quantity) {
       throw new Error('Insufficient stock');
     }
     
     this.items[existingItemIndex].quantity = newQuantity;
   } else {
     // Add new item if doesn't exist
-    if (quantity > variant.stock) {
+    if (quantity > variant.quantity) {
       throw new Error('Insufficient stock');
     }
     
@@ -128,7 +128,7 @@ cartSchema.methods.updateItemQuantity = async function (
     throw new Error('Product variant not found');
   }
   
-  if (quantity > variant.stock) {
+  if (quantity > variant.quantity) {
     throw new Error('Insufficient stock');
   }
   

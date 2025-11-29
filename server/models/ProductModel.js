@@ -22,9 +22,9 @@ const productSchema = new mongoose.Schema(
       required: [true, 'Please choose category'],
     },
     brand: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Brand',
       required: false,
-      trim: true,
     },
     tags: {
       type: [String],

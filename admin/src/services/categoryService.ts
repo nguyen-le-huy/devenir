@@ -5,8 +5,11 @@ export interface Category {
     name: string
     description?: string
     thumbnailUrl?: string
+    slug: string // SEO-friendly URL (required, unique, auto-generated)
     parentCategory?: string | null
     isActive: boolean
+    sortOrder?: number // Display order
+    productCount?: number // Number of products in this category
     createdAt: string
     updatedAt: string
 }
@@ -15,11 +18,21 @@ export interface CategoryFormData {
     name: string
     description?: string
     thumbnailUrl?: string
+    slug?: string // Optional: auto-generated from name if not provided
     parentCategory?: string | null
     isActive: boolean
+    sortOrder?: number
 }
 
 export const categoryService = {
+    /**
+     * Get categories as hierarchical tree with levels
+     */
+    getCategoriesTree: async () => {
+        const response = await api.get('/categories/tree')
+        return response.data
+    },
+
     /**
      * Get all categories with pagination and filters
      */

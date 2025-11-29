@@ -1,5 +1,138 @@
 import Category from '../models/CategoryModel.js';
+import Product from '../models/ProductModel.js';
+import ProductVariant from '../models/ProductVariantModel.js';
 import asyncHandler from 'express-async-handler';
+import logger from '../config/logger.js';
+
+/**
+ * Helper: Build tree structure with levels calculated from parent-child relationships
+ */
+function buildTreeWithLevels(categories, parentId = null, level = 0) {
+    return categories
+        .filter(cat => {
+            const catParentId = cat.parentCategory?.toString();
+            if (parentId === null) {
+                return !cat.parentCategory;
+            }
+            return catParentId === parentId.toString();
+        })
+        .map(cat => {
+            const children = buildTreeWithLevels(categories, cat._id, level + 1);
+            
+            return {
+                _id: cat._id,
+                name: cat.name,
+                description: cat.description,
+                slug: cat.slug,
+                thumbnailUrl: cat.thumbnailUrl,
+                parentCategory: cat.parentCategory,
+                isActive: cat.isActive,
+                sortOrder: cat.sortOrder,
+                createdAt: cat.createdAt,
+                updatedAt: cat.updatedAt,
+                productCount: cat.productCount || 0,
+                variantCount: cat.variantCount || 0,
+                level,                          // ← Calculated level
+                children,                       // ← Nested children
+                hasChildren: children.length > 0,
+                childrenCount: children.length,
+            };
+        })
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+}
+
+/**
+ * @desc    Get categories as tree with levels
+ * @route   GET /api/categories/tree
+ * @access  Public
+ */
+export const getCategoriesTree = asyncHandler(async (req, res) => {
+    const categories = await Category.find({ isActive: true })
+        .lean()
+        .sort('sortOrder');
+    
+    // Get product counts per category (with error handling)
+    let productCountMap = new Map();
+    try {
+        const productCounts = await Product.aggregate([
+            { $match: { isActive: true } },
+            { $group: { _id: '$category', count: { $sum: 1 } } }
+        ]);
+        productCountMap = new Map(
+            productCounts.map(item => [item._id?.toString(), item.count])
+        );
+    } catch (error) {
+        logger.error('Product count aggregation failed', { error: error.message, stack: error.stack });
+        // Continue without counts rather than failing the entire request
+    }
+    
+    // Get variant counts per category (with error handling)
+    let variantCountMap = new Map();
+    try {
+        const variantCounts = await ProductVariant.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            { $match: { 'product.isActive': true } },
+            {
+                $group: {
+                    _id: '$product.category',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+        variantCountMap = new Map(
+            variantCounts.map(item => [item._id?.toString(), item.count])
+        );
+    } catch (error) {
+        logger.error('Variant count aggregation failed', { error: error.message, stack: error.stack });
+        // Continue without counts rather than failing the entire request
+    }
+    
+    // Add counts to categories
+    const categoriesWithCounts = categories.map(cat => ({
+        ...cat,
+        productCount: productCountMap.get(cat._id.toString()) || 0,
+        variantCount: variantCountMap.get(cat._id.toString()) || 0,
+    }));
+    
+    const tree = buildTreeWithLevels(categoriesWithCounts);
+    
+    res.status(200).json({
+        success: true,
+        data: tree,
+    });
+});
+
+/**
+ * Helper function to check if a category is a descendant of another
+ */
+async function checkIsDescendant(categoryId, potentialAncestorId) {
+    let currentId = categoryId;
+    const visited = new Set();
+    
+    while (currentId) {
+        if (visited.has(currentId)) break; // Prevent infinite loop
+        visited.add(currentId);
+        
+        const category = await Category.findById(currentId);
+        if (!category || !category.parentCategory) break;
+        
+        if (category.parentCategory.toString() === potentialAncestorId) {
+            return true; // Found ancestor
+        }
+        
+        currentId = category.parentCategory;
+    }
+    
+    return false;
+}
 
 /**
  * @desc    Get all categories
@@ -70,7 +203,9 @@ export const getCategoryById = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const createCategory = asyncHandler(async (req, res) => {
-    const { name, description, thumbnailUrl, parentCategory, isActive } = req.body;
+    const { name, description, thumbnailUrl, slug, sortOrder, parentCategory, isActive } = req.body;
+
+    logger.info('Create category request', { name, slug, parentCategory });
 
     // Validate required fields
     if (!name) {
@@ -100,14 +235,27 @@ export const createCategory = asyncHandler(async (req, res) => {
         }
     }
 
-    // Create category
+    // Auto-generate slug if not provided
+    const finalSlug = slug || name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    // Create category - slug lưu như field bình thường
     const category = await Category.create({
         name,
-        description,
-        thumbnailUrl,
+        description: description || '',
+        thumbnailUrl: thumbnailUrl || '',
+        slug: finalSlug,
+        sortOrder: sortOrder !== undefined ? sortOrder : 0,
         parentCategory: parentCategory || null,
         isActive: isActive !== undefined ? isActive : true,
     });
+
+    logger.info('Category created successfully', { _id: category._id, name: category.name, slug: category.slug });
 
     res.status(201).json({
         success: true,
@@ -122,7 +270,9 @@ export const createCategory = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const updateCategory = asyncHandler(async (req, res) => {
-    const { name, description, thumbnailUrl, parentCategory, isActive } = req.body;
+    const { name, description, thumbnailUrl, slug, sortOrder, level, parentCategory, isActive } = req.body;
+
+    logger.info('Update category request', { id: req.params.id, body: req.body });
 
     let category = await Category.findById(req.params.id);
 
@@ -145,7 +295,8 @@ export const updateCategory = asyncHandler(async (req, res) => {
     }
 
     // Validate parent category if provided
-    if (parentCategory) {
+    let newLevel = category.level || 0;
+    if (parentCategory !== undefined) {
         // Prevent category from being its own parent
         if (parentCategory === req.params.id) {
             return res.status(400).json({
@@ -154,12 +305,37 @@ export const updateCategory = asyncHandler(async (req, res) => {
             });
         }
 
-        const parent = await Category.findById(parentCategory);
-        if (!parent) {
-            return res.status(404).json({
-                success: false,
-                message: 'Parent category not found',
-            });
+        if (parentCategory) {
+            const parent = await Category.findById(parentCategory);
+            if (!parent) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Parent category not found'
+                });
+            }
+            
+            // Calculate new level
+            newLevel = (parent.level || 0) + 1;
+            
+            // Check max depth
+            if (newLevel > 5) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Maximum category depth (5 levels) exceeded',
+                });
+            }
+            
+            // Prevent circular reference (setting child as parent)
+            const isDescendant = await checkIsDescendant(req.params.id, parentCategory);
+            if (isDescendant) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot set a descendant category as parent (circular reference)',
+                });
+            }
+        } else {
+            // Setting to root (no parent)
+            newLevel = 0;
         }
     }
 
@@ -167,10 +343,26 @@ export const updateCategory = asyncHandler(async (req, res) => {
     if (name) category.name = name;
     if (description !== undefined) category.description = description;
     if (thumbnailUrl !== undefined) category.thumbnailUrl = thumbnailUrl;
-    if (parentCategory !== undefined) category.parentCategory = parentCategory || null;
+    if (slug !== undefined && slug.trim() !== '') category.slug = slug.trim();
+    if (sortOrder !== undefined) category.sortOrder = sortOrder;
+    if (parentCategory !== undefined) {
+        category.parentCategory = parentCategory || null;
+        category.level = newLevel;
+    } else if (level !== undefined && level !== null) {
+        // Allow manual level override when parentCategory is not changed
+        category.level = level;
+    }
     if (isActive !== undefined) category.isActive = isActive;
 
     category = await category.save();
+
+    logger.info('Category updated successfully', {
+        _id: category._id,
+        name: category.name,
+        slug: category.slug,
+        level: category.level,
+        parentCategory: category.parentCategory
+    });
 
     res.status(200).json({
         success: true,

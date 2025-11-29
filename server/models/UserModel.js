@@ -24,6 +24,10 @@ const addressSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please select city'],
     },
+    district: {
+      type: String,
+      required: [true, 'Please select district'],
+    },
     postalCode: {
       type: String,
       required: [true, 'Please enter postal code'],
@@ -140,6 +144,18 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    loginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    },
     addresses: [addressSchema],
   },
   {
@@ -179,6 +195,51 @@ userSchema.pre('save', async function (next) {
  */
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+/**
+ * Check if account is currently locked
+ * @returns {Boolean} - true if locked, false if not
+ */
+userSchema.methods.isLocked = function () {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
+/**
+ * Increment login attempts and lock account if threshold exceeded
+ * @returns {Promise<Boolean>} - true if account is now locked
+ */
+userSchema.methods.incLoginAttempts = async function () {
+  // If we have a previous lock that has expired, restart at 1
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    this.loginAttempts = 1;
+    this.lockUntil = undefined;
+    await this.save();
+    return false;
+  }
+  
+  // Otherwise increment
+  this.loginAttempts += 1;
+  
+  // Lock account after 5 failed attempts for 2 hours
+  if (this.loginAttempts >= 5 && !this.isLocked()) {
+    this.lockUntil = Date.now() + 2 * 60 * 60 * 1000; // 2 hours
+  }
+  
+  await this.save();
+  return this.isLocked();
+};
+
+/**
+ * Reset login attempts after successful login
+ */
+userSchema.methods.resetLoginAttempts = async function () {
+  if (this.loginAttempts === 0 && !this.lockUntil) return;
+  
+  this.loginAttempts = 0;
+  this.lockUntil = undefined;
+  this.lastLogin = Date.now();
+  await this.save();
 };
 
 // ============ STATIC METHODS ============

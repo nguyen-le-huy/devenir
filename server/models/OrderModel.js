@@ -9,6 +9,7 @@ const orderSchema = new mongoose.Schema(
     },
     orderItems: [
       {
+        // Product base info (snapshot)
         name: {
           type: String,
           required: [true, 'Product name is required'],
@@ -17,6 +18,18 @@ const orderSchema = new mongoose.Schema(
           type: String,
           required: [true, 'SKU is required'],
         },
+        
+        // Variant details (snapshot at order time)
+        color: {
+          type: String,
+          required: [true, 'Color is required'],
+        },
+        size: {
+          type: String,
+          required: [true, 'Size is required'],
+        },
+        
+        // Order details
         quantity: {
           type: Number,
           required: [true, 'Quantity is required'],
@@ -27,15 +40,34 @@ const orderSchema = new mongoose.Schema(
           required: [true, 'Price is required'],
           min: [0, 'Price cannot be negative'],
         },
+        
+        // Images (snapshot)
         image: {
           type: String,
           required: [true, 'Product image is required'],
         },
+        mainImage: {
+          type: String,
+        },
+        hoverImage: {
+          type: String,
+        },
+        
+        // Reference to original variant (for tracking, optional)
+        // Nếu variant bị xóa, order vẫn giữ nguyên thông tin snapshot
         productVariant: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'ProductVariant',
-          required: [true, 'Product variant is required'],
+          required: false, // Đổi thành optional vì đã có snapshot
         },
+        
+        // Reference to product (for tracking)
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Product',
+          required: false,
+        },
+        
         _id: false,
       },
     ],
@@ -196,10 +228,23 @@ orderSchema.methods.cancelOrder = async function () {
   const ProductVariant = mongoose.model('ProductVariant');
   
   for (const item of this.orderItems) {
-    const variant = await ProductVariant.findById(item.productVariant);
-    if (variant) {
-      await variant.increaseStock(item.quantity);
+    // Thử tìm variant bằng reference trước
+    let variant = null;
+    
+    if (item.productVariant) {
+      variant = await ProductVariant.findById(item.productVariant);
     }
+    
+    // Nếu không tìm thấy, thử tìm bằng SKU
+    if (!variant) {
+      variant = await ProductVariant.findOne({ sku: item.sku });
+    }
+    
+    // Nếu tìm thấy variant, hoàn trả stock
+    if (variant) {
+      await variant.increaseQuantity(item.quantity);
+    }
+    // Nếu không tìm thấy, bỏ qua (variant có thể đã bị xóa)
   }
   
   this.status = 'cancelled';
@@ -269,13 +314,25 @@ orderSchema.pre('save', async function (next) {
     
     try {
       for (const item of this.orderItems) {
-        const variant = await ProductVariant.findById(item.productVariant);
-        
-        if (!variant) {
-          throw new Error(`Product variant ${item.sku} not found`);
+        // Nếu có productVariant reference, dùng nó để giảm stock
+        if (item.productVariant) {
+          const variant = await ProductVariant.findById(item.productVariant);
+          
+          if (!variant) {
+            throw new Error(`Product variant ${item.sku} not found`);
+          }
+          
+          // Giảm stock (sử dụng method decreaseQuantity thay vì decreaseStock)
+          await variant.decreaseQuantity(item.quantity);
+        } else {
+          // Fallback: tìm variant bằng SKU nếu không có reference
+          const variant = await ProductVariant.findOne({ sku: item.sku });
+          
+          if (variant) {
+            await variant.decreaseQuantity(item.quantity);
+          }
+          // Nếu không tìm thấy variant, tiếp tục (vì có thể là variant đã bị xóa)
         }
-        
-        await variant.decreaseStock(item.quantity);
       }
     } catch (error) {
       return next(error);

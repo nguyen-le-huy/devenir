@@ -139,14 +139,37 @@ export const login = asyncHandler(async (req, res) => {
         });
     }
 
+    // Check if account is locked
+    if (user.isLocked()) {
+        const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
+        return res.status(423).json({
+            success: false,
+            message: `Account is locked due to too many failed login attempts. Please try again in ${lockTimeRemaining} minutes.`
+        });
+    }
+
     // check password
     const isPasswordMatch = await user.matchPassword(password);
     if (!isPasswordMatch) {
+        // Increment login attempts
+        const isNowLocked = await user.incLoginAttempts();
+        
+        if (isNowLocked) {
+            return res.status(423).json({
+                success: false,
+                message: 'Account locked due to too many failed login attempts. Please try again in 2 hours.'
+            });
+        }
+        
+        const remainingAttempts = 5 - user.loginAttempts;
         return res.status(401).json({
             success: false,
-            message: 'Invalid password!'
+            message: `Invalid password! ${remainingAttempts} attempts remaining before account lock.`
         });
     }
+
+    // Reset login attempts after successful login
+    await user.resetLoginAttempts();
 
     // Check if email is verified
     if (!user.isEmailVerified) {
@@ -167,6 +190,7 @@ export const login = asyncHandler(async (req, res) => {
             username: user.username,
             email: user.email,
             role: user.role,
+            lastLogin: user.lastLogin,
         }
     });
 });

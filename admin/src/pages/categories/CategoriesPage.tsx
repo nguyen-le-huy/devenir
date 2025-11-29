@@ -1,260 +1,253 @@
-import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+/**
+ * CategoriesPage - Refactored with Tree View Layout
+ * 70% Tree Panel + 30% Detail Panel
+ * Preserves all CRUD operations
+ */
+
+import { useState, useMemo } from 'react'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconPlus, IconChevronLeft, IconEdit, IconTrash } from '@tabler/icons-react'
-import { Badge } from '@/components/ui/badge'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import { CategoryForm } from '@/components/CategoryForm'
-import { categoryService, type Category, type CategoryFormData } from '@/services/categoryService'
+import { IconPlus } from '@tabler/icons-react'
+import { CategoryTree } from '@/components/CategoryTree'
+import { CategoryTableView } from '@/components/CategoryTableView'
+import { CategoryDetailPanel } from '@/components/CategoryDetailPanel'
+import { CategoryFormModal } from '@/components/CategoryFormModal'
+import { buildCategoryTree } from '@/utils/categoryHelpers'
+import type { CategoryTreeNode } from '@/utils/categoryHelpers'
+import { categoryService, type CategoryFormData } from '@/services/categoryService'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 export default function CategoriesPage() {
-    const location = useLocation()
-    const [isFormOpen, setIsFormOpen] = useState(false)
-    const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-    const [categories, setCategories] = useState<Category[]>([])
-    const [loading, setLoading] = useState(false)
-    const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const [selectedCategory, setSelectedCategory] = useState<CategoryTreeNode | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<CategoryTreeNode | null>(null)
+  const [parentForNewCategory, setParentForNewCategory] = useState<CategoryTreeNode | null>(null)
+  const [viewMode, setViewMode] = useState<'tree' | 'table'>('tree')
 
-    useEffect(() => {
-        // Auto-open form if URL is /new
-        if (location.pathname === '/admin/categories/new') {
-            setIsFormOpen(true)
-            setEditingCategory(null)
-        }
-        loadCategories()
-    }, [location.pathname])
+  // Fetch categories tree (with levels calculated by backend)
+  const {
+    data: treeData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['categories', 'tree'],
+    queryFn: async () => {
+      const response = await categoryService.getCategoriesTree()
+      return response.data || []
+    },
+    staleTime: 1000 * 60 * 15, // 15 minutes
+  })
 
-    const loadCategories = async () => {
-        try {
-            setLoading(true)
-            const response = await categoryService.getAllCategories({ limit: 100 })
-            setCategories(response.data || [])
-        } catch (error) {
-            console.error('Error loading categories:', error)
-            alert('Failed to load categories')
-        } finally {
-            setLoading(false)
-        }
+  // Flatten tree for easy lookup (for form parent selection)
+  const flatCategories = useMemo(() => {
+    const flatten = (nodes: CategoryTreeNode[]): CategoryTreeNode[] => {
+      return nodes.reduce((acc, node) => {
+        return [...acc, node, ...flatten(node.children || [])]
+      }, [] as CategoryTreeNode[])
     }
+    return flatten(treeData || [])
+  }, [treeData])
 
-    const handleAddCategory = () => {
-        setEditingCategory(null)
-        setIsFormOpen(true)
-    }
-
-    const handleEditCategory = (category: Category) => {
-        setEditingCategory(category)
-        setIsFormOpen(true)
-    }
-
-    const handleCloseForm = () => {
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: (data: CategoryFormData) => categoryService.createCategory(data),
+    onSuccess: (response) => {
+      if (response.success) {
+        alert('✅ Category created successfully!')
+        queryClient.invalidateQueries({ queryKey: ['categories'] })
         setIsFormOpen(false)
         setEditingCategory(null)
-    }
+        setParentForNewCategory(null)
+      } else {
+        alert('❌ Failed to create category')
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error creating category:', error)
+      const errorMsg = error?.response?.data?.message || error?.message || 'Error creating category'
+      alert(`❌ Error: ${errorMsg}`)
+    },
+  })
 
-    const handleSaveCategory = async (data: CategoryFormData) => {
-        try {
-            if (editingCategory) {
-                // Update existing category
-                const response = await categoryService.updateCategory(editingCategory._id, data)
-                if (response.success) {
-                    alert('✅ Category updated successfully!')
-                    handleCloseForm()
-                    await loadCategories()
-                } else {
-                    alert('❌ Failed to update category')
-                }
-            } else {
-                // Create new category
-                const response = await categoryService.createCategory(data)
-                if (response.success) {
-                    alert('✅ Category created successfully!')
-                    handleCloseForm()
-                    await loadCategories()
-                } else {
-                    alert('❌ Failed to create category')
-                }
-            }
-        } catch (error: any) {
-            console.error('Error saving category:', error)
-            const errorMsg = error?.response?.data?.message || error?.message || 'Error saving category'
-            alert(`❌ Error: ${errorMsg}`)
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) =>
+      categoryService.updateCategory(id, data),
+    onSuccess: (response) => {
+      if (response.success) {
+        alert('✅ Category updated successfully!')
+        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        setIsFormOpen(false)
+        setEditingCategory(null)
+        setParentForNewCategory(null)
+      } else {
+        alert('❌ Failed to update category')
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error updating category:', error)
+      const errorMsg = error?.response?.data?.message || error?.message || 'Error updating category'
+      alert(`❌ Error: ${errorMsg}`)
+    },
+  })
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (categoryId: string) => categoryService.deleteCategory(categoryId),
+    onSuccess: (response, deletedId) => {
+      if (response.success) {
+        alert('✅ Category deleted successfully!')
+        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        if (selectedCategory?._id === deletedId) {
+          setSelectedCategory(null)
         }
-    }
+      } else {
+        alert('❌ Failed to delete category')
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error deleting category:', error)
+      const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting category'
+      alert(`❌ Error: ${errorMsg}`)
+    },
+  })
 
-    const handleDeleteCategory = async (categoryId: string) => {
-        const confirmed = window.confirm(
-            '⚠️ Are you sure you want to delete this category? This action cannot be undone.'
-        )
-        if (!confirmed) return
+  // Event Handlers
+  const handleAddCategory = () => {
+    setEditingCategory(null)
+    setParentForNewCategory(null)
+    setIsFormOpen(true)
+  }
 
-        setDeletingCategoryId(categoryId)
-        try {
-            const response = await categoryService.deleteCategory(categoryId)
-            if (response.success) {
-                alert('✅ Category deleted successfully!')
-                await loadCategories()
-            } else {
-                alert('❌ Failed to delete category')
-            }
-        } catch (error: any) {
-            console.error('Error deleting category:', error)
-            const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting category'
-            alert(`❌ Error: ${errorMsg}`)
-        } finally {
-            setDeletingCategoryId(null)
-        }
-    }
+  const handleAddChild = (parent: CategoryTreeNode) => {
+    setEditingCategory(null)
+    setParentForNewCategory(parent)
+    setIsFormOpen(true)
+  }
 
-    // Get parent category name
-    const getParentName = (parentId: string | null | undefined) => {
-        if (!parentId) return '—'
-        const parent = categories.find((cat) => cat._id === parentId)
-        return parent?.name || '—'
-    }
+  const handleEditCategory = (category: CategoryTreeNode) => {
+    setEditingCategory(category)
+    setParentForNewCategory(null)
+    setIsFormOpen(true)
+  }
 
-    if (isFormOpen) {
-        return (
-            <AdminLayout>
-                <div className="space-y-4">
-                    <Button variant="ghost" onClick={handleCloseForm} className="mb-4">
-                        <IconChevronLeft className="mr-2 h-4 w-4" />
-                        Back to Categories
-                    </Button>
-                    <CategoryForm
-                        initialData={editingCategory || undefined}
-                        categories={categories}
-                        onSave={handleSaveCategory}
-                        onCancel={handleCloseForm}
-                    />
-                </div>
-            </AdminLayout>
-        )
-    }
-
-    return (
-        <AdminLayout>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-                        <p className="text-muted-foreground">Manage product categories and hierarchy</p>
-                    </div>
-                    <Button onClick={handleAddCategory}>
-                        <IconPlus className="mr-2 h-4 w-4" />
-                        Add Category
-                    </Button>
-                </div>
-
-                {/* Categories List */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Category List ({categories.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="text-center py-12">
-                                <p className="text-muted-foreground">Loading...</p>
-                            </div>
-                        ) : categories.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-muted-foreground mb-4">No categories yet</p>
-                                <Button onClick={handleAddCategory}>
-                                    <IconPlus className="mr-2 h-4 w-4" />
-                                    Create First Category
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Thumbnail</TableHead>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Description</TableHead>
-                                            <TableHead>Parent Category</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Created</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {categories.map((category) => (
-                                            <TableRow key={category._id}>
-                                                <TableCell>
-                                                    {category.thumbnailUrl ? (
-                                                        <img
-                                                            src={category.thumbnailUrl}
-                                                            alt={category.name}
-                                                            className="w-12 h-12 object-cover rounded"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center text-muted-foreground text-xs">
-                                                            No img
-                                                        </div>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="font-medium">{category.name}</TableCell>
-                                                <TableCell className="max-w-xs truncate">
-                                                    {category.description || '—'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {category.parentCategory ? (
-                                                        <Badge variant="outline">{getParentName(category.parentCategory)}</Badge>
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-sm">Top-level</span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                                                        {category.isActive ? 'Active' : 'Inactive'}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>{new Date(category.createdAt).toLocaleDateString()}</TableCell>
-                                                <TableCell className="text-right space-x-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => handleEditCategory(category)}
-                                                        disabled={deletingCategoryId === category._id}
-                                                    >
-                                                        <IconEdit className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="destructive"
-                                                        onClick={() => handleDeleteCategory(category._id)}
-                                                        disabled={deletingCategoryId === category._id}
-                                                    >
-                                                        {deletingCategoryId === category._id ? (
-                                                            <>
-                                                                <span className="animate-spin mr-2">⏳</span>
-                                                                Deleting...
-                                                            </>
-                                                        ) : (
-                                                            <IconTrash className="h-4 w-4" />
-                                                        )}
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-        </AdminLayout>
+  const handleDeleteCategory = async (categoryId: string) => {
+    const confirmed = window.confirm(
+      '⚠️ Are you sure you want to delete this category?\n\n' +
+        'WARNING: All child categories will also be deleted!\n' +
+        'This action cannot be undone.'
     )
+    if (!confirmed) return
+
+    deleteMutation.mutate(categoryId)
+  }
+
+  const handleSaveCategory = async (data: CategoryFormData) => {
+    if (editingCategory) {
+      // Update existing category
+      await updateMutation.mutateAsync({ id: editingCategory._id, data })
+    } else {
+      // Create new category
+      await createMutation.mutateAsync(data)
+    }
+  }
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+            <p className="text-muted-foreground">Manage product categories with tree structure</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* View Toggle */}
+            <div className="flex items-center bg-muted rounded-lg p-1">
+              <Button
+                variant={viewMode === 'tree' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('tree')}
+                className="gap-2"
+              >
+                🌳 Tree View
+              </Button>
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className="gap-2"
+              >
+                📋 Table View
+              </Button>
+            </div>
+            
+            <Button onClick={handleAddCategory}>
+              <IconPlus className="mr-2 h-4 w-4" />
+              Add Root Category
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Layout: 70% Tree/Table + 30% Detail */}
+        <div className="grid grid-cols-[70%_30%] gap-6">
+          {/* Left Panel: Category Tree or Table */}
+          <div>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-96 bg-muted rounded-lg">
+                <p className="text-muted-foreground">Loading categories...</p>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-96 bg-destructive/10 rounded-lg">
+                <p className="text-destructive">Error loading categories. Please refresh the page.</p>
+              </div>
+            ) : viewMode === 'tree' ? (
+              <CategoryTree
+                data={treeData || []}
+                allCategories={flatCategories}
+                selectedCategoryId={selectedCategory?._id || null}
+                onSelectCategory={setSelectedCategory}
+                onEditCategory={handleEditCategory}
+                onAddChild={handleAddChild}
+                onDeleteCategory={handleDeleteCategory}
+              />
+            ) : (
+              <CategoryTableView
+                data={treeData || []}
+                onSelectCategory={setSelectedCategory}
+                onEditCategory={handleEditCategory}
+                onDeleteCategory={handleDeleteCategory}
+              />
+            )}
+          </div>
+
+          {/* Right Panel: Category Detail */}
+          <div className="sticky top-6 h-fit">
+            <CategoryDetailPanel
+              category={selectedCategory}
+              allCategories={flatCategories}
+              onEdit={handleEditCategory}
+              onAddChild={handleAddChild}
+              onDelete={(categoryId) => handleDeleteCategory(categoryId)}
+            />
+          </div>
+        </div>
+
+        {/* Category Form Modal */}
+        <CategoryFormModal
+          isOpen={isFormOpen}
+          onClose={() => {
+            setIsFormOpen(false)
+            setEditingCategory(null)
+            setParentForNewCategory(null)
+          }}
+          onSave={handleSaveCategory}
+          initialData={editingCategory || undefined}
+          allCategories={flatCategories}
+          parentCategory={parentForNewCategory}
+        />
+      </div>
+    </AdminLayout>
+  )
 }

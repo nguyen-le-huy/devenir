@@ -800,8 +800,6 @@ export default function VariantsPage() {
                             onClick={() => {
                               setEditingVariantId(variant._id)
                               setDrawerOpen(true)
-                              // Update URL to preserve page when navigating to edit
-                              navigate(`/admin/variants/edit/${variant._id}?page=${page}`)
                             }}
                             title="Edit Variant"
                           >

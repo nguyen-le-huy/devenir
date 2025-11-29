@@ -25,6 +25,20 @@ const reviewSchema = new mongoose.Schema(
       minlength: [10, 'Review content must be at least 10 characters'],
       maxlength: [1000, 'Review content must not exceed 1000 characters'],
     },
+    isVerifiedPurchase: {
+      type: Boolean,
+      default: false,
+    },
+    images: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function(v) {
+          return v.length <= 5; // Maximum 5 images per review
+        },
+        message: 'Maximum 5 images allowed per review'
+      }
+    },
   },
   {
     timestamps: true,

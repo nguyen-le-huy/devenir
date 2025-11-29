@@ -20,6 +20,17 @@ const categorySchema = new mongoose.Schema(
       ref: 'Category',
       default: null, // null if it is a top-level category
     },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    sortOrder: {
+      type: Number,
+      default: 0,
+    },
     thumbnailUrl: {
       type: String,
       trim: true,
@@ -36,8 +47,11 @@ const categorySchema = new mongoose.Schema(
 );
 
 // Indexes to optimize queries
-categorySchema.index({ name: 1 });
-categorySchema.index({ parentCategory: 1 });
+categorySchema.index({ slug: 1 }); // Unique lookup
+categorySchema.index({ parentCategory: 1 }); // Tree building
+categorySchema.index({ isActive: 1, sortOrder: 1 }); // Filtered sorted lists
+categorySchema.index({ parentCategory: 1, isActive: 1, sortOrder: 1 }); // Compound for tree queries
+categorySchema.index({ name: 'text' }); // Full-text search
 
 const Category = mongoose.model('Category', categorySchema);
 

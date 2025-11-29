@@ -2,7 +2,11 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
 import connectDB from './config/db.js';
+import logger from './config/logger.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import variantRoutes from './routes/variantRoutes.js';
@@ -17,19 +21,7 @@ connectDB();
 
 const app = express();
 
-// ============ PERFORMANCE MIDDLEWARE ============
-
-// Compression middleware - compress all responses
-app.use(compression({
-  filter: (req, res) => {
-    if (req.headers['x-no-compression']) {
-      return false;
-    }
-    return compression.filter(req, res);
-  },
-  level: 6, // Compression level (0-9, higher = more compression but slower)
-}));
-
+// ============ CORS MIDDLEWARE (MUST BE FIRST!) ============
 // Middleware - CORS configuration cho nhiều origins
 const allowedOrigins = [
   'http://localhost:3000',
@@ -63,19 +55,91 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
+      logger.warn('CORS blocked origin:', { origin });
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
 
+// ============ SECURITY MIDDLEWARE ============
+
+// Helmet - Security headers (after CORS!)
+app.use(helmet({
+  contentSecurityPolicy: false, // Tắt CSP để tránh conflict với CORS
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('Rate limit exceeded', { ip: req.ip, path: req.path });
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests. Please try again later.',
+    });
+  },
+});
+
+app.use('/api/', limiter);
+
+// Data sanitization against NoSQL injection
+// NOTE: Tạm thời tắt do conflict với Express version mới
+// app.use(mongoSanitize({
+//   replaceWith: '_',
+//   onSanitize: ({ req, key }) => {
+//     logger.warn('MongoDB injection attempt detected', { ip: req.ip, key });
+//   },
+// }));
+
+// ============ PERFORMANCE MIDDLEWARE ============
+
+// Compression middleware - compress all responses
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6, // Compression level (0-9, higher = more compression but slower)
+}));
+
 app.use(express.json({ limit: '50mb' })); // Increased limit for large image uploads
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logLevel = res.statusCode >= 400 ? 'warn' : 'http';
+    
+    logger[logLevel](`${req.method} ${req.path}`, {
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+  });
+  
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
