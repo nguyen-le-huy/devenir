@@ -12,7 +12,6 @@ import { CategoryTree } from '@/components/CategoryTree'
 import { CategoryTableView } from '@/components/CategoryTableView'
 import { CategoryDetailPanel } from '@/components/CategoryDetailPanel'
 import { CategoryFormModal } from '@/components/CategoryFormModal'
-import { buildCategoryTree } from '@/utils/categoryHelpers'
 import type { CategoryTreeNode } from '@/utils/categoryHelpers'
 import { categoryService, type CategoryFormData } from '@/services/categoryService'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -135,8 +134,8 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async (categoryId: string) => {
     const confirmed = window.confirm(
       '⚠️ Are you sure you want to delete this category?\n\n' +
-        'WARNING: All child categories will also be deleted!\n' +
-        'This action cannot be undone.'
+      'WARNING: All child categories will also be deleted!\n' +
+      'This action cannot be undone.'
     )
     if (!confirmed) return
 
@@ -182,7 +181,7 @@ export default function CategoriesPage() {
                 📋 Table View
               </Button>
             </div>
-            
+
             <Button onClick={handleAddCategory}>
               <IconPlus className="mr-2 h-4 w-4" />
               Add Root Category

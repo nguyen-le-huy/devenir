@@ -1,7 +1,6 @@
 import styles from './Search.module.css';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { lenisInstance } from '../../App';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
