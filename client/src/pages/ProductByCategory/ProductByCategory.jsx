@@ -19,13 +19,17 @@ const ProductByCategory = () => {
 
     const headerHeight = useHeaderHeight();
 
-    // Lấy categoryId từ URL query params
+    // Lấy categoryId và subcategory từ URL query params
     const [searchParams] = useSearchParams();
     const categoryId = searchParams.get('category');
+    const selectedSubcategory = searchParams.get('subcategory');
+
+    // Sử dụng subcategory ID nếu có, nếu không thì dùng main category ID
+    const activeCategoryId = selectedSubcategory || categoryId;
 
     // Fetch data using React Query hooks
     const { data: categoryData, isLoading: categoryLoading } = useCategoryById(categoryId);
-    const { data: variantsData = [], isLoading: variantsLoading, error } = useVariantsByCategory(categoryId);
+    const { data: variantsData = [], isLoading: variantsLoading, error } = useVariantsByCategory(activeCategoryId);
     const { data: colorsData } = useColors();
 
     // Memoize expensive calculations
@@ -36,11 +40,11 @@ const ProductByCategory = () => {
 
     const loading = categoryLoading || variantsLoading;
 
-    // Reset filters khi category thay đổi
+    // Reset filters khi category hoặc subcategory thay đổi
     useEffect(() => {
         setSelectedSort('Default');
         setSelectedColors([]);
-    }, [categoryId]);
+    }, [categoryId, selectedSubcategory]);
 
     const handleOpenFilter = () => {
         setIsFilterOpen(true);
@@ -132,6 +136,11 @@ const ProductByCategory = () => {
         sku: variant.sku,
     });
 
+    // Extract subcategories from category data (must be before early returns)
+    const subcategories = useMemo(() => {
+        return category?.children || [];
+    }, [category]);
+
     if (loading) {
         return (
             <div className={styles.productByCategory}>
@@ -162,12 +171,37 @@ const ProductByCategory = () => {
     return (
         <div className={styles.productByCategory}>
             <h1 className={styles.title}>{category?.name || 'Products'}</h1>
-            <div className={styles.category}>
-                <p className={styles.active}>All</p>
-                <p>Cashmere Scarves</p>
-                <p>Wool Scarves</p>
-                <p>Silk Scarves</p>
-            </div>
+
+            {/* Only show subcategories if they exist */}
+            {subcategories.length > 0 && (
+                <div className={styles.category}>
+                    <p
+                        className={!selectedSubcategory ? styles.active : ''}
+                        onClick={() => {
+                            const newParams = new URLSearchParams(searchParams);
+                            newParams.delete('subcategory');
+                            window.location.search = newParams.toString();
+                        }}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        All
+                    </p>
+                    {subcategories.map((subcat) => (
+                        <p
+                            key={subcat._id}
+                            className={selectedSubcategory === subcat._id ? styles.active : ''}
+                            onClick={() => {
+                                const newParams = new URLSearchParams(searchParams);
+                                newParams.set('subcategory', subcat._id);
+                                window.location.search = newParams.toString();
+                            }}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            {subcat.name}
+                        </p>
+                    ))}
+                </div>
+            )}
 
             <div className={styles.countAndFilter} style={{ top: `${headerHeight}px` }}>
                 <span className={styles.count}>{filteredVariants.length} items</span>

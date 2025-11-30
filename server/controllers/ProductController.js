@@ -295,9 +295,9 @@ export const createVariant = asyncHandler(async (req, res) => {
 
     // Validate required fields
     if (!sku || !size || !color) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Please provide all required fields: sku, size, color' 
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields: sku, size, color'
       });
     }
 
@@ -349,15 +349,15 @@ export const updateVariant = asyncHandler(async (req, res) => {
 
     // Try to find by SKU first (case-insensitive), then by ID
     let variant;
-    
+
     // Check if it's a valid ObjectId format
     const isValidObjectId = skuOrId.length === 24 && /^[0-9a-fA-F]{24}$/.test(skuOrId);
-    
+
     if (isValidObjectId) {
       // Try by ID first if it looks like an ObjectId
       variant = await ProductVariant.findById(skuOrId);
     }
-    
+
     // If not found by ID or not an ObjectId format, try by SKU
     if (!variant) {
       variant = await ProductVariant.findOne({ sku: skuOrId.toUpperCase() });
@@ -405,10 +405,10 @@ export const updateVariant = asyncHandler(async (req, res) => {
  */
 export const deleteVariant = asyncHandler(async (req, res) => {
   const skuOrId = req.params.skuOrId;
-  
+
   // Check if it's a valid ObjectId format
   const isValidObjectId = skuOrId.length === 24 && /^[0-9a-fA-F]{24}$/.test(skuOrId);
-  
+
   let variant;
   if (isValidObjectId) {
     // Try by ID first if it looks like an ObjectId
@@ -467,7 +467,7 @@ export const getAllVariants = asyncHandler(async (req, res) => {
           // Use product_id field to fetch product name
           const prod = await Product.findById(variant.product_id);
           const variantObj = variant.toObject();
-          
+
           // Ensure quantity and stock are always in response
           return {
             ...variantObj,

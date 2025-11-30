@@ -133,8 +133,8 @@ const Header = () => {
                             </li>
                         ))}
                         {/* Giữ nguyên Gallery và Contact */}
+                        <li className={styles.link}>All</li>
                         <li className={styles.link}>Gallery</li>
-                        <li className={styles.link}>Contact</li>
                     </ul>
                 </div>
                 <div className={styles.actions}>
@@ -194,8 +194,8 @@ const Header = () => {
                                 </li>
                             ))}
                             {/* Giữ nguyên Gallery và Contact */}
+                            <li className={styles.overlayTopLink}>All</li>
                             <li className={styles.overlayTopLink}>Gallery</li>
-                            <li className={styles.overlayTopLink}>Contact</li>
                         </ul>
                     </div>
                     <div className={styles.overlayBottom}>

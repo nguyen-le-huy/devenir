@@ -14,7 +14,7 @@ export default function EditProductPage() {
   const [editingProduct, setEditingProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const { updateProduct } = useProducts()
-  
+
   // Get preserved page from URL params
   const preservedPage = searchParams.get('page') || '1'
 
