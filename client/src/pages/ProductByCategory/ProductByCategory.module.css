@@ -9,6 +9,19 @@
     display: flex;
     gap: 20px;
     align-items: center;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.category::-webkit-scrollbar {
+    display: none;
 }
 
 .category>p {
@@ -163,7 +176,6 @@
     }
 
     .category {
-        flex-wrap: wrap;
         gap: 15px;
         padding: 10px;
     }

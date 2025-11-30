@@ -1,31 +1,44 @@
 import { useEffect } from 'react';
-import { lenisInstance } from '../App'; // Đảm bảo đường dẫn import đúng tới App.jsx
+import { lenisInstance } from '../App';
+
+// Reference counter để track số lượng components đang yêu cầu stop scroll
+let scrollStopCount = 0;
 
 /**
- * Custom hook để dừng Lenis scroll khi component mount hoặc khi điều kiện active là true,
- * và khởi động lại khi unmount hoặc active là false.
+ * Custom hook để dừng Lenis scroll khi component mount,
+ * và khởi động lại khi unmount.
+ * Sử dụng reference counting để handle nhiều components cùng lúc.
  * 
  * @param {boolean} active - Trạng thái kích hoạt (mặc định là true). Nếu true, sẽ stop lenis.
  */
 export const useLenisControl = (active = true) => {
     useEffect(() => {
-        if (active) {
-            // Dừng Lenis khi active
+        // Chỉ stop khi active = true
+        if (!active) return;
+
+        // Tăng counter
+        scrollStopCount++;
+
+        // Chỉ stop nếu đây là component đầu tiên yêu cầu stop
+        if (scrollStopCount === 1) {
             if (lenisInstance) {
                 lenisInstance.stop();
             }
-        } else {
-            // Khởi động lại nếu active chuyển sang false (tuỳ chọn, thường cleanup sẽ lo việc này)
-            if (lenisInstance) {
-                lenisInstance.start();
-            }
+            document.body.style.overflow = 'hidden';
         }
 
-        // Cleanup function: chạy khi component unmount hoặc active thay đổi
+        // Cleanup function: chạy khi component unmount
         return () => {
-            if (active && lenisInstance) {
-                lenisInstance.start();
+            // Giảm counter
+            scrollStopCount--;
+
+            // Chỉ start lại nếu không còn component nào yêu cầu stop
+            if (scrollStopCount === 0) {
+                if (lenisInstance) {
+                    lenisInstance.start();
+                }
+                document.body.style.overflow = '';
             }
         };
-    }, [active]);
+    }, []); // Empty dependency array - chỉ chạy khi mount/unmount
 };

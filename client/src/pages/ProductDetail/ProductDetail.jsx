@@ -11,6 +11,8 @@ import Loading from '../../components/Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import ColourVarients from '../../components/ColourVarients/ColourVarients.jsx';
+import SelectSize from '../../components/SelectSize/SelectSize.jsx';
+import SizeAndFit from '../../components/SizeAndFit/SizeAndFit.jsx';
 
 export default function ProductDetail() {
     const [searchParams] = useSearchParams();
@@ -22,6 +24,7 @@ export default function ProductDetail() {
     const [activeSlide, setActiveSlide] = useState(0);
     const [totalSlides, setTotalSlides] = useState(4);
     const [isColourVariantsOpen, setIsColourVariantsOpen] = useState(false);
+    const [isSelectSizeOpen, setIsSelectSizeOpen] = useState(false);
 
     // Product data states
     const [loading, setLoading] = useState(true);
@@ -252,7 +255,7 @@ export default function ProductDetail() {
                             </div>
                         </div>
                         <div className={styles.buttonList}>
-                            <button className={styles.addToBag}>Add to Bag</button>
+                            <button className={styles.addToBag} onClick={() => setIsSelectSizeOpen(true)}>Add to Bag</button>
                             <button className={styles.sendGift}>Send using 4GIFT</button>
                             <p className={styles.instalment}>
                                 Instalment payments available{' '}
@@ -322,7 +325,12 @@ export default function ProductDetail() {
                     </div>
                 </div>
             </div>
-
+            {isSelectSizeOpen && (
+                <SelectSize
+                    isOpen={isSelectSizeOpen}
+                    onClose={() => setIsSelectSizeOpen(false)}
+                />
+            )}
             {/* ✅ Reusable ProductCarousel với title khác */}
             <ProductCarousel
                 title="We Recommend"
