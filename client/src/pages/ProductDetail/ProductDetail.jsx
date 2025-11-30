@@ -1,11 +1,12 @@
 import styles from './ProductDetail.module.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
 import ProductCarousel from '../../components/ProductCarousel/ProductCarousel.jsx';
 import { scarves } from '../../data/scarvesData.js';
 import { getVariantById } from '../../services/productService.js';
 import { getAllColors, createColorMap } from '../../services/colorService.js';
+import { useVariantsByCategory } from '../../hooks/useProducts.js';
 import Loading from '../../components/Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -121,7 +122,42 @@ export default function ProductDetail() {
     const currentColorName = variant?.color || 'Unknown';
     const currentColorHex = colorMap[currentColorName] || '#ccc';
 
-    const relatedProducts = scarves.slice(0, 8);
+    // Fetch variants from the same category
+    // product.category is populated, so we need to use _id
+    const categoryId = product?.category?._id || product?.category;
+    const { data: variantsData } = useVariantsByCategory(categoryId);
+
+    // Transform and filter variants to unique colors for related products
+    const relatedProducts = useMemo(() => {
+        const variants = variantsData || [];
+
+        if (!variants || variants.length === 0) return [];
+
+        // Remove duplicates by color (keep only one variant per color)
+        const colorMap = new Map();
+        const uniqueVariants = variants.filter(variantItem => {
+            // Exclude the current variant
+            if (variantItem._id === variantId) return false;
+
+            if (variantItem.color && !colorMap.has(variantItem.color)) {
+                colorMap.set(variantItem.color, true);
+                return true;
+            }
+            return false;
+        });
+
+        // Transform to product format and limit to 8 items for carousel
+        return uniqueVariants.slice(0, 8).map(variantItem => ({
+            id: variantItem._id,
+            name: variantItem.productInfo?.name || 'Product',
+            price: variantItem.price,
+            image: variantItem.mainImage || '/images/placeholder.png',
+            imageHover: variantItem.hoverImage || variantItem.mainImage || '/images/placeholder.png',
+            color: variantItem.color,
+            size: variantItem.size,
+            sku: variantItem.sku,
+        }));
+    }, [variantsData, variantId]);
 
     if (loading) {
         return (

@@ -77,10 +77,10 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 }));
 
-// Rate limiting
+// Rate limiting - More generous for development
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 1000, // Limit each IP to 1000 requests per minute (generous for local dev)
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -123,11 +123,11 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
-  
+
   res.on('finish', () => {
     const duration = Date.now() - start;
     const logLevel = res.statusCode >= 400 ? 'warn' : 'http';
-    
+
     logger[logLevel](`${req.method} ${req.path}`, {
       method: req.method,
       path: req.path,
@@ -137,7 +137,7 @@ app.use((req, res, next) => {
       userAgent: req.get('user-agent'),
     });
   });
-  
+
   next();
 });
 
