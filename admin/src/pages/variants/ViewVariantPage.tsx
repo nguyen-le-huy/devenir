@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import VariantDrawer from '@/components/VariantDrawer'
 import axiosInstance from '@/services/axiosConfig'
+import { toast } from 'sonner'
 
 interface Variant {
   _id: string
@@ -80,7 +81,7 @@ export default function ViewVariantPage() {
       const variantData = allVariants.find((v: any) => v._id === id)
 
       if (!variantData) {
-        alert('Variant not found')
+        toast.error('Variant not found')
         navigate(`/admin/variants?page=${preservedPage}`)
         return
       }
@@ -98,7 +99,7 @@ export default function ViewVariantPage() {
       setVariant(variantData)
     } catch (error) {
       console.error('Error fetching variant:', error)
-      alert('Failed to load variant')
+      toast.error('Failed to load variant')
       navigate(`/admin/variants?page=${preservedPage}`)
     } finally {
       setLoading(false)
@@ -227,7 +228,7 @@ export default function ViewVariantPage() {
                     variant="ghost"
                     onClick={() => {
                       navigator.clipboard.writeText(variant.sku)
-                      alert('SKU copied to clipboard')
+                      toast.success('SKU copied to clipboard')
                     }}
                   >
                     📋 Copy

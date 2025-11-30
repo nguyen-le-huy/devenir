@@ -6,6 +6,7 @@ import { IconChevronLeft } from "@tabler/icons-react"
 import ProductFormSimplified, { type ProductFormData } from "@/components/ProductFormSimplified"
 import { useProducts } from "@/hooks/useProducts"
 import { api } from "@/services/api"
+import { toast } from "sonner"
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>()
@@ -32,12 +33,12 @@ export default function EditProductPage() {
         if (data.success) {
           setEditingProduct(data.data)
         } else {
-          alert('Product not found')
+          toast.error('Product not found')
           navigate(`/admin/products?page=${preservedPage}`)
         }
       } catch (error) {
         console.error('Error loading product:', error)
-        alert('Error loading product')
+        toast.error('Error loading product')
         navigate(`/admin/products?page=${preservedPage}`)
       } finally {
         setLoading(false)
@@ -49,8 +50,8 @@ export default function EditProductPage() {
 
   const handleSaveProduct = async (data: ProductFormData) => {
     try {
-      if (!data.name || !data.description || !data.category) {
-        alert('Please fill in: Name, Description, Category')
+      if (!data.name || !data.description || !data.category || !data.brand) {
+        toast.error('Please fill in: Name, Description, Category, Brand')
         return
       }
 
@@ -80,15 +81,15 @@ export default function EditProductPage() {
       const result = await updateProduct(id!, productData as any)
 
       if (result) {
-        alert('Product updated successfully!')
+        toast.success('Product updated successfully')
         navigate(`/admin/products?page=${preservedPage}`)
       } else {
-        alert('Failed to update product')
+        toast.error('Failed to update product')
       }
     } catch (error: any) {
       console.error('Error updating product:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error updating product'
-      alert(`Error: ${errorMsg}`)
+      toast.error(errorMsg)
     }
   }
 

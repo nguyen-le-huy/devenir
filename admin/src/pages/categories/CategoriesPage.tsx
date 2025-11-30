@@ -15,6 +15,16 @@ import { CategoryFormModal } from '@/components/CategoryFormModal'
 import type { CategoryTreeNode } from '@/utils/categoryHelpers'
 import { categoryService, type CategoryFormData } from '@/services/categoryService'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '@/lib/queryClient'
+import { toast } from 'sonner'
+import { useIsMobile } from '@/hooks/use-mobile'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 
 export default function CategoriesPage() {
   const queryClient = useQueryClient()
@@ -23,6 +33,8 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<CategoryTreeNode | null>(null)
   const [parentForNewCategory, setParentForNewCategory] = useState<CategoryTreeNode | null>(null)
   const [viewMode, setViewMode] = useState<'tree' | 'table'>('tree')
+  const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   // Fetch categories tree (with levels calculated by backend)
   const {
@@ -30,12 +42,13 @@ export default function CategoriesPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['categories', 'tree'],
+    queryKey: QUERY_KEYS.categories.tree(),
     queryFn: async () => {
       const response = await categoryService.getCategoriesTree()
       return response.data || []
     },
-    staleTime: 1000 * 60 * 15, // 15 minutes
+    staleTime: 30 * 1000, // 30 seconds - realtime for admin
+    gcTime: 5 * 60 * 1000, // 5 minutes
   })
 
   // Flatten tree for easy lookup (for form parent selection)
@@ -48,24 +61,35 @@ export default function CategoriesPage() {
     return flatten(treeData || [])
   }, [treeData])
 
+  const invalidateCategories = () => {
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.categories.all,
+      refetchType: 'all',
+    })
+  }
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: CategoryFormData) => categoryService.createCategory(data),
     onSuccess: (response) => {
       if (response.success) {
-        alert('✅ Category created successfully!')
-        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        toast.success('Category created successfully')
+        invalidateCategories()
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.products.lists(),
+          refetchType: 'active'
+        })
         setIsFormOpen(false)
         setEditingCategory(null)
         setParentForNewCategory(null)
       } else {
-        alert('❌ Failed to create category')
+        toast.error('Failed to create category')
       }
     },
     onError: (error: any) => {
       console.error('Error creating category:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error creating category'
-      alert(`❌ Error: ${errorMsg}`)
+      toast.error(errorMsg)
     },
   })
 
@@ -75,19 +99,23 @@ export default function CategoriesPage() {
       categoryService.updateCategory(id, data),
     onSuccess: (response) => {
       if (response.success) {
-        alert('✅ Category updated successfully!')
-        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        toast.success('Category updated successfully')
+        invalidateCategories()
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.products.lists(),
+          refetchType: 'active'
+        })
         setIsFormOpen(false)
         setEditingCategory(null)
         setParentForNewCategory(null)
       } else {
-        alert('❌ Failed to update category')
+        toast.error('Failed to update category')
       }
     },
     onError: (error: any) => {
       console.error('Error updating category:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error updating category'
-      alert(`❌ Error: ${errorMsg}`)
+      toast.error(errorMsg)
     },
   })
 
@@ -96,19 +124,23 @@ export default function CategoriesPage() {
     mutationFn: (categoryId: string) => categoryService.deleteCategory(categoryId),
     onSuccess: (response, deletedId) => {
       if (response.success) {
-        alert('✅ Category deleted successfully!')
-        queryClient.invalidateQueries({ queryKey: ['categories'] })
+        toast.success('Category deleted successfully')
+        invalidateCategories()
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.products.lists(),
+          refetchType: 'active'
+        })
         if (selectedCategory?._id === deletedId) {
           setSelectedCategory(null)
         }
       } else {
-        alert('❌ Failed to delete category')
+        toast.error('Failed to delete category')
       }
     },
     onError: (error: any) => {
       console.error('Error deleting category:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting category'
-      alert(`❌ Error: ${errorMsg}`)
+      toast.error(errorMsg)
     },
   })
 
@@ -142,6 +174,14 @@ export default function CategoriesPage() {
     deleteMutation.mutate(categoryId)
   }
 
+  const handleSelectCategory = (category: CategoryTreeNode | null) => {
+    setSelectedCategory(category)
+
+    if (isMobile && category) {
+      setIsDetailSheetOpen(true)
+    }
+  }
+
   const handleSaveCategory = async (data: CategoryFormData) => {
     if (editingCategory) {
       // Update existing category
@@ -156,19 +196,18 @@ export default function CategoriesPage() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
             <p className="text-muted-foreground">Manage product categories with tree structure</p>
           </div>
-          <div className="flex items-center gap-2">
-            {/* View Toggle */}
-            <div className="flex items-center bg-muted rounded-lg p-1">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex items-center justify-between gap-2 bg-muted rounded-lg p-1 sm:w-auto">
               <Button
                 variant={viewMode === 'tree' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('tree')}
-                className="gap-2"
+                className="gap-2 flex-1"
               >
                 🌳 Tree View
               </Button>
@@ -176,23 +215,23 @@ export default function CategoriesPage() {
                 variant={viewMode === 'table' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('table')}
-                className="gap-2"
+                className="gap-2 flex-1"
               >
                 📋 Table View
               </Button>
             </div>
 
-            <Button onClick={handleAddCategory}>
+            <Button onClick={handleAddCategory} className="w-full sm:w-auto">
               <IconPlus className="mr-2 h-4 w-4" />
               Add Root Category
             </Button>
           </div>
         </div>
 
-        {/* Main Layout: 70% Tree/Table + 30% Detail */}
-        <div className="grid grid-cols-[70%_30%] gap-6">
+        {/* Main Layout: responsive grid */}
+        <div className="grid gap-6 lg:grid-cols-[70%_30%]">
           {/* Left Panel: Category Tree or Table */}
-          <div>
+          <div className="space-y-4">
             {isLoading ? (
               <div className="flex items-center justify-center h-96 bg-muted rounded-lg">
                 <p className="text-muted-foreground">Loading categories...</p>
@@ -206,7 +245,7 @@ export default function CategoriesPage() {
                 data={treeData || []}
                 allCategories={flatCategories}
                 selectedCategoryId={selectedCategory?._id || null}
-                onSelectCategory={setSelectedCategory}
+                onSelectCategory={handleSelectCategory}
                 onEditCategory={handleEditCategory}
                 onAddChild={handleAddChild}
                 onDeleteCategory={handleDeleteCategory}
@@ -214,23 +253,35 @@ export default function CategoriesPage() {
             ) : (
               <CategoryTableView
                 data={treeData || []}
-                onSelectCategory={setSelectedCategory}
+                onSelectCategory={handleSelectCategory}
                 onEditCategory={handleEditCategory}
                 onDeleteCategory={handleDeleteCategory}
               />
             )}
+
+            {isMobile && selectedCategory && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setIsDetailSheetOpen(true)}
+              >
+                View Category Details
+              </Button>
+            )}
           </div>
 
           {/* Right Panel: Category Detail */}
-          <div className="sticky top-6 h-fit">
-            <CategoryDetailPanel
-              category={selectedCategory}
-              allCategories={flatCategories}
-              onEdit={handleEditCategory}
-              onAddChild={handleAddChild}
-              onDelete={(categoryId) => handleDeleteCategory(categoryId)}
-            />
-          </div>
+          {!isMobile && (
+            <div className="sticky top-6 h-fit">
+              <CategoryDetailPanel
+                category={selectedCategory}
+                allCategories={flatCategories}
+                onEdit={handleEditCategory}
+                onAddChild={handleAddChild}
+                onDelete={(categoryId) => handleDeleteCategory(categoryId)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Category Form Modal */}
@@ -246,6 +297,38 @@ export default function CategoriesPage() {
           allCategories={flatCategories}
           parentCategory={parentForNewCategory}
         />
+
+        {/* Mobile Detail Sheet */}
+        {isMobile && (
+          <Sheet open={isDetailSheetOpen} onOpenChange={setIsDetailSheetOpen}>
+            <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+              <SheetHeader className="text-left">
+                <SheetTitle>Category Details</SheetTitle>
+                <SheetDescription>
+                  Review structure, metadata, and quick actions for the selected category.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-4">
+                <CategoryDetailPanel
+                  category={selectedCategory}
+                  allCategories={flatCategories}
+                  onEdit={(category) => {
+                    handleEditCategory(category)
+                    setIsDetailSheetOpen(false)
+                  }}
+                  onAddChild={(category) => {
+                    handleAddChild(category)
+                    setIsDetailSheetOpen(false)
+                  }}
+                  onDelete={(categoryId) => {
+                    handleDeleteCategory(categoryId)
+                    setIsDetailSheetOpen(false)
+                  }}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
     </AdminLayout>
   )

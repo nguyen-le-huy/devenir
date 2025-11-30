@@ -15,6 +15,7 @@ import {
 import { IconUpload, IconTrash } from '@tabler/icons-react'
 import { api } from '@/services/api'
 import type { Category, CategoryFormData } from '@/services/categoryService'
+import { toast } from 'sonner'
 
 interface CategoryFormProps {
     initialData?: Partial<Category>
@@ -139,14 +140,14 @@ export function CategoryForm({ initialData, categories = [], onSave, onCancel }:
                 const imageUrl = response.data.data.url
                 setFormData({ ...formData, thumbnailUrl: imageUrl })
                 setThumbnailPreview(imageUrl)
-                // alert('Image uploaded successfully!') // Removed alert for smoother UX
+                // toast.success('Image uploaded successfully!') // Intentionally omitted for smoother UX
             } else {
-                alert(response.data.message || 'Upload failed')
+                toast.error(response.data.message || 'Upload failed')
             }
         } catch (error: any) {
             console.error('Upload error:', error)
             const errorMsg = error?.response?.data?.message || error?.message || 'Error uploading image'
-            alert(`Error: ${errorMsg}`)
+            toast.error(errorMsg)
         } finally {
             setUploadingImage(false)
         }
@@ -156,7 +157,7 @@ export function CategoryForm({ initialData, categories = [], onSave, onCancel }:
         e.preventDefault()
 
         if (!formData.name.trim()) {
-            alert('Please provide category name')
+            toast.error('Please provide category name')
             return
         }
 

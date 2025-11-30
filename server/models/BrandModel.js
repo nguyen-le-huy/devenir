@@ -19,6 +19,25 @@ const brandSchema = new mongoose.Schema(
       trim: true,
       maxlength: [500, 'Description must not exceed 500 characters'],
     },
+    tagline: {
+      type: String,
+      trim: true,
+      maxlength: [120, 'Tagline must not exceed 120 characters'],
+    },
+    originCountry: {
+      type: String,
+      trim: true,
+      maxlength: [60, 'Origin country must not exceed 60 characters'],
+    },
+    foundedYear: {
+      type: Number,
+      min: [1850, 'Founded year must be after 1850'],
+      max: [new Date().getFullYear() + 1, 'Founded year must be realistic'],
+    },
+    website: {
+      type: String,
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -31,6 +50,7 @@ const brandSchema = new mongoose.Schema(
 
 // Indexes to optimize queries
 brandSchema.index({ name: 1 });
+brandSchema.index({ isActive: 1 });
 
 const Brand = mongoose.model('Brand', brandSchema);
 

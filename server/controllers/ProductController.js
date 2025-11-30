@@ -2,6 +2,16 @@ import Product from '../models/ProductModel.js';
 import ProductVariant from '../models/ProductVariantModel.js';
 import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
+import { emitRealtimeEvent } from '../utils/realtimeEmitter.js';
+import { clearCache } from '../middleware/cacheMiddleware.js';
+
+const BRAND_CACHE_KEY = '__express__/api/brands';
+const invalidateBrandCache = () => {
+  const cleared = clearCache(BRAND_CACHE_KEY);
+  if (cleared > 0) {
+    console.log(`Cleared ${cleared} cached brand responses after product mutation`);
+  }
+};
 
 /**
  * @desc    Get all products with pagination, filtering, and search
@@ -109,18 +119,25 @@ export const createProduct = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create product
-  const product = await Product.create({
+  // Validate brand - only include if it's a valid ObjectId
+  const productData = {
     name,
     description,
     category,
-    brand,
     tags: tags || [],
     status: status || 'draft',
     seoTitle,
     seoDescription,
     urlSlug,
-  });
+  };
+
+  // Only add brand if it's a valid MongoDB ObjectId (24 hex characters)
+  if (brand && mongoose.Types.ObjectId.isValid(brand) && brand.length === 24) {
+    productData.brand = brand;
+  }
+
+  // Create product
+  const product = await Product.create(productData);
 
   // Create variants if provided
   if (variants && Array.isArray(variants) && variants.length > 0) {
@@ -144,6 +161,13 @@ export const createProduct = asyncHandler(async (req, res) => {
       throw new Error(`Failed to create variants: ${variantError.message}`);
     }
   }
+
+  emitRealtimeEvent(req, 'product:created', {
+    productId: product._id,
+    name: product.name,
+    category: product.category?.toString?.() || product.category,
+  });
+  invalidateBrandCache();
 
   res.status(201).json({
     success: true,
@@ -189,7 +213,13 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (name) product.name = name;
   if (description) product.description = description;
   if (category) product.category = category;
-  if (brand) product.brand = brand;
+  // Only update brand if it's a valid MongoDB ObjectId
+  if (brand && mongoose.Types.ObjectId.isValid(brand) && brand.length === 24) {
+    product.brand = brand;
+  } else if (brand) {
+    // If brand is provided but invalid, set it to undefined to remove it
+    product.brand = undefined;
+  }
   if (tags) product.tags = tags;
   if (status) product.status = status;
   if (seoTitle) product.seoTitle = seoTitle;
@@ -251,6 +281,12 @@ export const updateProduct = asyncHandler(async (req, res) => {
   }
 
   console.log('Product update completed successfully');
+  emitRealtimeEvent(req, 'product:updated', {
+    productId: product._id,
+    category: product.category?.toString?.() || product.category,
+  });
+  invalidateBrandCache();
+
   res.status(200).json({
     success: true,
     message: 'Product updated successfully',
@@ -272,6 +308,11 @@ export const deleteProduct = asyncHandler(async (req, res) => {
 
   // Delete associated variants
   await ProductVariant.deleteMany({ product_id: req.params.id });
+
+  emitRealtimeEvent(req, 'product:deleted', {
+    productId: product._id,
+  });
+  invalidateBrandCache();
 
   res.status(200).json({
     success: true,
@@ -321,6 +362,12 @@ export const createVariant = asyncHandler(async (req, res) => {
     });
 
     const variantObj = variant.toObject();
+
+    emitRealtimeEvent(req, 'variant:created', {
+      productId: product._id,
+      variantId: variant._id,
+      sku: variant.sku,
+    });
 
     res.status(201).json({
       success: true,
@@ -383,6 +430,12 @@ export const updateVariant = asyncHandler(async (req, res) => {
     variant = await variant.save();
     const variantObj = variant.toObject();
 
+    emitRealtimeEvent(req, 'variant:updated', {
+      productId: variant.product_id,
+      variantId: variant._id,
+      sku: variant.sku,
+    });
+
     res.status(200).json({
       success: true,
       message: 'Variant updated successfully',
@@ -421,6 +474,12 @@ export const deleteVariant = asyncHandler(async (req, res) => {
   if (!variant) {
     return res.status(404).json({ success: false, message: 'Variant not found' });
   }
+
+  emitRealtimeEvent(req, 'variant:deleted', {
+    variantId: variant._id,
+    sku: variant.sku,
+    productId: variant.product_id,
+  });
 
   res.status(200).json({
     success: true,
@@ -616,6 +675,12 @@ export const bulkUpdateVariants = asyncHandler(async (req, res) => {
     { sku: { $in: skus } },
     updateQuery
   );
+
+  emitRealtimeEvent(req, 'variant:bulk-updated', {
+    skus,
+    operation,
+    amount,
+  });
 
   res.status(200).json({
     success: true,

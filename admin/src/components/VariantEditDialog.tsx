@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -70,11 +71,11 @@ export function VariantEditDialog({ variant, isOpen, onClose, onSave, customColo
       if (response.data.success) {
         const newImages = response.data.data.map((img: any) => img.url)
         handleChange("images", [...(editedVariant?.images || []), ...newImages])
-        alert(`${newImages.length} image(s) uploaded successfully!`)
+        toast.success(`${newImages.length} image(s) uploaded successfully`)
       }
     } catch (error: any) {
       console.error("Upload error:", error)
-      alert("Error uploading images")
+      toast.error("Error uploading images")
     } finally {
       setUploadingImages(false)
       // Reset input

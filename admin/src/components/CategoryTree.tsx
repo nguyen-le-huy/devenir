@@ -185,19 +185,40 @@ export function CategoryTree({
       {/* Filter Bar */}
       <Card>
         <CardContent className="pt-6 space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search categories..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
+          {/* Search & quick actions */}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full">
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleAll}
+              className="gap-2 w-full sm:w-auto"
+            >
+              {expandedNodes.size > 0 ? (
+                <>
+                  <IconChevronDown className="h-4 w-4" />
+                  Collapse All
+                </>
+              ) : (
+                <>
+                  <IconChevronRight className="h-4 w-4" />
+                  Expand All
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Filters Row */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {/* Status Filter */}
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Status</label>
@@ -231,7 +252,7 @@ export function CategoryTree({
             </div>
 
             {/* Sort Filter */}
-            <div className="space-y-1">
+            <div className="space-y-1 xl:col-span-1 col-span-full">
               <label className="text-xs text-muted-foreground">Sort By</label>
               <select
                 className="w-full border rounded-md p-2 text-sm bg-background"
@@ -246,44 +267,21 @@ export function CategoryTree({
             </div>
           </div>
 
-          {/* Controls Row */}
-          <div className="flex items-center justify-between pt-2 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleAll}
-              className="gap-2"
-            >
-              {expandedNodes.size > 0 ? (
-                <>
-                  <IconChevronDown className="h-4 w-4" />
-                  Collapse All
-                </>
-              ) : (
-                <>
-                  <IconChevronRight className="h-4 w-4" />
-                  Expand All
-                </>
-              )}
-            </Button>
-
-            {/* Stats with Products Count */}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          {/* Stats Row */}
+          <div className="border-t pt-4">
+            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center xl:gap-4">
               <div className="flex items-center gap-1">
                 <span className="font-medium">{stats.root}</span>
                 <span>Root</span>
               </div>
-              <span className="text-gray-300">•</span>
               <div className="flex items-center gap-1">
                 <span className="font-medium">{stats.total}</span>
                 <span>Total</span>
               </div>
-              <span className="text-gray-300">•</span>
               <div className="flex items-center gap-1">
                 <span className="font-medium text-blue-600">{stats.products}</span>
                 <span>Products</span>
               </div>
-              <span className="text-gray-300">•</span>
               <div className="flex items-center gap-1">
                 <span className="font-medium text-green-600">{stats.active}</span>
                 <span>Active</span>

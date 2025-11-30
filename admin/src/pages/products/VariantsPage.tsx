@@ -27,12 +27,16 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { useVariantsQuery, useDeleteVariant } from "@/hooks/useVariantsQuery"
 import { useProductsQuery } from "@/hooks/useProductsQuery"
 import { useColorsQuery } from "@/hooks/useColorsQuery"
+import { toast } from 'sonner'
 
 // Import types from hook files
+type VariantProductRef = string | { _id: string }
+
 type Variant = {
   _id: string
   sku: string
-  product: string
+  product?: VariantProductRef
+  product_id?: string
   productName?: string
   size: string
   color: string | null
@@ -149,6 +153,20 @@ export default function VariantsPage() {
     return 'text-base'
   }
 
+  const resolveVariantProductId = useCallback((variant: Variant) => {
+    if (variant.product_id) {
+      return variant.product_id
+    }
+
+    if (!variant.product) return ''
+
+    if (typeof variant.product === 'string') {
+      return variant.product
+    }
+
+    return variant.product._id || ''
+  }, [])
+
   // Sync page to URL search params
   React.useEffect(() => {
     const currentPage = searchParams.get('page')
@@ -207,7 +225,7 @@ export default function VariantsPage() {
 
     // Product filter
     if (filterProduct !== "all") {
-      filtered = filtered.filter((v: Variant) => v.product === filterProduct)
+      filtered = filtered.filter((v: Variant) => resolveVariantProductId(v) === filterProduct)
     }
 
     // Size filter
@@ -231,7 +249,7 @@ export default function VariantsPage() {
     }
 
     return filtered
-  }, [variants, debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus])
+  }, [variants, debouncedSearchTerm, filterProduct, filterSize, filterColor, filterStockStatus, resolveVariantProductId])
 
   // Memoize paginated variants
   const paginatedVariants = useMemo(() => {
@@ -311,10 +329,10 @@ export default function VariantsPage() {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      alert("CSV exported successfully!")
+      toast.success("CSV exported successfully")
     } catch (error) {
       console.error("Error exporting CSV:", error)
-      alert("Failed to export CSV")
+      toast.error("Failed to export CSV")
     }
   }, [filteredVariants, getStockStatus])
 
@@ -338,7 +356,7 @@ export default function VariantsPage() {
           const missingCols = requiredColumns.filter((col) => !headers.includes(col))
 
           if (missingCols.length > 0) {
-            alert(`Missing required columns: ${missingCols.join(", ")}`)
+            toast.error(`Missing required columns: ${missingCols.join(", ")}`)
             return
           }
 
@@ -367,11 +385,11 @@ export default function VariantsPage() {
             }
           }
 
-          alert(`Imported ${importedVariants.length} variants successfully!`)
+          toast.success(`Imported ${importedVariants.length} variants successfully`)
           // React Query will auto-refetch after mutation
         } catch (error) {
           console.error("Error reading CSV:", error)
-          alert("Failed to import CSV")
+          toast.error("Failed to import CSV")
         }
       }
       reader.readAsText(file)
@@ -384,10 +402,10 @@ export default function VariantsPage() {
     if (confirm("Are you sure you want to delete this variant? This action cannot be undone.")) {
       try {
         await deleteVariantMutation.mutateAsync(variantId)
-        alert("Variant deleted successfully")
+        toast.success("Variant deleted successfully")
       } catch (error) {
         console.error("Error deleting variant:", error)
-        alert("Failed to delete variant")
+        toast.error("Failed to delete variant")
       }
     }
   }

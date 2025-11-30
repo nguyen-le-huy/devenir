@@ -16,6 +16,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { api } from '@/services/api'
 import { IconUpload, IconTrash, IconAlertTriangle } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { useIsMobile } from '@/hooks/use-mobile'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 
 interface CategoryFormModalProps {
   isOpen: boolean
@@ -48,6 +57,7 @@ export function CategoryFormModal({
   const [thumbnailPreview, setThumbnailPreview] = useState<string>(initialData?.thumbnailUrl || '')
   const [isSaving, setIsSaving] = useState(false)
   const [parentSearchTerm, setParentSearchTerm] = useState('')
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (isOpen) {
@@ -177,12 +187,12 @@ export function CategoryFormModal({
         setFormData({ ...formData, thumbnailUrl: imageUrl })
         setThumbnailPreview(imageUrl)
       } else {
-        alert(response.data.message || 'Upload failed')
+        toast.error(response.data.message || 'Upload failed')
       }
     } catch (error: any) {
       console.error('Upload error:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error uploading image'
-      alert(`Error: ${errorMsg}`)
+      toast.error(errorMsg)
     } finally {
       setUploadingImage(false)
     }
@@ -192,7 +202,7 @@ export function CategoryFormModal({
     e.preventDefault()
 
     if (!formData.name.trim()) {
-      alert('Please provide category name')
+      toast.error('Please provide category name')
       return
     }
 
@@ -287,30 +297,19 @@ export function CategoryFormModal({
 
   const depth = getDepth()
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between text-2xl">
-            <span>{initialData ? 'Edit Category' : 'Create Category'}</span>
-            {parentCategory && (
-              <span className="text-sm font-normal text-muted-foreground">
-                Parent: {parentCategory.name}
-              </span>
-            )}
-          </DialogTitle>
-        </DialogHeader>
+  const headingTitle = initialData ? 'Edit Category' : 'Create Category'
 
-        <form onSubmit={handleSubmit}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="basic">1. Basic Information</TabsTrigger>
-              <TabsTrigger value="hierarchy">2. Hierarchy & Relationships</TabsTrigger>
-              <TabsTrigger value="seo">3. SEO & Settings</TabsTrigger>
-            </TabsList>
+  const formElement = (
+    <form onSubmit={handleSubmit}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="basic">1. Basic Information</TabsTrigger>
+          <TabsTrigger value="hierarchy">2. Hierarchy & Relationships</TabsTrigger>
+          <TabsTrigger value="seo">3. SEO & Settings</TabsTrigger>
+        </TabsList>
 
-            {/* TAB 1: BASIC INFORMATION */}
-            <TabsContent value="basic" className="space-y-6 mt-6">
+        {/* TAB 1: BASIC INFORMATION */}
+        <TabsContent value="basic" className="space-y-6 mt-6">
               <div className="space-y-2">
                 <Label htmlFor="name">
                   Category Name <span className="text-destructive">*</span>
@@ -420,8 +419,8 @@ export function CategoryFormModal({
               </div>
             </TabsContent>
 
-            {/* TAB 2: HIERARCHY & RELATIONSHIPS */}
-            <TabsContent value="hierarchy" className="space-y-6 mt-6">
+        {/* TAB 2: HIERARCHY & RELATIONSHIPS */}
+        <TabsContent value="hierarchy" className="space-y-6 mt-6">
               <div className="space-y-3">
                 <Label htmlFor="parentCategory">Parent Category</Label>
                 
@@ -480,8 +479,8 @@ export function CategoryFormModal({
               )}
             </TabsContent>
 
-            {/* TAB 3: SEO & SETTINGS */}
-            <TabsContent value="seo" className="space-y-6 mt-6">
+        {/* TAB 3: SEO & SETTINGS */}
+        <TabsContent value="seo" className="space-y-6 mt-6">
               <div className="space-y-3">
                 <Label>Status & Visibility</Label>
                 <div className="flex items-center space-x-4">
@@ -523,48 +522,83 @@ export function CategoryFormModal({
                 <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
               </div>
             </TabsContent>
-          </Tabs>
+      </Tabs>
 
-          <div className="flex items-center justify-between pt-6 border-t mt-6">
-            <div className="flex gap-2">
-              {activeTab !== 'basic' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    setActiveTab(
-                      activeTab === 'seo' ? 'hierarchy' : activeTab === 'hierarchy' ? 'basic' : 'basic'
-                    )
-                  }
-                >
-                  ❮ Previous
-                </Button>
-              )}
-              {activeTab !== 'seo' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    setActiveTab(
-                      activeTab === 'basic' ? 'hierarchy' : activeTab === 'hierarchy' ? 'seo' : 'seo'
-                    )
-                  }
-                >
-                  Next ❯
-                </Button>
-              )}
-            </div>
+      <div className="flex items-center justify-between pt-6 border-t mt-6">
+        <div className="flex gap-2">
+          {activeTab !== 'basic' && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setActiveTab(
+                  activeTab === 'seo' ? 'hierarchy' : activeTab === 'hierarchy' ? 'basic' : 'basic'
+                )
+              }
+            >
+              ❮ Previous
+            </Button>
+          )}
+          {activeTab !== 'seo' && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                setActiveTab(
+                  activeTab === 'basic' ? 'hierarchy' : activeTab === 'hierarchy' ? 'seo' : 'seo'
+                )
+              }
+            >
+              Next ❯
+            </Button>
+          )}
+        </div>
 
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? 'Saving...' : initialData ? 'Update Category' : 'Publish'} ✓
-              </Button>
-            </div>
-          </div>
-        </form>
+        <div className="flex gap-3">
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? 'Saving...' : initialData ? 'Update Category' : 'Publish'} ✓
+          </Button>
+        </div>
+      </div>
+    </form>
+  )
+
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+        <SheetContent
+          side="bottom"
+          className="h-[90vh] overflow-y-auto px-4 w-full max-w-xl left-1/2 -translate-x-1/2 right-auto rounded-t-3xl"
+        >
+          <SheetHeader className="text-left">
+            <SheetTitle>{headingTitle}</SheetTitle>
+            <SheetDescription>
+              {parentCategory ? `Parent: ${parentCategory.name}` : 'Configure category details'}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 pb-6 w-full max-w-lg mx-auto">{formElement}</div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between text-2xl">
+            <span>{headingTitle}</span>
+            {parentCategory && (
+              <span className="text-sm font-normal text-muted-foreground">
+                Parent: {parentCategory.name}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+        {formElement}
       </DialogContent>
     </Dialog>
   )

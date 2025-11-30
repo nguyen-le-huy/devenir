@@ -89,7 +89,7 @@ async function fetchVariantsByProduct(productId: string): Promise<Variant[]> {
  * Hook to fetch variants list with automatic caching
  * 
  * Features:
- * - 10min cache - Variants don't change frequently
+ * - 30sec cache - Realtime updates for admin panel
  * - Survives navigation between Product List ↔ SKU Management Table
  * - Background refetch when stale
  * - Pagination support
@@ -107,9 +107,8 @@ export function useVariantsQuery(filters: VariantFilters = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.variants.list(filters),
     queryFn: () => fetchVariants(filters),
-    staleTime: 10 * 60 * 1000, // 10 minutes - perfect for SKU table
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
-    // Keep previous data while fetching (prevents table flicker)
+    staleTime: 30 * 1000, // 30 seconds - realtime for admin
+    gcTime: 5 * 60 * 1000, // 5 minutes
     placeholderData: (previousData: any) => previousData,
   })
 }
@@ -151,7 +150,12 @@ export function useVariantsByProductQuery(productId: string | null) {
 // ==================== MUTATION HOOKS ====================
 
 /**
- * Hook to create new variant with optimistic updates
+ * Hook to create new variant - Realtime refetch
+ * 
+ * Features:
+ * - Instant UI update via refetchType: 'active'
+ * - Invalidates variants + products + categories
+ * - Simple and reliable - no cache manipulation
  * 
  * Usage:
  * ```tsx
@@ -163,18 +167,29 @@ export function useCreateVariant() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (variantData: any) => {
-      const response = await axiosInstance.post('/variants', variantData)
+    mutationFn: async ({ productId, data }: { productId: string, data: any }) => {
+      const response = await axiosInstance.post(`/products/admin/${productId}/variants`, data)
       return response.data
     },
     onSuccess: (newVariant) => {
-      // Invalidate all variant lists
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.variants.lists() })
+      // Realtime refetch - invalidate all variant & product queries
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.variants.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.products.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.categories.all,
+        refetchType: 'active'
+      })
       
-      // Invalidate variants for this product
       if (newVariant?.product) {
         queryClient.invalidateQueries({ 
-          queryKey: QUERY_KEYS.variants.byProduct(newVariant.product) 
+          queryKey: QUERY_KEYS.variants.byProduct(newVariant.product),
+          refetchType: 'active'
         })
       }
     },
@@ -182,45 +197,44 @@ export function useCreateVariant() {
 }
 
 /**
- * Hook to update variant with instant UI feedback
+ * Hook to update variant - Realtime refetch
+ * 
+ * Features:
+ * - Instant UI update via refetchType: 'active'
+ * - Invalidates variants + products + categories
+ * - Simple and reliable - no cache manipulation
  */
 export function useUpdateVariant() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string, data: any }) => {
-      const response = await axiosInstance.put(`/variants/${id}`, data)
+      const response = await axiosInstance.put(`/products/admin/variants/${id}`, data)
       return response.data
     },
-    onMutate: async ({ id, data }) => {
-      // Cancel outgoing queries
-      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.variants.detail(id) })
-
-      // Snapshot previous value
-      const previousVariant = queryClient.getQueryData(QUERY_KEYS.variants.detail(id))
-
-      // Optimistically update the cache
-      queryClient.setQueryData(QUERY_KEYS.variants.detail(id), (old: any) => ({
-        ...old,
-        ...data,
-      }))
-
-      return { previousVariant }
-    },
-    onError: (_err, { id }, context) => {
-      // Rollback on error
-      if (context?.previousVariant) {
-        queryClient.setQueryData(QUERY_KEYS.variants.detail(id), context.previousVariant)
-      }
-    },
     onSuccess: (updatedVariant, { id }) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.variants.detail(id) })
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.variants.lists() })
+      // Realtime refetch - invalidate all variant & product queries
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.variants.detail(id),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.variants.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.products.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.categories.all,
+        refetchType: 'active'
+      })
       
       if (updatedVariant?.product) {
         queryClient.invalidateQueries({ 
-          queryKey: QUERY_KEYS.variants.byProduct(updatedVariant.product) 
+          queryKey: QUERY_KEYS.variants.byProduct(updatedVariant.product),
+          refetchType: 'active'
         })
       }
     },
@@ -228,53 +242,46 @@ export function useUpdateVariant() {
 }
 
 /**
- * Hook to delete variant with optimistic updates
+ * Hook to delete variant - Realtime refetch
+ * 
+ * Features:
+ * - Instant UI update via refetchType: 'active'
+ * - Invalidates variants + products + categories
+ * - Simple and reliable - no cache manipulation
  */
 export function useDeleteVariant() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await axiosInstance.delete(`/variants/${id}`)
+      await axiosInstance.delete(`/products/admin/variants/${id}`)
       return id
     },
-    onMutate: async (deletedId) => {
-      // Cancel outgoing queries
-      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.variants.lists() })
-
-      // Snapshot previous value
-      const previousVariants = queryClient.getQueryData(QUERY_KEYS.variants.lists())
-
-      // Optimistically remove from cache
-      queryClient.setQueriesData(
-        { queryKey: QUERY_KEYS.variants.lists() },
-        (old: any) => {
-          if (!old?.data) return old
-          return {
-            ...old,
-            data: old.data.filter((v: Variant) => v._id !== deletedId),
-            total: old.total - 1
-          }
-        }
-      )
-
-      return { previousVariants }
-    },
-    onError: (_err, _deletedId, context) => {
-      // Rollback on error
-      if (context?.previousVariants) {
-        queryClient.setQueryData(QUERY_KEYS.variants.lists(), context.previousVariants)
-      }
-    },
-    onSettled: () => {
-      // Always refetch
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.variants.lists() })
+    onSuccess: () => {
+      // Realtime refetch - invalidate all variant & product queries
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.variants.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.products.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.categories.all,
+        refetchType: 'active'
+      })
     },
   })
 }
 
 /**
- * Hook to bulk update variant stock
+ * Hook to bulk update variant stock - Realtime refetch
+ * 
+ * Features:
+ * - Instant UI update via refetchType: 'active'
+ * - Invalidates all variant + product + category queries
+ * - Simple and reliable - no cache manipulation
  * 
  * Usage:
  * ```tsx
@@ -289,15 +296,24 @@ export function useBulkUpdateVariantStock() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (updates: { id: string, stock: number }[]) => {
-      const promises = updates.map(({ id, stock }) =>
-        axiosInstance.patch(`/variants/${id}/stock`, { stock })
-      )
-      return Promise.all(promises)
+    mutationFn: async (payload: { skus: string[], operation: 'set' | 'add' | 'subtract', amount: number }) => {
+      const response = await axiosInstance.put('/products/admin/variants/bulk-update', payload)
+      return response.data
     },
     onSuccess: () => {
-      // Invalidate all variant queries
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.variants.all })
+      // Realtime refetch - invalidate all variant & product queries
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.variants.all,
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.products.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.categories.all,
+        refetchType: 'active'
+      })
     },
   })
 }

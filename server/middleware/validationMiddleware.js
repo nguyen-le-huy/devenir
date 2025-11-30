@@ -94,6 +94,58 @@ export const validateCategoryInput = (req, res, next) => {
     next();
 };
 
+export const validateBrandInput = (req, res, next) => {
+    const { name, description, tagline, originCountry, foundedYear, website, isActive } = req.body;
+
+    if (!name || typeof name !== 'string') {
+        return res.status(400).json({
+            success: false,
+            message: 'Valid brand name is required',
+        });
+    }
+
+    req.body.name = sanitizeString(name);
+    if (description) req.body.description = sanitizeString(description);
+    if (tagline) req.body.tagline = sanitizeString(tagline);
+    if (originCountry) req.body.originCountry = sanitizeString(originCountry);
+
+    if (req.body.name.length < 2 || req.body.name.length > 50) {
+        return res.status(400).json({
+            success: false,
+            message: 'Brand name must be between 2-50 characters',
+        });
+    }
+
+    if (foundedYear !== undefined) {
+        const year = parseInt(foundedYear, 10);
+        const currentYear = new Date().getFullYear() + 1;
+        if (isNaN(year) || year < 1850 || year > currentYear) {
+            return res.status(400).json({
+                success: false,
+                message: 'Founded year must be between 1850 and current year',
+            });
+        }
+        req.body.foundedYear = year;
+    }
+
+    if (website) {
+        const sanitizedWebsite = website.trim();
+        if (!/^https?:\/\//i.test(sanitizedWebsite)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Website must start with http:// or https://',
+            });
+        }
+        req.body.website = sanitizedWebsite;
+    }
+
+    if (isActive !== undefined) {
+        req.body.isActive = Boolean(isActive);
+    }
+
+    next();
+};
+
 /**
  * Rate limiting per IP (simple in-memory implementation)
  */

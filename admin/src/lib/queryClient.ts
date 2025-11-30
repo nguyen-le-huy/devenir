@@ -4,19 +4,19 @@ import { QueryClient } from '@tanstack/react-query'
  * Global React Query Client Configuration for Admin Panel
  * 
  * Strategy:
- * - Persistent cache: Data survives navigation between pages
- * - Smart refetch: Background updates without blocking UI
- * - Optimistic updates: Instant UI feedback on mutations
+ * - Realtime updates: 30sec staleTime for immediate feedback on CRUD operations
+ * - Smart refetch: Background updates with refetchType: 'active'
+ * - Simple & reliable: No optimistic updates, just invalidate + refetch
  * - Scalable: Works efficiently even with large datasets
  */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache data for 10 minutes - perfect for admin data that doesn't change frequently
-      staleTime: 10 * 60 * 1000, // 10 minutes
+      // Cache data for 30 seconds - realtime updates for admin panel
+      staleTime: 30 * 1000, // 30 seconds (overridden per-query if needed)
       
-      // Keep data in cache for 30 minutes even if unused
-      gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
+      // Keep data in cache for 5 minutes
+      gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
       
       // Don't refetch on window focus (admin users often switch tabs)
       refetchOnWindowFocus: false,
@@ -27,8 +27,8 @@ export const queryClient = new QueryClient({
       // Keep previous data while fetching new data (prevents flickering)
       placeholderData: (previousData: any) => previousData,
       
-      // Enable persistent cache across navigation
-      refetchOnMount: false, // Only fetch if data is stale
+      // Refetch on mount to ensure fresh data
+      refetchOnMount: true,
       refetchOnReconnect: true, // Fetch fresh data when internet reconnects
     },
     mutations: {
@@ -70,6 +70,7 @@ export const QUERY_KEYS = {
     all: ['categories'] as const,
     lists: () => [...QUERY_KEYS.categories.all, 'list'] as const,
     list: () => [...QUERY_KEYS.categories.lists()] as const,
+    tree: () => [...QUERY_KEYS.categories.all, 'tree'] as const,
   },
   colors: {
     all: ['colors'] as const,

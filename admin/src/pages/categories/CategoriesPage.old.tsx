@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/table'
 import { CategoryForm } from '@/components/CategoryForm'
 import { categoryService, type Category, type CategoryFormData } from '@/services/categoryService'
+import { toast } from 'sonner'
 
 export default function CategoriesPage() {
     const location = useLocation()
@@ -40,7 +41,7 @@ export default function CategoriesPage() {
             setCategories(response.data || [])
         } catch (error) {
             console.error('Error loading categories:', error)
-            alert('Failed to load categories')
+            toast.error('Failed to load categories')
         } finally {
             setLoading(false)
         }
@@ -67,27 +68,27 @@ export default function CategoriesPage() {
                 // Update existing category
                 const response = await categoryService.updateCategory(editingCategory._id, data)
                 if (response.success) {
-                    alert('✅ Category updated successfully!')
+                    toast.success('Category updated successfully')
                     handleCloseForm()
                     await loadCategories()
                 } else {
-                    alert('❌ Failed to update category')
+                    toast.error('Failed to update category')
                 }
             } else {
                 // Create new category
                 const response = await categoryService.createCategory(data)
                 if (response.success) {
-                    alert('✅ Category created successfully!')
+                    toast.success('Category created successfully')
                     handleCloseForm()
                     await loadCategories()
                 } else {
-                    alert('❌ Failed to create category')
+                    toast.error('Failed to create category')
                 }
             }
         } catch (error: any) {
             console.error('Error saving category:', error)
             const errorMsg = error?.response?.data?.message || error?.message || 'Error saving category'
-            alert(`❌ Error: ${errorMsg}`)
+            toast.error(errorMsg)
         }
     }
 
@@ -101,15 +102,15 @@ export default function CategoriesPage() {
         try {
             const response = await categoryService.deleteCategory(categoryId)
             if (response.success) {
-                alert('✅ Category deleted successfully!')
+                toast.success('Category deleted successfully')
                 await loadCategories()
             } else {
-                alert('❌ Failed to delete category')
+                toast.error('Failed to delete category')
             }
         } catch (error: any) {
             console.error('Error deleting category:', error)
             const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting category'
-            alert(`❌ Error: ${errorMsg}`)
+            toast.error(errorMsg)
         } finally {
             setDeletingCategoryId(null)
         }

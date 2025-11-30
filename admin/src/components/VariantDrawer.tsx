@@ -13,6 +13,9 @@ import {
 } from '@/components/ui/select'
 import axiosInstance from '@/services/axiosConfig'
 import { uploadImage } from '@/services/uploadService'
+import { useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '@/lib/queryClient'
+import { toast } from 'sonner'
 
 interface VariantDrawerProps {
   isOpen: boolean
@@ -42,6 +45,7 @@ interface VariantImage {
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', 'Free Size']
 
 export default function VariantDrawer({ isOpen, variantId, variantData, isEdit = false, onClose, onSuccess }: VariantDrawerProps) {
+  const queryClient = useQueryClient()
   const [products, setProducts] = useState<Product[]>([])
   const [colors, setColors] = useState<Color[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -216,10 +220,10 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
       if (uploadedUrls.length > 0) {
         setVariantImages((prev) => [...prev, ...uploadedUrls])
       } else {
-        alert('Upload failed')
+        toast.error('Upload failed')
       }
     } catch (error: any) {
-      alert(`Upload error: ${error.message}`)
+      toast.error(error?.message || 'Upload error')
     } finally {
       setUploadingImage(false)
       if (fileInputRef.current) {
@@ -272,17 +276,17 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
 
     // Validation
     if (!formData.product || !formData.sku || !formData.size || !formData.color) {
-      alert('Please fill all required fields')
+      toast.error('Please fill all required fields')
       return
     }
 
     if (!isEdit && (variantImages.length === 0 || !selectedMainImage || !selectedHoverImage)) {
-      alert('Please upload and select main and hover images')
+      toast.error('Please upload and select main and hover images')
       return
     }
 
     if (isEdit && (!selectedMainImage || !selectedHoverImage)) {
-      alert('Please select main and hover images')
+      toast.error('Please select main and hover images')
       return
     }
 
@@ -304,13 +308,33 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
       }
 
       if (isEdit) {
-        // Update variant
         await axiosInstance.put(`/products/admin/variants/${formData.sku}`, payload)
-        alert('Variant updated successfully')
+        toast.success('Variant updated successfully')
       } else {
-        // Create new variant
         await axiosInstance.post(`/products/admin/${formData.product}/variants`, payload)
-        alert('Variant created successfully')
+        toast.success('Variant created successfully')
+      }
+
+      // Realtime refetch similar to category logic
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.variants.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.products.lists(),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.categories.all,
+        refetchType: 'active'
+      })
+
+      const productKey = formData.product || variantData?.product || variantData?.product_id
+      if (productKey) {
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.variants.byProduct(productKey),
+          refetchType: 'active'
+        })
       }
 
       onSuccess()
@@ -319,7 +343,7 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
     } catch (error: any) {
       console.error('Error saving variant:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Failed to save variant'
-      alert(`Error: ${errorMsg}`)
+      toast.error(errorMsg)
     } finally {
       setLoading(false)
     }

@@ -3,6 +3,7 @@ import Product from '../models/ProductModel.js';
 import ProductVariant from '../models/ProductVariantModel.js';
 import asyncHandler from 'express-async-handler';
 import logger from '../config/logger.js';
+import { emitRealtimeEvent } from '../utils/realtimeEmitter.js';
 
 /**
  * Helper: Build tree structure with levels calculated from parent-child relationships
@@ -257,6 +258,11 @@ export const createCategory = asyncHandler(async (req, res) => {
 
     logger.info('Category created successfully', { _id: category._id, name: category.name, slug: category.slug });
 
+    emitRealtimeEvent(req, 'category:created', {
+        categoryId: category._id,
+        parentCategory: category.parentCategory,
+    });
+
     res.status(201).json({
         success: true,
         message: 'Category created successfully',
@@ -364,6 +370,12 @@ export const updateCategory = asyncHandler(async (req, res) => {
         parentCategory: category.parentCategory
     });
 
+    emitRealtimeEvent(req, 'category:updated', {
+        categoryId: category._id,
+        parentCategory: category.parentCategory,
+        isActive: category.isActive,
+    });
+
     res.status(200).json({
         success: true,
         message: 'Category updated successfully',
@@ -399,6 +411,10 @@ export const deleteCategory = asyncHandler(async (req, res) => {
     }
 
     await Category.findByIdAndDelete(req.params.id);
+
+    emitRealtimeEvent(req, 'category:deleted', {
+        categoryId: category._id,
+    });
 
     res.status(200).json({
         success: true,

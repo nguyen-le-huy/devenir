@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,11 +17,20 @@ import { categoryService, type Category } from "@/services/categoryService"
 import { colorService, type Color } from "@/services/colorService"
 import { uploadImage } from "@/services/uploadService"
 import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from 'sonner'
+import { brandService, type Brand } from "@/services/brandService"
+import { useBrandsQuery, useBrandsRealtimeSync } from "@/hooks/useBrandsQuery"
+import { Badge } from "@/components/ui/badge"
+
+type PopulatedReference = string | { _id: string }
 
 interface ProductFormProps {
   onSave?: (data: ProductFormData) => void
   onDraft?: (data: ProductFormData) => void
-  initialData?: Partial<ProductFormData>
+  initialData?: (Partial<ProductFormData> & {
+    category?: PopulatedReference | null
+    brand?: PopulatedReference | null
+  }) | null
 }
 
 export interface ProductFormData {
@@ -53,14 +63,13 @@ export interface ProductFormData {
 }
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "Free Size"]
-const BRANDS = ["DEV", "GUCCI", "PRADA", "LOUIS VUITTON"]
 
 export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductFormProps) {
   const defaultFormData: ProductFormData = {
     name: "",
     description: "",
     category: "",
-    brand: "DEV",
+    brand: "",
     tags: [],
     status: "draft",
     variants: [],
@@ -71,9 +80,25 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
 
   const [formData, setFormData] = useState<ProductFormData>(() => {
     if (initialData) {
+      // Handle category field - could be ObjectId string or populated object
+      const categoryId = initialData.category 
+        ? (typeof initialData.category === 'object' && initialData.category !== null && '_id' in initialData.category 
+            ? (initialData.category as { _id: string })._id 
+            : (initialData.category as string))
+        : ""
+      
+      // Handle brand field - could be ObjectId string or populated object
+      const brandId = initialData.brand
+        ? (typeof initialData.brand === 'object' && initialData.brand !== null && '_id' in initialData.brand
+            ? (initialData.brand as { _id: string })._id
+            : (initialData.brand as string))
+        : ""
+
       return {
         ...defaultFormData,
         ...(initialData as Partial<ProductFormData>),
+        category: categoryId as string,
+        brand: brandId as string,
       }
     }
     return defaultFormData
@@ -107,6 +132,12 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   const [viewDetailIndex, setViewDetailIndex] = useState<number | null>(null)
   const [variantPage, setVariantPage] = useState(1)
   const [variantItemsPerPage] = useState(10)
+  const [categorySearch, setCategorySearch] = useState("")
+  const [brandSearch, setBrandSearch] = useState("")
+  const brandQueryParams = useMemo(() => ({ status: 'active', sort: 'name-asc', limit: 200 }), [])
+  const { data: brandsResponse, isLoading: brandsLoading } = useBrandsQuery(brandQueryParams)
+  const [fallbackBrand, setFallbackBrand] = useState<Brand | null>(null)
+  useBrandsRealtimeSync()
 
   // Fetch categories
   useEffect(() => {
@@ -162,10 +193,10 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
       if (uploadedUrls.length > 0) {
         setVariantImages((prev) => [...prev, ...uploadedUrls])
       } else {
-        alert("Upload failed")
+        toast.error("Upload failed")
       }
     } catch (error: any) {
-      alert(`Upload error: ${error.message}`)
+      toast.error(error?.message || 'Upload error')
     } finally {
       setUploadingImage(false)
     }
@@ -199,6 +230,76 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   // Get unique sizes and colors from variants
   const variantSizes = Array.from(new Set(formData.variants.map((v) => v.size)))
   const variantColors = Array.from(new Set(formData.variants.map((v) => v.color).filter(Boolean)))
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(categorySearch.toLowerCase())
+  )
+  const brandOptions = brandsResponse?.data || []
+  const availableBrands = useMemo(() => {
+    const base = [...brandOptions]
+    if (fallbackBrand && !base.some((brand) => brand._id === fallbackBrand._id)) {
+      base.push(fallbackBrand)
+    }
+    return base
+  }, [brandOptions, fallbackBrand])
+  const filteredBrands = useMemo(() => {
+    if (!brandSearch.trim()) return availableBrands
+    const term = brandSearch.trim().toLowerCase()
+    return availableBrands.filter((brand) => {
+      return (
+        brand.name.toLowerCase().includes(term) ||
+        brand.originCountry?.toLowerCase().includes(term) ||
+        brand.tagline?.toLowerCase().includes(term)
+      )
+    })
+  }, [availableBrands, brandSearch])
+  const selectedBrandDetails = useMemo(() => {
+    if (!formData.brand) return null
+    return availableBrands.find((brand) => brand._id === formData.brand) || null
+  }, [availableBrands, formData.brand])
+
+  useEffect(() => {
+    if (!availableBrands.length) return
+    setFormData((prev) => {
+      if (prev.brand) return prev
+      return { ...prev, brand: availableBrands[0]._id }
+    })
+  }, [availableBrands])
+
+  useEffect(() => {
+    let ignore = false
+    if (!formData.brand) {
+      setFallbackBrand(null)
+      return
+    }
+    if (!/^[a-fA-F0-9]{24}$/.test(formData.brand)) {
+      setFallbackBrand(null)
+      return
+    }
+    if (availableBrands.some((brand) => brand._id === formData.brand)) {
+      setFallbackBrand(null)
+      return
+    }
+
+    const fetchBrand = async () => {
+      try {
+        const response = await brandService.getBrandById(formData.brand)
+        const brandRecord = response?.data ?? response
+        if (!ignore && brandRecord?._id) {
+          setFallbackBrand(brandRecord as Brand)
+        }
+      } catch (error) {
+        if (!ignore) {
+          setFallbackBrand(null)
+        }
+      }
+    }
+
+    fetchBrand()
+
+    return () => {
+      ignore = true
+    }
+  }, [formData.brand, availableBrands])
 
   // Filter variants
   const filteredVariants = formData.variants.filter((v) => {
@@ -249,12 +350,12 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   // Handle add/edit variant
   const handleAddOrUpdateVariant = () => {
     if (!newVariant.color || selectedSizes.length === 0 || !newVariant.price || newVariant.quantity === undefined) {
-      alert("Please fill all required fields (Color, Size(s), Price, Quantity)")
+      toast.error("Please fill all required fields (Color, Size(s), Price, Quantity)")
       return
     }
 
     if (!selectedMainImage || !selectedHoverImage) {
-      alert("Please select both main and hover images")
+      toast.error("Please select both main and hover images")
       return
     }
 
@@ -277,7 +378,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
         updatedVariants[editingVariantIndex] = updatedVariant
         setFormData((prev) => ({ ...prev, variants: updatedVariants }))
         setEditingVariantIndex(null)
-        alert("✅ Variant updated successfully!")
+        toast.success("Variant updated successfully")
       } else {
         // Case 2: Added new sizes - update original + create new variants for new sizes
         const newSizesToAdd = selectedSizes.filter(size => size !== originalSize)
@@ -316,9 +417,9 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
           }))
           
           setEditingVariantIndex(null)
-          alert(`✅ Variant updated! Created ${newVariants.length} additional variant(s) for new size(s)!`)
+          toast.success(`Variant updated! Created ${newVariants.length} additional variant(s) for new size(s)`)
         } else {
-          alert("ℹ️ No new sizes selected")
+          toast.info("No new sizes selected")
         }
       }
     } else {
@@ -340,7 +441,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
         variants: [...prev.variants, ...newVariants],
       }))
 
-      alert(`✅ Created ${newVariants.length} variant(s) for color "${newVariant.color}" with ${selectedSizes.length} size(s)!`)
+      toast.success(`Created ${newVariants.length} variant(s) for color "${newVariant.color}" with ${selectedSizes.length} size(s)`)
     }
 
     // Reset form
@@ -453,45 +554,124 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
               {/* Category */}
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, category: value }))
-                  }
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center max-w-xl">
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, category: value }))
+                    }
+                  >
+                    <SelectTrigger id="category" className="w-full sm:w-60">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredCategories.length ? (
+                        filteredCategories.map((cat) => (
+                          <SelectItem key={cat._id} value={cat._id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-category" disabled>
+                          No categories found
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Search category"
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    className="w-full sm:w-64"
+                  />
+                </div>
               </div>
 
               {/* Brand */}
               <div className="space-y-2">
-                <Label htmlFor="brand">Brand</Label>
-                <Select
-                  value={formData.brand}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, brand: value }))
-                  }
-                >
-                  <SelectTrigger id="brand">
-                    <SelectValue placeholder="Select a brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BRANDS.map((brand) => (
-                      <SelectItem key={brand} value={brand}>
-                        {brand}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="brand">Brand *</Label>
+                  <Button variant="link" size="sm" className="px-0" asChild>
+                    <Link to="/admin/brands" target="_blank" rel="noreferrer">
+                      Manage brands
+                    </Link>
+                  </Button>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center max-w-xl">
+                  <Select
+                    value={formData.brand || undefined}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, brand: value }))
+                    }
+                    disabled={brandsLoading || availableBrands.length === 0}
+                  >
+                    <SelectTrigger id="brand" className="w-full sm:w-60">
+                      <SelectValue placeholder={brandsLoading ? "Loading brands..." : "Select a brand"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brandsLoading ? (
+                        <SelectItem value="loading" disabled>
+                          Loading brands...
+                        </SelectItem>
+                      ) : filteredBrands.length ? (
+                        filteredBrands.map((brand) => (
+                          <SelectItem key={brand._id} value={brand._id}>
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="font-medium leading-tight">{brand.name}</p>
+                                {(brand.tagline || brand.originCountry) && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {brand.tagline || brand.originCountry}
+                                  </p>
+                                )}
+                              </div>
+                              {!brand.isActive && (
+                                <Badge variant="outline" className="text-[10px] uppercase">
+                                  Inactive
+                                </Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-brand" disabled>
+                          No brands found
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="Search brand"
+                    value={brandSearch}
+                    onChange={(e) => setBrandSearch(e.target.value)}
+                    className="w-full sm:w-64"
+                    disabled={brandsLoading || availableBrands.length === 0}
+                  />
+                </div>
+                {!brandsLoading && availableBrands.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No brands available yet.{' '}
+                    <Link to="/admin/brands" className="underline" target="_blank" rel="noreferrer">
+                      Create one from the Brands page.
+                    </Link>
+                  </p>
+                )}
+                {selectedBrandDetails && (
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant={selectedBrandDetails.isActive ? 'secondary' : 'outline'}>
+                      {selectedBrandDetails.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                    {selectedBrandDetails.originCountry && (
+                      <span>Origin: {selectedBrandDetails.originCountry}</span>
+                    )}
+                    {selectedBrandDetails.foundedYear && (
+                      <span>Since {selectedBrandDetails.foundedYear}</span>
+                    )}
+                    {selectedBrandDetails.tagline && (
+                      <span className="truncate max-w-full">"{selectedBrandDetails.tagline}"</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Tags */}
@@ -878,7 +1058,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                                   })
                                   setFormData((prev) => ({ ...prev, variants: updatedVariants }))
                                   setSelectedVariants(new Set())
-                                  alert(`✅ Deleted ${selectedVariants.size} variant(s)`)
+                                  toast.success(`Deleted ${selectedVariants.size} variant(s)`)
                                 }
                               }}
                               className="h-9 w-9 p-0"
@@ -1027,7 +1207,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                                     })
                                     setFormData((prev) => ({ ...prev, variants: updatedVariants }))
                                     setSelectedVariants(new Set())
-                                    alert(`✅ Deleted ${selectedVariants.size} variant(s)`)
+                                    toast.success(`Deleted ${selectedVariants.size} variant(s)`)
                                   }
                                 }}
                                 className="h-9 w-9 p-0"
@@ -1629,7 +1809,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                           if (confirm("Delete this variant?")) {
                             handleDeleteVariant(viewDetailIndex)
                             setViewDetailIndex(null)
-                            alert("✅ Variant deleted")
+                            toast.success("Variant deleted")
                           }
                         }}
                         variant="destructive"

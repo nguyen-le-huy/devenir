@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import Dashboard from './pages/Dashboard'
@@ -9,6 +10,7 @@ import EditProductPage from './pages/products/EditProductPage'
 import VariantsPage from './pages/products/VariantsPage'
 import AddVariantPage from './pages/variants/AddVariantPage'
 import ViewVariantPage from './pages/variants/ViewVariantPage'
+import BrandsPage from './pages/brands/BrandsPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import CustomersPage from './pages/customers/CustomersPage'
 import InventoryPage from './pages/inventory/InventoryPage'
@@ -20,6 +22,8 @@ import CategoriesPage from './pages/categories/CategoriesPage'
 import ColorsPage from './pages/colors/ColorsPage'
 
 function App() {
+  useRealtimeSync()
+
   return (
     <AdminAuthProvider>
       <BrowserRouter>
@@ -44,7 +48,7 @@ function App() {
           <Route path="/admin/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
           <Route path="/admin/categories/new" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
           <Route path="/admin/categories/:id" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
-          <Route path="/admin/brands" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
+          <Route path="/admin/brands" element={<ProtectedRoute><BrandsPage /></ProtectedRoute>} />
           <Route path="/admin/colors" element={<ProtectedRoute><ColorsPage /></ProtectedRoute>} />
 
           {/* Orders */}

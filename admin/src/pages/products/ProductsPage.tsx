@@ -26,7 +26,10 @@ import ProductFormSimplified, { type ProductFormData } from "@/components/Produc
 import { useProductsQuery, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/useProductsQuery"
 import { useVariantsQuery } from "@/hooks/useVariantsQuery"
 import { useCategoriesQuery } from "@/hooks/useCategoriesQuery"
+import { useBrandsQuery, useBrandsRealtimeSync } from "@/hooks/useBrandsQuery"
 import { useDebounce } from "@/hooks/useDebounce"
+import { toast } from 'sonner'
+import type { Brand } from "@/services/brandService"
 
 export default function ProductsPage() {
   const location = useLocation()
@@ -50,12 +53,22 @@ export default function ProductsPage() {
   const { data: productsData, isLoading: productsLoading } = useProductsQuery({ limit: 100 })
   const { data: variantsData } = useVariantsQuery({ limit: 500 })
   const { data: categories = [] } = useCategoriesQuery()
+  const brandQueryParams = useMemo(() => ({ limit: 500 }), [])
+  const { data: brandsResponse } = useBrandsQuery(brandQueryParams)
   const createProductMutation = useCreateProduct()
   const updateProductMutation = useUpdateProduct()
   const deleteProductMutation = useDeleteProduct()
+  useBrandsRealtimeSync()
 
   const products = productsData?.data || []
   const allVariants = variantsData?.data || []
+  const brandsById = useMemo(() => {
+    const map = new Map<string, Brand>()
+    ;(brandsResponse?.data || []).forEach((brand: Brand) => {
+      map.set(brand._id, brand)
+    })
+    return map
+  }, [brandsResponse])
   const loading = productsLoading
 
   // Group variants by product_id for easy lookup
@@ -154,8 +167,8 @@ export default function ProductsPage() {
 
   const handleSaveProduct = useCallback(async (data: ProductFormData) => {
     try {
-      if (!data.name || !data.description || !data.category) {
-        alert('Please fill in: Name, Description, Category')
+      if (!data.name || !data.description || !data.category || !data.brand) {
+        toast.error('Please fill in: Name, Description, Category, Brand')
         return
       }
 
@@ -183,17 +196,17 @@ export default function ProductsPage() {
 
       if (editingProduct) {
         await updateProductMutation.mutateAsync({ id: editingProduct._id, data: productData as any })
-        alert('Product updated successfully!')
+        toast.success('Product updated successfully')
       } else {
         await createProductMutation.mutateAsync(productData as any)
-        alert('Product created successfully!')
+        toast.success('Product created successfully')
       }
       
       handleCloseForm()
     } catch (error: any) {
       console.error('Error saving product:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error saving product'
-      alert(`Error: ${errorMsg}`)
+      toast.error(errorMsg)
     }
   }, [editingProduct, updateProductMutation, createProductMutation, handleCloseForm])
 
@@ -205,18 +218,18 @@ export default function ProductsPage() {
 
     try {
       await deleteProductMutation.mutateAsync(productId)
-      alert('✅ Product deleted successfully!')
+      toast.success('Product deleted successfully')
     } catch (error: any) {
       console.error('Error deleting product:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting product'
-      alert(`❌ Error: ${errorMsg}`)
+      toast.error(errorMsg)
     }
   }, [deleteProductMutation])
 
   const handleDraftProduct = useCallback(async (data: ProductFormData) => {
     try {
-      if (!data.name || !data.description || !data.category) {
-        alert('Please fill in: Name, Description, Category')
+      if (!data.name || !data.description || !data.category || !data.brand) {
+        toast.error('Please fill in: Name, Description, Category, Brand')
         return
       }
 
@@ -234,11 +247,11 @@ export default function ProductsPage() {
       } as any)
 
       setIsFormOpen(false)
-      alert('Product saved as draft!')
+      toast.success('Product saved as draft')
     } catch (error: any) {
       console.error('Error saving draft:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error saving draft'
-      alert(`Error: ${errorMsg}`)
+      toast.error(errorMsg)
     }
   }, [createProductMutation])
 
@@ -400,18 +413,24 @@ export default function ProductsPage() {
                           <TableCell className="font-medium">{product.name}</TableCell>
                           <TableCell>
                             {(() => {
-                              // Handle both populated object and string ID
                               if (typeof product.category === 'object' && product.category) {
                                 return product.category.name || '—'
                               } else if (typeof product.category === 'string') {
-                                // Find category name from categories state
                                 const cat = categories.find((c: any) => c._id === product.category)
                                 return cat?.name || product.category
                               }
                               return '—'
                             })()}
                           </TableCell>
-                          <TableCell>{product.brand}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              if (!product.brand) return '—'
+                              if (typeof product.brand === 'object') {
+                                return product.brand?.name || '—'
+                              }
+                              return brandsById.get(product.brand)?.name || '—'
+                            })()}
+                          </TableCell>
                           <TableCell>${product.basePrice?.toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge

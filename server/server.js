@@ -1,3 +1,4 @@
+import http from 'http';
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -5,6 +6,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
+import { Server as SocketIOServer } from 'socket.io';
 import connectDB from './config/db.js';
 import logger from './config/logger.js';
 import authRoutes from './routes/authRoutes.js';
@@ -13,6 +15,7 @@ import variantRoutes from './routes/variantRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import colorRoutes from './routes/colorRoutes.js';
+import brandRoutes from './routes/brandRoutes.js';
 
 
 dotenv.config();
@@ -20,6 +23,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
 
 // ============ CORS MIDDLEWARE (MUST BE FIRST!) ============
 // Middleware - CORS configuration cho nhiều origins
@@ -38,26 +42,24 @@ const allowedOrigins = [
   'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net' // Thêm Tailscale domain
 ];
 
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  return allowedOrigins.some(allowedOrigin => {
+    if (allowedOrigin.includes('*')) {
+      const pattern = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
+      return pattern.test(origin);
+    }
+    return allowedOrigin === origin;
+  });
+};
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Cho phép requests không có origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-
-    // Kiểm tra exact match hoặc wildcard pattern
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (allowedOrigin.includes('*')) {
-        const pattern = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
-        return pattern.test(origin);
-      }
-      return allowedOrigin === origin;
-    });
-
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      logger.warn('CORS blocked origin:', { origin });
-      callback(new Error('Not allowed by CORS'));
+    if (!origin || isOriginAllowed(origin)) {
+      return callback(null, true);
     }
+    logger.warn('CORS blocked origin:', { origin });
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -148,9 +150,35 @@ app.use('/api/variants', variantRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/colors', colorRoutes);
+app.use('/api/brands', brandRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
+});
+
+// ============ SOCKET.IO SETUP ============
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || isOriginAllowed(origin)) {
+        return callback(null, true);
+      }
+      logger.warn('Socket CORS blocked origin:', { origin });
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  logger.info('Admin socket connected', { socketId: socket.id });
+
+  socket.on('disconnect', (reason) => {
+    logger.info('Admin socket disconnected', { socketId: socket.id, reason });
+  });
 });
 
 // Error handling middleware
@@ -163,6 +191,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3111;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running with realtime support on port ${PORT}`);
 });
