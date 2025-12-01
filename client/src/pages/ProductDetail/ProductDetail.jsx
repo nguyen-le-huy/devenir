@@ -14,6 +14,7 @@ import 'swiper/css';
 import ColourVarients from '../../components/ColourVarients/ColourVarients.jsx';
 import SelectSize from '../../components/SelectSize/SelectSize.jsx';
 import SizeAndFit from '../../components/SizeAndFit/SizeAndFit.jsx';
+import AddToBagNoti from '../../components/Notification/AddToBagNoti.jsx';
 
 export default function ProductDetail() {
     const [searchParams] = useSearchParams();
@@ -26,6 +27,9 @@ export default function ProductDetail() {
     const [totalSlides, setTotalSlides] = useState(4);
     const [isColourVariantsOpen, setIsColourVariantsOpen] = useState(false);
     const [isSelectSizeOpen, setIsSelectSizeOpen] = useState(false);
+    const [isSizeAndFitOpen, setIsSizeAndFitOpen] = useState(false);
+    const [isAddToBagNotiOpen, setIsAddToBagNotiOpen] = useState(false);
+    const [isAddToBagHovered, setIsAddToBagHovered] = useState(false);
 
     // Product data states
     const [loading, setLoading] = useState(true);
@@ -97,7 +101,8 @@ export default function ProductDetail() {
         {
             id: 'sizeAndFit',
             title: 'Size & Fit',
-            content: '168 x 30cm/66.1 x 11.8in'
+            content: '168 x 30cm/66.1 x 11.8in',
+            hasButton: true
         },
         {
             id: 'fabricAndCare',
@@ -141,12 +146,13 @@ export default function ProductDetail() {
     // Handle add to bag for Free Size products
     const handleAddToBagFreeSize = () => {
         if (!variant?._id) return;
-        
+
         addToCartMutation.mutate(
             { variantId: variant._id, quantity: 1 },
             {
                 onSuccess: () => {
-                    alert(`Added ${product?.name || 'Product'} to bag!`);
+                    // Show AddToBagNoti modal instead of alert
+                    setIsAddToBagNotiOpen(true);
                 },
                 onError: (error) => {
                     alert(error.response?.data?.message || 'Failed to add to bag. Please login first.');
@@ -285,14 +291,21 @@ export default function ProductDetail() {
                             </div>
                         </div>
                         <div className={styles.buttonList}>
-                            <button className={styles.addToBag} onClick={() => {
-                                if (needsSizeSelection) {
-                                    setIsSelectSizeOpen(true);
-                                } else {
-                                    // Add directly to cart for Free Size products
-                                    handleAddToBagFreeSize();
-                                }
-                            }}>Add to Bag</button>
+                            <button
+                                className={styles.addToBag}
+                                onClick={() => {
+                                    if (needsSizeSelection) {
+                                        setIsSelectSizeOpen(true);
+                                    } else {
+                                        // Add directly to cart for Free Size products
+                                        handleAddToBagFreeSize();
+                                    }
+                                }}
+                                onMouseEnter={() => setIsAddToBagHovered(true)}
+                                onMouseLeave={() => setIsAddToBagHovered(false)}
+                            >
+                                {needsSizeSelection && isAddToBagHovered ? 'Select Size' : 'Add to Bag'}
+                            </button>
                             <button className={styles.sendGift}>Send using 4GIFT</button>
                             <p className={styles.instalment}>
                                 Instalment payments available{' '}
@@ -342,6 +355,14 @@ export default function ProductDetail() {
 
                                 <div className={`${styles.itemContent} ${openItem === item.id ? styles.open : ''}`}>
                                     <p className={styles.contentText}>{item.content}</p>
+                                    {item.hasButton && (
+                                        <p className={styles.sizeGuideLink} onClick={() => setIsSizeAndFitOpen(true)}>
+                                            Size Guide
+                                            <svg className={styles.linkGraphicSlide} width="300%" height="100%" viewBox="0 0 1200 60" preserveAspectRatio="none">
+                                                <path d="M0,56.5c0,0,298.666,0,399.333,0C448.336,56.5,513.994,46,597,46c77.327,0,135,10.5,200.999,10.5c95.996,0,402.001,0,402.001,0"></path>
+                                            </svg>
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -369,6 +390,13 @@ export default function ProductDetail() {
                     variants={sameColorVariants}
                     currentVariant={variant}
                     product={product}
+                    onAddToCartSuccess={() => setIsAddToBagNotiOpen(true)}
+                />
+            )}
+            {isSizeAndFitOpen && (
+                <SizeAndFit
+                    isOpen={isSizeAndFitOpen}
+                    onClose={() => setIsSizeAndFitOpen(false)}
                 />
             )}
             {/* ✅ Reusable ProductCarousel với title khác */}
@@ -384,6 +412,10 @@ export default function ProductDetail() {
                 siblingVariants={siblingVariants}
                 currentVariantId={variantId}
                 colorMap={colorMap}
+            />
+            <AddToBagNoti
+                isOpen={isAddToBagNotiOpen}
+                onClose={() => setIsAddToBagNotiOpen(false)}
             />
         </div>
     );

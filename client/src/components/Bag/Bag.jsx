@@ -10,7 +10,7 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
     const navigate = useNavigate();
     const headerHeight = useHeaderHeight();
     useLenisControl(true);
-    
+
     // Fetch real cart data
     const { data: cartData, isLoading } = useCart();
     const cart = cartData?.data || { items: [], totalItems: 0, totalPrice: 0 };
@@ -42,7 +42,7 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                                 const price = variant?.price || 0;
                                 const size = variant?.size || '';
                                 const color = variant?.color || '';
-                                
+
                                 return (
                                     <div key={variant?._id || index} className={styles.product}>
                                         <img src={image} alt={productName} />
@@ -50,8 +50,10 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                                             <div className={styles.nameAndQuanity}>
                                                 <p className={styles.productName}>{productName}</p>
                                                 <p className={styles.productQuantity}>
-                                                    {size && `Size: ${size}`}{size && color && ' | '}{color && `Color: ${color}`}
-                                                    {' | '}Qty: {item.quantity}
+                                                    {size && size !== 'Free Size' && `Size: ${size}`}
+                                                    {size && size !== 'Free Size' && color && ' | '}
+                                                    {color && `Color: ${color}`}
+                                                    {(size && size !== 'Free Size') || color ? ' | ' : ''}Qty: {item.quantity}
                                                 </p>
                                             </div>
                                             <p className={styles.productPrice}>${(price * item.quantity).toFixed(2)}</p>

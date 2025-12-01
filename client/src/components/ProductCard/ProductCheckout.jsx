@@ -29,8 +29,12 @@ const ProductCheckout = ({ item, onRemove, onUpdateQuantity }) => {
                         <p>Item: {sku}</p>
                         <p>{color}</p>
                         <div className={styles.sizeQtyEdit}>
-                            <p>Size: {size}</p>
-                            <span>|</span>
+                            {size && size !== 'Free Size' && (
+                                <>
+                                    <p>Size: {size}</p>
+                                    <span>|</span>
+                                </>
+                            )}
                             <p>Qty: {quantity}</p>
                             <span>|</span>
                             <p className={styles.editButton}>Edit</p>

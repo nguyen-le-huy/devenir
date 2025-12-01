@@ -1,0 +1,141 @@
+/* Dark Backdrop Overlay */
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1999;
+}
+
+.notification {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    background-color: var(--white);
+    width: 30vw;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header>span,
+.moreToDiscover {
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.header>svg {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.header>svg:hover {
+    transform: rotate(90deg);
+}
+
+.buttonList {
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px;
+    gap: 10px;
+}
+
+.buttonList>button {
+    padding: 10px;
+    border: 1px solid var(--brown);
+    font-weight: 500;
+    font-size: 16px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.checkout {
+    background-color: var(--brown);
+    color: var(--white);
+}
+
+.continueShopping {
+    background-color: var(--white);
+    color: var(--brown);
+    transition: all 0.2s ease;
+}
+
+.continueShopping:hover {
+    background-color: var(--brown);
+    color: var(--white);
+}
+
+.moreToDiscover {
+    padding: 0 20px;
+}
+
+.productSuggestion {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f5f5f5;
+}
+
+/* Webkit scrollbar styling for productSuggestion */
+.productSuggestion::-webkit-scrollbar {
+    width: 6px;
+}
+
+.productSuggestion::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+
+.productSuggestion::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 3px;
+}
+
+.productSuggestion::-webkit-scrollbar-thumb:hover {
+    background-color: #999;
+}
+
+.productCard {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.productCard:hover {
+    opacity: 0.8;
+}
+
+.productInfo {
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px
+}
+
+.productInfo>p {
+    font-size: 14px;
+}
+
+@media screen and (max-width: 768px) {
+    .notification {
+        width: 100vw;
+    }
+}

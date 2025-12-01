@@ -86,3 +86,15 @@ export const useAllVariants = (params = {}) => {
     staleTime: 3 * 60 * 1000, // 3 minutes
   });
 };
+
+/**
+ * Hook to fetch random variants (for product suggestions)
+ * @param {number} limit - Number of random variants to fetch
+ */
+export const useRandomVariants = (limit = 8) => {
+  return useQuery({
+    queryKey: queryKeys.variants.random(limit),
+    queryFn: () => productService.getRandomVariants(limit),
+    staleTime: 5 * 60 * 1000, // 5 minutes - random suggestions can stay cached longer
+  });
+};

@@ -129,8 +129,8 @@ export const getVariantsByCategory = async (categoryId) => {
 export const getVariantsByCategoryWithChildren = async (parentCategoryId, allCategories = []) => {
     try {
         // Tìm tất cả subcategory IDs
-        const subcategories = allCategories.filter(cat => 
-            cat.parentCategory === parentCategoryId || 
+        const subcategories = allCategories.filter(cat =>
+            cat.parentCategory === parentCategoryId ||
             cat.parentCategory?._id === parentCategoryId ||
             String(cat.parentCategory) === String(parentCategoryId)
         );
@@ -253,6 +253,75 @@ export const getLatestVariants = async (limit = 4) => {
         return uniqueVariants.slice(0, limit);
     } catch (error) {
         console.error('Error fetching latest variants:', error);
+        throw error;
+    }
+};
+
+/**
+ * Lấy các variants ngẫu nhiên để gợi ý sản phẩm
+ * @param {number} limit - Số lượng variants cần lấy
+ * @returns {Promise} Array of random variants với thông tin product
+ */
+export const getRandomVariants = async (limit = 8) => {
+    try {
+        // Lấy tất cả products
+        const productsResponse = await apiClient.get('/products', {
+            params: {
+                limit: 100, // Lấy 100 products để có đủ dữ liệu random
+            }
+        });
+
+        const products = productsResponse.data || [];
+
+        if (!products || products.length === 0) {
+            return [];
+        }
+
+        // Lấy variants và flatten
+        const allVariants = [];
+        for (const product of products) {
+            try {
+                const variantsResponse = await apiClient.get(`/products/${product._id}/variants`);
+                const variants = variantsResponse.data || [];
+
+                if (variants.length > 0) {
+                    const enrichedVariants = variants.map(variant => ({
+                        ...variant,
+                        productInfo: {
+                            _id: product._id,
+                            name: product.name,
+                            description: product.description,
+                            category: product.category,
+                            brand: product.brand,
+                            averageRating: product.averageRating,
+                        }
+                    }));
+                    allVariants.push(...enrichedVariants);
+                }
+            } catch (err) {
+                console.error(`Error fetching variants for product ${product._id}:`, err);
+            }
+        }
+
+        // Filter unique by product+color combination
+        const uniqueMap = new Map();
+        const uniqueVariants = allVariants.filter(variant => {
+            const productId = variant.productInfo?._id || variant.product_id;
+            const key = `${productId}_${variant.color}`;
+
+            if (!uniqueMap.has(key)) {
+                uniqueMap.set(key, true);
+                return true;
+            }
+            return false;
+        });
+
+        // Shuffle array để random
+        const shuffled = uniqueVariants.sort(() => Math.random() - 0.5);
+
+        return shuffled.slice(0, limit);
+    } catch (error) {
+        console.error('Error fetching random variants:', error);
         throw error;
     }
 };

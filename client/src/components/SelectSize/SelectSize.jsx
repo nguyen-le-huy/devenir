@@ -1,18 +1,18 @@
 import styles from "./SelectSize.module.css";
 import { useState } from "react";
-import { useScrollLock } from "../../hooks/useScrollLock";
+import { useLenisControl } from "../../hooks/useLenisControl";
 import { useAddToCart } from "../../hooks/useCart.js";
 import SizeAndFit from "../SizeAndFit/SizeAndFit.jsx";
 
-const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, product = null }) => {
+const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, product = null, onAddToCartSuccess }) => {
     const [isSizeAndFitOpen, setIsSizeAndFitOpen] = useState(false);
     const [selectedSize, setSelectedSize] = useState(null);
-    
+
     // Add to cart mutation
     const addToCartMutation = useAddToCart();
 
-    // Lock scroll khi modal mở
-    useScrollLock(isOpen);
+    // Lock scroll khi modal mở using useLenisControl instead of useScrollLock
+    useLenisControl(isOpen);
 
     // Group variants by size with stock info
     const sizeInfo = variants.reduce((acc, variant) => {
@@ -56,15 +56,18 @@ const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, pro
     const handleSizeSelect = (sizeData) => {
         if (sizeData.inStock) {
             setSelectedSize(sizeData.size);
-            
+
             // Add to cart with selected variant
             const variantId = sizeData.variant._id;
             addToCartMutation.mutate(
                 { variantId, quantity: 1 },
                 {
                     onSuccess: () => {
-                        alert(`Added ${product?.name || 'Product'} (Size: ${sizeData.size}) to bag!`);
                         onClose();
+                        // Call callback to show AddToBagNoti
+                        if (onAddToCartSuccess) {
+                            onAddToCartSuccess();
+                        }
                     },
                     onError: (error) => {
                         alert(error.response?.data?.message || 'Failed to add to bag. Please login first.');

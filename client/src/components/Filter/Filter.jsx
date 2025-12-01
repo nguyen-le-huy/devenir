@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './Filter.module.css';
-import { useScrollLock } from '../../hooks/useScrollLock';
+import { useLenisControl } from '../../hooks/useLenisControl';
 
 const Filter = ({
     isOpen,
@@ -62,7 +62,8 @@ const Filter = ({
     }, [isOpen, onClose]);
 
 
-    useScrollLock(isOpen);
+    // Lock scroll when modal is open using useLenisControl instead of useScrollLock
+    useLenisControl(isOpen);
 
     // Toggle Sort By dropdown (close Colour dropdown if open)
     const handleToggleSortBy = () => {
@@ -132,10 +133,10 @@ const Filter = ({
     return (
         <>
             {/* Dark Overlay */}
-            <div className={styles.backdrop} onClick={onClose}></div>
+            <div className={styles.backdrop} onClick={onClose} data-lenis-prevent></div>
 
             {/* Filter Panel */}
-            <div ref={overlayRef} className={`${styles.overlayFilter} ${isOpen ? styles.show : ''} `}>
+            <div ref={overlayRef} className={`${styles.overlayFilter} ${isOpen ? styles.show : ''} `} data-lenis-prevent>
                 <div className={styles.box}>
                     <div className={styles.header}>
                         <span>Filter & Sort</span>

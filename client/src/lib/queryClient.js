@@ -73,5 +73,6 @@ export const queryKeys = {
     lists: () => [...['variants'], 'list'],
     list: (params) => [...['variants'], 'list', params],
     latest: (limit) => [...['variants'], 'latest', limit],
+    random: (limit) => [...['variants'], 'random', limit],
   },
 };

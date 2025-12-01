@@ -2,13 +2,13 @@ import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ColourVarients.module.css';
 import ScarfCard from '../ProductCard/ScarfCard';
-import { useScrollLock } from '../../hooks/useScrollLock';
+import { useLenisControl } from '../../hooks/useLenisControl';
 
 const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantId, colorMap = {} }) => {
     const navigate = useNavigate();
 
-    // Lock scroll when modal is open
-    useScrollLock(isOpen);
+    // Lock scroll when modal is open using useLenisControl instead of useScrollLock
+    useLenisControl(isOpen);
 
     // Get unique variants by color (one variant per color)
     const uniqueColorVariants = useMemo(() => {
@@ -74,8 +74,8 @@ const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantI
 
     return (
         <>
-            <div className={styles.backdrop} onClick={onClose}></div>
-            <div className={styles.colourVarients}>
+            <div className={styles.backdrop} onClick={onClose} data-lenis-prevent></div>
+            <div className={styles.colourVarients} data-lenis-prevent>
                 <div className={styles.header}>
                     <p>{uniqueColorVariants.length} {uniqueColorVariants.length === 1 ? 'Colour' : 'Colours'}</p>
                     <svg

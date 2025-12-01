@@ -10,7 +10,8 @@
     gap: 40px;
 }
 
-.left, .center {
+.left,
+.center {
     width: 35%;
 }
 
@@ -20,8 +21,8 @@
     height: 100vh;
 }
 
-.left > img,
-.center > img {
+.left>img,
+.center>img {
     width: 100%;
     height: 100vh;
     object-fit: cover;
@@ -93,7 +94,7 @@
     gap: 10px;
 }
 
-.productColour > p {
+.productColour>p {
     font-weight: 500;
     font-size: 16px;
 }
@@ -111,7 +112,7 @@
     cursor: pointer;
 }
 
-.colourVarients > p {
+.colourVarients>p {
     font-size: 16px;
 }
 
@@ -121,7 +122,7 @@
     gap: 10px;
 }
 
-.buttonList > button {
+.buttonList>button {
     width: 100%;
     font-size: 16px;
     font-weight: 500;
@@ -217,7 +218,7 @@
     cursor: pointer;
 }
 
-.itemLabel > p {
+.itemLabel>p {
     font-size: 16px;
     font-weight: 500;
 }
@@ -236,12 +237,12 @@
     user-select: none;
 }
 
-.itemLabel > p {
+.itemLabel>p {
     font-size: 17px;
     font-weight: 500;
 }
 
-.itemLabel > svg {
+.itemLabel>svg {
     transition: transform 0.3s ease;
 }
 
@@ -254,12 +255,13 @@
 
 /* ✅ Content khi mở */
 .itemContent.open {
-    max-height: 500px; /* Adjust based on your content */
+    max-height: 500px;
+    /* Adjust based on your content */
     transition: max-height 0.5s ease-in;
 }
 
 .contentText {
-    padding-top: 15px; 
+    padding-top: 15px;
     font-size: 15px;
     font-weight: 400;
     line-height: 1.5;
@@ -272,7 +274,8 @@
 }
 
 .appointmentLink,
-.contactLink {
+.contactLink,
+.sizeGuideLink {
     position: relative;
     display: inline-block;
     overflow: hidden;
@@ -280,11 +283,13 @@
     font-size: 16px;
     font-weight: 400;
     cursor: pointer;
-    width: fit-content; /* ✅ Chỉ rộng bằng text */
+    width: fit-content;
+    /* ✅ Chỉ rộng bằng text */
 }
 
 .appointmentLink:hover .linkGraphicSlide,
-.contactLink:hover .linkGraphicSlide {
+.contactLink:hover .linkGraphicSlide,
+.sizeGuideLink:hover .linkGraphicSlide {
     transform: translate3d(-66.6%, 0, 0);
 }
 
@@ -313,7 +318,7 @@
         height: 100%;
     }
 
-    .mobileGalleryItems > img {
+    .mobileGalleryItems>img {
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -340,8 +345,10 @@
         position: absolute;
         top: 0;
         height: 100%;
-        background-color: var(--black); /* Màu đen */
-        transition: left 0.3s ease, width 0.3s ease; /* Smooth animation */
+        background-color: var(--black);
+        /* Màu đen */
+        transition: left 0.3s ease, width 0.3s ease;
+        /* Smooth animation */
     }
 
     .left,
@@ -360,7 +367,7 @@
         flex-direction: column;
     }
 
-    .buttonList > button {
+    .buttonList>button {
         padding: 10px;
     }
 }
