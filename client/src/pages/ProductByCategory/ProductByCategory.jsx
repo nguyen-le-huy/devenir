@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import styles from './ProductByCategory.module.css';
 import Filter from '../../components/Filter/Filter.jsx';
 import ScarfCard from '../../components/ProductCard/ScarfCard.jsx';
 import Loading from '../../components/Loading/Loading.jsx';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight.js';
-import { useVariantsByCategory } from '../../hooks/useProducts.js';
-import { useCategoryById } from '../../hooks/useCategories.js';
+import { useCategoryById, useCategories } from '../../hooks/useCategories.js';
 import { useColors } from '../../hooks/useColors.js';
 import { createColorMap } from '../../services/colorService.js';
+import { getVariantsByCategory, getVariantsByCategoryWithChildren } from '../../services/productService.js';
 
 const ProductByCategory = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -24,12 +25,40 @@ const ProductByCategory = () => {
     const categoryId = searchParams.get('category');
     const selectedSubcategory = searchParams.get('subcategory');
 
-    // Sử dụng subcategory ID nếu có, nếu không thì dùng main category ID
-    const activeCategoryId = selectedSubcategory || categoryId;
+    // Fetch all categories to find subcategories
+    const { data: allCategoriesData } = useCategories();
+
+    // Parse categories array
+    const allCategories = useMemo(() => {
+        if (allCategoriesData?.data) {
+            return allCategoriesData.data;
+        } else if (Array.isArray(allCategoriesData)) {
+            return allCategoriesData;
+        }
+        return [];
+    }, [allCategoriesData]);
 
     // Fetch data using React Query hooks
     const { data: categoryData, isLoading: categoryLoading } = useCategoryById(categoryId);
-    const { data: variantsData = [], isLoading: variantsLoading, error } = useVariantsByCategory(activeCategoryId);
+    
+    // Fetch variants from category (with or without children based on selection)
+    const { data: variantsData = [], isLoading: variantsLoading, error } = useQuery({
+        queryKey: ['variants-by-category', categoryId, selectedSubcategory, allCategories.length],
+        queryFn: async () => {
+            if (!categoryId) return [];
+
+            // Nếu chọn subcategory cụ thể, chỉ lấy variants từ subcategory đó
+            if (selectedSubcategory) {
+                return await getVariantsByCategory(selectedSubcategory);
+            }
+            
+            // Nếu chọn "All", lấy variants từ parent category + tất cả subcategories
+            return await getVariantsByCategoryWithChildren(categoryId, allCategories);
+        },
+        enabled: !!categoryId && allCategories.length > 0,
+        staleTime: 3 * 60 * 1000, // 3 minutes
+    });
+
     const { data: colorsData } = useColors();
 
     // Memoize expensive calculations
@@ -115,10 +144,13 @@ const ProductByCategory = () => {
     // Check if filters are active
     const isFiltering = selectedSort !== 'Default' || selectedColors.length > 0;
 
-    // Logic hiển thị: Nếu đang filter thì ẩn topBox
-    const hasThumbnail = category?.thumbnailUrl && !isFiltering;
+    // Logic hiển thị: Chỉ hiển thị topBox khi:
+    // 1. Category có thumbnail
+    // 2. Không đang filter
+    // 3. Không đang chọn subcategory (đang ở "All")
+    const hasThumbnail = category?.thumbnailUrl && !isFiltering && !selectedSubcategory;
 
-    // 4 variants đầu tiên cho leftBox (chỉ khi có thumbnail VÀ không filter)
+    // 4 variants đầu tiên cho leftBox (chỉ khi có thumbnail VÀ không filter VÀ không chọn subcategory)
     const firstFourVariants = hasThumbnail ? filteredVariants.slice(0, 4) : [];
 
     // Các variants còn lại cho productList

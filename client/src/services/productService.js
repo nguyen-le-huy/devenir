@@ -121,6 +121,44 @@ export const getVariantsByCategory = async (categoryId) => {
 };
 
 /**
+ * Lấy tất cả variants của một category VÀ các subcategories của nó
+ * @param {string} parentCategoryId - Parent Category ID
+ * @param {Array} allCategories - Tất cả categories (để tìm subcategories)
+ * @returns {Promise} Array of variants với thông tin product
+ */
+export const getVariantsByCategoryWithChildren = async (parentCategoryId, allCategories = []) => {
+    try {
+        // Tìm tất cả subcategory IDs
+        const subcategories = allCategories.filter(cat => 
+            cat.parentCategory === parentCategoryId || 
+            cat.parentCategory?._id === parentCategoryId ||
+            String(cat.parentCategory) === String(parentCategoryId)
+        );
+
+        // Tạo danh sách tất cả category IDs (parent + children)
+        const allCategoryIds = [parentCategoryId, ...subcategories.map(sub => sub._id)];
+
+        // Fetch variants từ tất cả categories
+        const allVariants = [];
+        for (const categoryId of allCategoryIds) {
+            try {
+                const variants = await getVariantsByCategory(categoryId);
+                if (Array.isArray(variants)) {
+                    allVariants.push(...variants);
+                }
+            } catch (err) {
+                // Silently handle error for individual category
+            }
+        }
+
+        return allVariants;
+    } catch (error) {
+        console.error('Error fetching variants by category with children:', error);
+        throw error;
+    }
+};
+
+/**
  * Lấy thông tin chi tiết của một variant theo ID
  * Bao gồm thông tin product cha và tất cả variants cùng cha
  * @param {string} variantId - Variant ID
@@ -146,6 +184,7 @@ export const getVariantById = async (variantId) => {
 
 /**
  * Lấy các variants mới nhất (sorted by createdAt)
+ * Chỉ lấy 1 variant cho mỗi product+color combination (tránh trùng màu)
  * @param {number} limit - Số lượng variants cần lấy
  * @returns {Promise} Array of latest variants với thông tin product
  */
@@ -191,16 +230,27 @@ export const getLatestVariants = async (limit = 4) => {
             }
         }
 
-        // Sort by createdAt (newest first) và lấy limit số lượng
-        const sortedVariants = allVariants
-            .sort((a, b) => {
-                const dateA = new Date(a.createdAt || a._id);
-                const dateB = new Date(b.createdAt || b._id);
-                return dateB - dateA;
-            })
-            .slice(0, limit);
+        // Sort by createdAt (newest first)
+        const sortedVariants = allVariants.sort((a, b) => {
+            const dateA = new Date(a.createdAt || a._id);
+            const dateB = new Date(b.createdAt || b._id);
+            return dateB - dateA;
+        });
 
-        return sortedVariants;
+        // Filter unique by product+color combination
+        const uniqueMap = new Map();
+        const uniqueVariants = sortedVariants.filter(variant => {
+            const productId = variant.productInfo?._id || variant.product_id;
+            const key = `${productId}_${variant.color}`;
+
+            if (!uniqueMap.has(key)) {
+                uniqueMap.set(key, true);
+                return true;
+            }
+            return false;
+        });
+
+        return uniqueVariants.slice(0, limit);
     } catch (error) {
         console.error('Error fetching latest variants:', error);
         throw error;

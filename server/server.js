@@ -16,6 +16,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import colorRoutes from './routes/colorRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
 
 
 dotenv.config();
@@ -151,6 +152,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/colors', colorRoutes);
 app.use('/api/brands', brandRoutes);
+app.use('/api/cart', cartRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

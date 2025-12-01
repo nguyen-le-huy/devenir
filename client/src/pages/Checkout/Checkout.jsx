@@ -1,28 +1,79 @@
 import styles from "./Checkout.module.css";
 import ProductCheckout from "../../components/ProductCard/ProductCheckout";
 import ProductCarousel from "../../components/ProductCarousel/ProductCarousel";
-import { scarves } from "../../data/scarvesData";
+import { useCart, useRemoveFromCart } from "../../hooks/useCart.js";
+import { useLatestVariants } from "../../hooks/useProducts.js";
+import { useMemo } from "react";
 
 const Checkout = () => {
+    // Fetch real cart data
+    const { data: cartData, isLoading } = useCart();
+    const cart = cartData?.data || { items: [], totalItems: 0, totalPrice: 0 };
+    
+    // Remove from cart mutation
+    const removeFromCartMutation = useRemoveFromCart();
+
+    // Fetch latest variants for "You May Also Like" carousel
+    const { data: variantsData } = useLatestVariants(20);
+
+    // Transform and shuffle variants to get 8 random products
+    const recommendedProducts = useMemo(() => {
+        if (!variantsData || variantsData.length === 0) return [];
+
+        // Shuffle array randomly
+        const shuffled = [...variantsData].sort(() => Math.random() - 0.5);
+
+        // Take first 8 and transform to product format
+        return shuffled.slice(0, 8).map(variant => ({
+            id: variant._id,
+            name: variant.productInfo?.name || 'Product',
+            price: variant.price,
+            image: variant.mainImage || '/images/placeholder.png',
+            imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
+            color: variant.color,
+            size: variant.size,
+            sku: variant.sku,
+        }));
+    }, [variantsData]);
+
+    const handleRemoveItem = (variantId) => {
+        removeFromCartMutation.mutate(variantId, {
+            onSuccess: () => {
+                // Item removed successfully
+            },
+            onError: (error) => {
+                alert(error.message || 'Failed to remove item');
+            }
+        });
+    };
+
     return (
         <>
             <div className={styles.checkout}>
                 <div className={styles.header}>
-                    <h3>Your Bag Total Is USD 2000.00</h3>
+                    <h3>Your Bag Total Is USD {cart.totalPrice.toFixed(2)}</h3>
                     <p>Free delivery & returns on your order</p>
                 </div>
                 <div className={styles.body}>
                     <div className={styles.left}>
-                        <ProductCheckout />
-                        <ProductCheckout />
-                        <ProductCheckout />
+                        {cart.items.length > 0 ? (
+                            cart.items.map((item, index) => (
+                                <ProductCheckout 
+                                    key={item.productVariant?._id || index} 
+                                    item={item} 
+                                    onRemove={handleRemoveItem}
+                                />
+                            ))
+                        ) : (
+                            <p style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Your bag is empty</p>
+                        )}
                     </div>
                     <div className={styles.right}>
                         <h2>Your Order Summary</h2>
                         <div className={styles.summary}>
                             <div className={styles.summaryItem}>
                                 <p className={styles.subtotalLabel}>Subtotal</p>
-                                <p>USD 2000.00</p>
+                                <p>USD {cart.totalPrice.toFixed(2)}</p>
                             </div>
                             <div className={styles.summaryItem}>
                                 <p>Estimated Shipping</p>
@@ -35,10 +86,10 @@ const Checkout = () => {
                         </div>
                         <div className={styles.total}>
                             <p className={styles.totalLabel}>Total</p>
-                            <p className={styles.totalPrice}>USD 2000.00</p>
+                            <p className={styles.totalPrice}>USD {cart.totalPrice.toFixed(2)}</p>
                         </div>
                         <div className={styles.checkoutButtonList}>
-                            <button className={styles.checkoutButton}>Checkout (3)</button>
+                            <button className={styles.checkoutButton}>Checkout ({cart.totalItems})</button>
                             <div className={styles.coinbaseButton}>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 101 18" fill="none">
                                     <g clip-path="url(#clip0_334_284)">
@@ -89,7 +140,7 @@ const Checkout = () => {
             <ProductCarousel
                 title="You May Also Like"
                 viewAllLink="#"
-                products={scarves}
+                products={recommendedProducts}
                 showViewAll={false}
             />
         </>

@@ -94,7 +94,7 @@ const productSchema = new mongoose.Schema(
  * Usage: product.reviewCount
  */
 productSchema.virtual('reviewCount').get(function () {
-  return this.reviews.length;
+  return this.reviews?.length || 0;
 });
 
 // ============ PRE-SAVE MIDDLEWARE ============

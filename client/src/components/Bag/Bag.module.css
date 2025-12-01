@@ -4,7 +4,7 @@
     right: 0;
     background-color: var(--white);
     padding: 0 10px 30px 10px;
-    z-index: 1002;
+    z-index: 5000;
 }
 
 .backdrop {
@@ -20,10 +20,15 @@
 .emptyText {
     font-size: 18px;
     color: var(--black);
-    padding: 20px 0;
+    padding-top: 20px;
     width: 300px;
 }
 
+.nameAndQuanity {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
 
 .productList {
     display: flex;

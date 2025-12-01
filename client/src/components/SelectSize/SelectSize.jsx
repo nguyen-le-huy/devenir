@@ -1,11 +1,15 @@
 import styles from "./SelectSize.module.css";
 import { useState } from "react";
 import { useScrollLock } from "../../hooks/useScrollLock";
+import { useAddToCart } from "../../hooks/useCart.js";
 import SizeAndFit from "../SizeAndFit/SizeAndFit.jsx";
 
 const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, product = null }) => {
     const [isSizeAndFitOpen, setIsSizeAndFitOpen] = useState(false);
     const [selectedSize, setSelectedSize] = useState(null);
+    
+    // Add to cart mutation
+    const addToCartMutation = useAddToCart();
 
     // Lock scroll khi modal mở
     useScrollLock(isOpen);
@@ -52,8 +56,21 @@ const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, pro
     const handleSizeSelect = (sizeData) => {
         if (sizeData.inStock) {
             setSelectedSize(sizeData.size);
-            // TODO: Add to cart with selected size
-            onClose();
+            
+            // Add to cart with selected variant
+            const variantId = sizeData.variant._id;
+            addToCartMutation.mutate(
+                { variantId, quantity: 1 },
+                {
+                    onSuccess: () => {
+                        alert(`Added ${product?.name || 'Product'} (Size: ${sizeData.size}) to bag!`);
+                        onClose();
+                    },
+                    onError: (error) => {
+                        alert(error.response?.data?.message || 'Failed to add to bag. Please login first.');
+                    }
+                }
+            );
         }
     };
 

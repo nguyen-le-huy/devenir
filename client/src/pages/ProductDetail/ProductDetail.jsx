@@ -7,6 +7,7 @@ import { scarves } from '../../data/scarvesData.js';
 import { getVariantById } from '../../services/productService.js';
 import { getAllColors, createColorMap } from '../../services/colorService.js';
 import { useVariantsByCategory } from '../../hooks/useProducts.js';
+import { useAddToCart } from '../../hooks/useCart.js';
 import Loading from '../../components/Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -133,6 +134,26 @@ export default function ProductDetail() {
     const isFreeSize = availableSizes.length === 1 && availableSizes[0]?.toLowerCase() === 'free size';
     const needsSizeSelection = !isFreeSize && availableSizes.length > 0;
     const currentColorHex = colorMap[currentColorName] || '#ccc';
+
+    // Add to cart mutation for Free Size products
+    const addToCartMutation = useAddToCart();
+
+    // Handle add to bag for Free Size products
+    const handleAddToBagFreeSize = () => {
+        if (!variant?._id) return;
+        
+        addToCartMutation.mutate(
+            { variantId: variant._id, quantity: 1 },
+            {
+                onSuccess: () => {
+                    alert(`Added ${product?.name || 'Product'} to bag!`);
+                },
+                onError: (error) => {
+                    alert(error.response?.data?.message || 'Failed to add to bag. Please login first.');
+                }
+            }
+        );
+    };
 
     // Fetch variants from the same category
     // product.category is populated, so we need to use _id
@@ -268,7 +289,8 @@ export default function ProductDetail() {
                                 if (needsSizeSelection) {
                                     setIsSelectSizeOpen(true);
                                 } else {
-                                    // TODO: Add directly to cart for Free Size products
+                                    // Add directly to cart for Free Size products
+                                    handleAddToBagFreeSize();
                                 }
                             }}>Add to Bag</button>
                             <button className={styles.sendGift}>Send using 4GIFT</button>

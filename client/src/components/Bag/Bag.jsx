@@ -4,13 +4,19 @@ import { lenisInstance } from "../../App";
 import { useEffect } from "react";
 import { useLenisControl } from "../../hooks/useLenisControl";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "../../hooks/useCart.js";
 
-export default function Bag({ onMouseEnter, onMouseLeave, bagCount }) {
+export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
     const navigate = useNavigate();
     const headerHeight = useHeaderHeight();
     useLenisControl(true);
+    
+    // Fetch real cart data
+    const { data: cartData, isLoading } = useCart();
+    const cart = cartData?.data || { items: [], totalItems: 0, totalPrice: 0 };
 
     const handleCheckout = () => {
+        if (onClose) onClose();
         navigate("/checkout");
     };
 
@@ -26,44 +32,38 @@ export default function Bag({ onMouseEnter, onMouseLeave, bagCount }) {
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
             >
-                {bagCount > 0 ? (
+                {cart.items.length > 0 ? (
                     <div className={styles.bagContent}>
                         <div className={styles.productList} data-lenis-prevent>
-                            <div className={styles.product}>
-                                <img src="/images/scarf1.png" alt="product" />
-                                <div className={styles.productInfo}>
-                                    <div className={styles.nameAndQuanity}>
-                                        <p className={styles.productName}>Check Cashmere Scarf</p>
-                                        <p className={styles.productQuantity}>Quantity: 1</p>
+                            {cart.items.map((item, index) => {
+                                const variant = item.productVariant;
+                                const productName = variant?.product_id?.name || 'Product';
+                                const image = variant?.mainImage || '/images/placeholder.png';
+                                const price = variant?.price || 0;
+                                const size = variant?.size || '';
+                                const color = variant?.color || '';
+                                
+                                return (
+                                    <div key={variant?._id || index} className={styles.product}>
+                                        <img src={image} alt={productName} />
+                                        <div className={styles.productInfo}>
+                                            <div className={styles.nameAndQuanity}>
+                                                <p className={styles.productName}>{productName}</p>
+                                                <p className={styles.productQuantity}>
+                                                    {size && `Size: ${size}`}{size && color && ' | '}{color && `Color: ${color}`}
+                                                    {' | '}Qty: {item.quantity}
+                                                </p>
+                                            </div>
+                                            <p className={styles.productPrice}>${(price * item.quantity).toFixed(2)}</p>
+                                        </div>
                                     </div>
-                                    <p className={styles.productPrice}>$120.00</p>
-                                </div>
-                            </div>
-                            <div className={styles.product}>
-                                <img src="/images/scarf1.png" alt="product" />
-                                <div className={styles.productInfo}>
-                                    <div className={styles.nameAndQuanity}>
-                                        <p className={styles.productName}>Check Cashmere Scarf</p>
-                                        <p className={styles.productQuantity}>Quantity: 1</p>
-                                    </div>
-                                    <p className={styles.productPrice}>$120.00</p>
-                                </div>
-                            </div>
-                            <div className={styles.product}>
-                                <img src="/images/scarf1.png" alt="product" />
-                                <div className={styles.productInfo}>
-                                    <div className={styles.nameAndQuanity}>
-                                        <p className={styles.productName}>Check Cashmere Scarf</p>
-                                        <p className={styles.productQuantity}>Quantity: 1</p>
-                                    </div>
-                                    <p className={styles.productPrice}>$120.00</p>
-                                </div>
-                            </div>
+                                );
+                            })}
                         </div>
 
                         <div className={styles.totalPrice}>
                             <p>Sub total</p>
-                            <p>$7360.00</p>
+                            <p>${cart.totalPrice.toFixed(2)}</p>
                         </div>
 
                         <div className={styles.checkoutButton}>

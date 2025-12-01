@@ -6,6 +6,7 @@ import UserMenu from "../../UserMenu/UserMenu";
 import Search from "../../Search/Search";
 import Bag from "../../Bag/Bag";
 import { getMainCategories } from "../../../services/categoryService";
+import { useCart } from "../../../hooks/useCart.js";
 
 const Header = () => {
     const navigate = useNavigate();
@@ -14,8 +15,11 @@ const Header = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isBagOpen, setIsBagOpen] = useState(false);
     const bagTimeoutRef = useRef(null);
-    const [bagCount, setBagCount] = useState(2);
     const [categories, setCategories] = useState([]);
+    
+    // Fetch real cart data for badge count
+    const { data: cartData } = useCart();
+    const bagCount = cartData?.data?.totalItems || 0;
 
     // Fetch categories khi component mount
     useEffect(() => {
@@ -160,7 +164,7 @@ const Header = () => {
                         </svg>
                     )}
                     <div className={styles.bagWrapper} onMouseEnter={handleBagIconMouseEnter} onMouseLeave={handleBagIconMouseLeave}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.bagIcon}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" fill="none" className={styles.bagIcon} onClick={() => navigate('/checkout')} style={{ cursor: 'pointer' }}>
                             <path d="M10 15V10C10 8.67392 10.5268 7.40215 11.4645 6.46447C12.4021 5.52678 13.6739 5 15 5C16.3261 5 17.5979 5.52678 18.5355 6.46447C19.4732 7.40215 20 8.67392 20 10V15" stroke="black" stroke-linecap="round" stroke-width="1.5" />
                             <path d="M4.61752 15.835C4.79877 13.6588 4.89002 12.5712 5.60752 11.91C6.32502 11.2487 7.41752 11.25 9.60127 11.25H20.4C22.5825 11.25 23.675 11.25 24.3925 11.91C25.11 12.57 25.2013 13.6588 25.3825 15.835L26.025 23.5425C26.13 24.8087 26.1825 25.4425 25.8125 25.8463C25.44 26.25 24.805 26.25 23.5325 26.25H6.46752C5.19627 26.25 4.56002 26.25 4.18877 25.8463C3.81752 25.4425 3.87002 24.8087 3.97627 23.5425L4.61752 15.835Z" stroke="black" stroke-width="1.5" />
                         </svg>
@@ -220,7 +224,7 @@ const Header = () => {
                 <Bag
                     onMouseEnter={handleBagComponentMouseEnter}
                     onMouseLeave={handleBagComponentMouseLeave}
-                    bagCount={bagCount}
+                    onClose={() => setIsBagOpen(false)}
                 />
             )}
             {isSearchOpen && <Search onClose={closeSearch} />}
