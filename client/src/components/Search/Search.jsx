@@ -1,5 +1,5 @@
 import styles from './Search.module.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -14,8 +14,9 @@ const Search = ({ onClose }) => {
     const containerRef = useRef(null);
     const inputWrapperRef = useRef(null);
     const resultsRef = useRef(null);
-    const headerHeight = useHeaderHeight();
     const navigate = useNavigate();
+    const abortControllerRef = useRef(null);
+    const headerHeight = useHeaderHeight();
 
     // State cho search
     const [searchQuery, setSearchQuery] = useState('');
@@ -25,7 +26,7 @@ const Search = ({ onClose }) => {
 
     useLenisControl(true);
 
-    // ✅ Sử dụng useGSAP cho animations
+    // ✅ Sử dụng useGSAP cho animations với proper cleanup
     useGSAP(() => {
         const timeline = gsap.timeline();
 
@@ -33,16 +34,20 @@ const Search = ({ onClose }) => {
         timeline.fromTo(
             backdropRef.current,
             { opacity: 0 },
-            { opacity: 1, duration: 0.5, ease: 'power2.out' }
+            { opacity: 1, duration: 0.4, ease: 'power2.out' }
         );
 
-        // Animate search container height từ 0 -> auto
+        // Animate search container với clipPath để tránh scrollbar flash
         timeline.fromTo(
             searchContainerRef.current,
-            { height: 0 },
+            { 
+                clipPath: 'inset(0 0 100% 0)',
+                opacity: 0
+            },
             {
-                height: 'auto',
-                duration: 0.5,
+                clipPath: 'inset(0 0 0% 0)',
+                opacity: 1,
+                duration: 0.4,
                 ease: 'power3.out'
             },
             '<'
@@ -50,26 +55,37 @@ const Search = ({ onClose }) => {
 
         timeline.fromTo(
             [inputWrapperRef.current, resultsRef.current],
-            { opacity: 0 },
+            { opacity: 0, y: -10 },
             {
                 opacity: 1,
-                duration: 0.5,
-                ease: 'power3.out'
+                y: 0,
+                duration: 0.3,
+                ease: 'power2.out'
             },
-            '<'
+            '-=0.2'
         );
 
         // Focus vào input sau khi animation xong
         timeline.call(() => {
             inputRef.current?.focus();
         });
+
+        // Cleanup
+        return () => {
+            timeline.kill();
+        };
     }, { scope: containerRef });
 
-    // Search products với debounce
+    // Search products với debounce và abort controller
     useEffect(() => {
         // Clear previous timer
         if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
+        }
+
+        // Abort previous request
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
         }
 
         // Nếu search query rỗng, clear results
@@ -82,6 +98,9 @@ const Search = ({ onClose }) => {
         // Set debounce timer
         setIsSearching(true);
         debounceTimerRef.current = setTimeout(async () => {
+            // Create new abort controller
+            abortControllerRef.current = new AbortController();
+
             try {
                 const response = await getAllProducts({
                     search: searchQuery,
@@ -92,8 +111,11 @@ const Search = ({ onClose }) => {
                     setSearchResults(response.data);
                 }
             } catch (error) {
-                console.error('Error searching products:', error);
-                setSearchResults([]);
+                // Ignore abort errors
+                if (error.name !== 'AbortError') {
+                    console.error('Error searching products:', error);
+                    setSearchResults([]);
+                }
             } finally {
                 setIsSearching(false);
             }
@@ -104,45 +126,50 @@ const Search = ({ onClose }) => {
             if (debounceTimerRef.current) {
                 clearTimeout(debounceTimerRef.current);
             }
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
         };
     }, [searchQuery]);
 
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         // GSAP Animation khi đóng
         const timeline = gsap.timeline({
             onComplete: onClose
         });
 
-        // Animate search container về height 0
-        timeline.to(searchContainerRef.current, {
-            height: 0,
-            duration: 0.3,
-            ease: 'power2.in'
-        });
-
-        // Animate backdrop về opacity 0
-        timeline.to(
-            backdropRef.current,
-            { opacity: 0, duration: 0.3, ease: 'power2.in' },
-            '<'
-        );
-
+        // Animate content ra trước
         timeline.to(
             [inputWrapperRef.current, resultsRef.current],
             {
                 opacity: 0,
-                duration: 0.3,
+                y: -10,
+                duration: 0.2,
                 ease: 'power2.in'
-            },
+            }
+        );
+
+        // Animate search container với clipPath
+        timeline.to(searchContainerRef.current, {
+            clipPath: 'inset(0 0 100% 0)',
+            opacity: 0,
+            duration: 0.3,
+            ease: 'power2.in'
+        }, '-=0.1');
+
+        // Animate backdrop về opacity 0
+        timeline.to(
+            backdropRef.current,
+            { opacity: 0, duration: 0.25, ease: 'power2.in' },
             '<'
         );
-    };
+    }, [onClose]);
 
-    const handleInputChange = (e) => {
+    const handleInputChange = useCallback((e) => {
         setSearchQuery(e.target.value);
-    };
+    }, []);
 
-    const handleResultClick = async (product) => {
+    const handleResultClick = useCallback(async (product) => {
         try {
             // Lấy variants của product này
             const variantsData = await getProductVariants(product._id);
@@ -168,13 +195,14 @@ const Search = ({ onClose }) => {
             alert('An error occurred while loading the product.');
             handleClose();
         }
-    };
+    }, [navigate, handleClose]);
 
     return (
-        <div ref={containerRef}>
+        <div ref={containerRef} data-lenis-prevent>
             <div
                 ref={backdropRef}
                 className={styles.backdrop}
+                style={{ top: `${headerHeight}px` }}
                 onClick={handleClose}
             ></div>
 
@@ -182,6 +210,7 @@ const Search = ({ onClose }) => {
                 ref={searchContainerRef}
                 className={styles.searchContainer}
                 style={{ top: `${headerHeight}px` }}
+                data-lenis-prevent
             >
                 <div className={styles.inputWrapper} ref={inputWrapperRef}>
                     <input

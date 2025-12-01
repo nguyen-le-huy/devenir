@@ -123,6 +123,15 @@ export default function ProductDetail() {
     // variant.color stores the color name (e.g., "Charcoal")
     // colorMap maps colorName -> hexCode
     const currentColorName = variant?.color || 'Unknown';
+
+    // Get variants of the same color for size selection
+    const sameColorVariants = siblingVariants.filter(v => v.color === currentColorName);
+
+    // Determine if product needs size selection
+    // If all variants are "Free Size" or only 1 variant, no need to show size selector
+    const availableSizes = [...new Set(sameColorVariants.map(v => v.size))].filter(Boolean);
+    const isFreeSize = availableSizes.length === 1 && availableSizes[0]?.toLowerCase() === 'free size';
+    const needsSizeSelection = !isFreeSize && availableSizes.length > 0;
     const currentColorHex = colorMap[currentColorName] || '#ccc';
 
     // Fetch variants from the same category
@@ -255,7 +264,13 @@ export default function ProductDetail() {
                             </div>
                         </div>
                         <div className={styles.buttonList}>
-                            <button className={styles.addToBag} onClick={() => setIsSelectSizeOpen(true)}>Add to Bag</button>
+                            <button className={styles.addToBag} onClick={() => {
+                                if (needsSizeSelection) {
+                                    setIsSelectSizeOpen(true);
+                                } else {
+                                    // TODO: Add directly to cart for Free Size products
+                                }
+                            }}>Add to Bag</button>
                             <button className={styles.sendGift}>Send using 4GIFT</button>
                             <p className={styles.instalment}>
                                 Instalment payments available{' '}
@@ -329,6 +344,9 @@ export default function ProductDetail() {
                 <SelectSize
                     isOpen={isSelectSizeOpen}
                     onClose={() => setIsSelectSizeOpen(false)}
+                    variants={sameColorVariants}
+                    currentVariant={variant}
+                    product={product}
                 />
             )}
             {/* ✅ Reusable ProductCarousel với title khác */}

@@ -3,6 +3,24 @@ import { lenisInstance } from '../App';
 
 // Reference counter để track số lượng components đang yêu cầu stop scroll
 let scrollStopCount = 0;
+let preventScrollHandler = null;
+
+// Prevent wheel scroll function - được tạo 1 lần và reuse
+const preventScroll = (e) => {
+    // Cho phép scroll trong element có data-lenis-prevent và có overflow
+    const target = e.target;
+    const scrollableParent = target.closest('[data-lenis-prevent]');
+    
+    if (scrollableParent) {
+        const { scrollHeight, clientHeight } = scrollableParent;
+        // Chỉ cho phép scroll nếu element thực sự có nội dung overflow
+        if (scrollHeight > clientHeight) {
+            return; // Cho phép scroll trong container này
+        }
+    }
+    
+    e.preventDefault();
+};
 
 /**
  * Custom hook để dừng Lenis scroll khi component mount,
@@ -24,7 +42,9 @@ export const useLenisControl = (active = true) => {
             if (lenisInstance) {
                 lenisInstance.stop();
             }
-            document.body.style.overflow = 'hidden';
+            // Chặn wheel event ở document level
+            document.addEventListener('wheel', preventScroll, { passive: false });
+            document.addEventListener('touchmove', preventScroll, { passive: false });
         }
 
         // Cleanup function: chạy khi component unmount
@@ -37,8 +57,9 @@ export const useLenisControl = (active = true) => {
                 if (lenisInstance) {
                     lenisInstance.start();
                 }
-                document.body.style.overflow = '';
+                document.removeEventListener('wheel', preventScroll);
+                document.removeEventListener('touchmove', preventScroll);
             }
         };
-    }, []); // Empty dependency array - chỉ chạy khi mount/unmount
+    }, [active]);
 };

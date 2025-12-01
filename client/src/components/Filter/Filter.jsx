@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './Filter.module.css';
-import { lenisInstance } from '../../App'; // Import Lenis
-import { useLenisControl } from '../../hooks/useLenisControl';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 const Filter = ({
     isOpen,
@@ -63,7 +62,7 @@ const Filter = ({
     }, [isOpen, onClose]);
 
 
-    useLenisControl(isOpen);
+    useScrollLock(isOpen);
 
     // Toggle Sort By dropdown (close Colour dropdown if open)
     const handleToggleSortBy = () => {

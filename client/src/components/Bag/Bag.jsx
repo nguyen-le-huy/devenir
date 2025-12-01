@@ -18,11 +18,11 @@ export default function Bag({ onMouseEnter, onMouseLeave, bagCount }) {
         <>
             <div
                 className={styles.backdrop}
-                style={{ top: headerHeight }}
+                style={{ top: `${headerHeight}px` }}
             ></div>
             <div
                 className={styles.bag}
-                style={{ top: headerHeight }}
+                style={{ top: `${headerHeight}px` }}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
             >

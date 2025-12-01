@@ -215,14 +215,14 @@ const Header = () => {
                         )}
                     </div>
                 </div>
-                {isBagOpen && (
-                    <Bag
-                        onMouseEnter={handleBagComponentMouseEnter}
-                        onMouseLeave={handleBagComponentMouseLeave}
-                        bagCount={bagCount}
-                    />
-                )}
             </div >
+            {isBagOpen && (
+                <Bag
+                    onMouseEnter={handleBagComponentMouseEnter}
+                    onMouseLeave={handleBagComponentMouseLeave}
+                    bagCount={bagCount}
+                />
+            )}
             {isSearchOpen && <Search onClose={closeSearch} />}
         </>
     );

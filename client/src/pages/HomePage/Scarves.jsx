@@ -1,54 +1,121 @@
 import { useMemo } from 'react';
 import ProductCarousel from '../../components/ProductCarousel/ProductCarousel.jsx';
-import { useVariantsByCategory } from '../../hooks/useProducts.js';
 import { useCategories } from '../../hooks/useCategories.js';
+import { getAllProducts, getProductVariants } from '../../services/productService.js';
+import { useQuery } from '@tanstack/react-query';
 
 const Scarves = () => {
-    // Fetch categories to find Scarves category ID
-    const { data: categoriesData } = useCategories();
+    // Fetch all categories
+    const { data: categoriesResponse, isLoading: isCategoriesLoading } = useCategories();
 
-    // Find Scarves category
-    const scarvesCategory = useMemo(() => {
-        const categories = categoriesData?.data || categoriesData || [];
-        return categories.find(cat =>
-            cat.name?.toLowerCase().includes('scarf') ||
-            cat.name?.toLowerCase().includes('scarves')
-        );
-    }, [categoriesData]);
+    // Find Scarves category and its subcategories
+    const { scarvesCategory, allCategoryIds } = useMemo(() => {
+        let categories = [];
+        
+        if (categoriesResponse?.data) {
+            categories = categoriesResponse.data;
+        } else if (Array.isArray(categoriesResponse)) {
+            categories = categoriesResponse;
+        }
 
-    // Fetch variants from Scarves category
-    const { data: variantsData, isLoading } = useVariantsByCategory(scarvesCategory?._id);
+        if (!categories || categories.length === 0) {
+            return { scarvesCategory: null, allCategoryIds: [] };
+        }
 
-    // Transform and filter variants to unique colors
-    const scarves = useMemo(() => {
-        const variants = variantsData || [];
-
-        if (!variants || variants.length === 0) return [];
-
-        // Remove duplicates by color (keep only one variant per color)
-        const colorMap = new Map();
-        const uniqueVariants = variants.filter(variant => {
-            if (variant.color && !colorMap.has(variant.color)) {
-                colorMap.set(variant.color, true);
-                return true;
-            }
-            return false;
+        // Find parent Scarves category
+        const parentCategory = categories.find(cat => {
+            const name = cat.name?.toLowerCase() || '';
+            return name === 'scarves' || name === 'scarf';
         });
 
-        // Transform to scarf format and limit to 12 items for carousel
-        return uniqueVariants.slice(0, 12).map(variant => ({
+        if (!parentCategory) {
+            return { scarvesCategory: null, allCategoryIds: [] };
+        }
+
+        // Find all subcategories of Scarves
+        const subcategories = categories.filter(cat => 
+            cat.parentCategory === parentCategory._id || 
+            cat.parentCategory?._id === parentCategory._id ||
+            String(cat.parentCategory) === String(parentCategory._id)
+        );
+
+        // Collect all category IDs (parent + children)
+        const allIds = [parentCategory._id, ...subcategories.map(sub => sub._id)];
+
+        return { 
+            scarvesCategory: parentCategory, 
+            allCategoryIds: allIds 
+        };
+    }, [categoriesResponse]);
+
+    // Fetch products from Scarves and all subcategories
+    const { data: allVariants, isLoading: isVariantsLoading } = useQuery({
+        queryKey: ['scarves-all-variants', allCategoryIds],
+        queryFn: async () => {
+            if (allCategoryIds.length === 0) return [];
+
+            const allVariants = [];
+
+            // Fetch products for each category (parent + subcategories)
+            for (const categoryId of allCategoryIds) {
+                try {
+                    const productsResponse = await getAllProducts({
+                        category: categoryId,
+                        limit: 100
+                    });
+                    
+                    const products = productsResponse?.data || [];
+
+                    // Fetch variants for each product
+                    for (const product of products) {
+                        try {
+                            const variantsResponse = await getProductVariants(product._id);
+                            const variants = variantsResponse?.data || [];
+                            
+                            // Add product info to each variant
+                            const enrichedVariants = variants.map(v => ({
+                                ...v,
+                                productInfo: {
+                                    _id: product._id,
+                                    name: product.name,
+                                }
+                            }));
+                            allVariants.push(...enrichedVariants);
+                        } catch (err) {
+                            // Silently handle error
+                        }
+                    }
+                } catch (err) {
+                    // Silently handle error
+                }
+            }
+            
+            return allVariants;
+        },
+        enabled: allCategoryIds.length > 0,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+
+    // Transform variants for carousel display
+    const scarves = useMemo(() => {
+        if (!allVariants || allVariants.length === 0) return [];
+
+        return allVariants.slice(0, 12).map(variant => ({
             id: variant._id,
             name: variant.productInfo?.name || 'Scarf',
             price: variant.price,
             image: variant.mainImage || '/images/placeholder.png',
             imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
-            color: variant.color,
+            color: variant.color?.name || variant.color,
             size: variant.size,
             sku: variant.sku,
         }));
-    }, [variantsData]);
+    }, [allVariants]);
 
-    if (isLoading || !scarvesCategory) {
+    // Show loading state
+    const isLoading = isCategoriesLoading || isVariantsLoading;
+    
+    if (isLoading) {
         return (
             <ProductCarousel
                 title="Scarves Collection"
@@ -57,6 +124,11 @@ const Scarves = () => {
                 showViewAll={true}
             />
         );
+    }
+
+    // If no scarves category or no products found
+    if (!scarvesCategory || scarves.length === 0) {
+        return null;
     }
 
     return (

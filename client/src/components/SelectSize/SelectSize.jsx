@@ -3,11 +3,59 @@ import { useState } from "react";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import SizeAndFit from "../SizeAndFit/SizeAndFit.jsx";
 
-const SelectSize = ({ isOpen, onClose }) => {
+const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, product = null }) => {
     const [isSizeAndFitOpen, setIsSizeAndFitOpen] = useState(false);
+    const [selectedSize, setSelectedSize] = useState(null);
 
     // Lock scroll khi modal mở
     useScrollLock(isOpen);
+
+    // Group variants by size with stock info
+    const sizeInfo = variants.reduce((acc, variant) => {
+        const size = variant.size;
+        if (!size) return acc;
+
+        // Check stock với nhiều tên field khác nhau
+        const stockQuantity = variant.stockQuantity ?? variant.stock ?? variant.quantity ?? 0;
+        const isInStock = stockQuantity > 0;
+
+        if (!acc[size]) {
+            acc[size] = {
+                size: size,
+                inStock: isInStock,
+                variant: variant
+            };
+        } else {
+            // Nếu đã có size này rồi, update inStock = true nếu có bất kỳ variant nào còn hàng
+            if (isInStock) {
+                acc[size].inStock = true;
+                acc[size].variant = variant; // Ưu tiên variant còn hàng
+            }
+        }
+        return acc;
+    }, {});
+
+    // Standard size order
+    const sizeOrder = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL', 'XXXL'];
+
+    // Sort sizes by standard order
+    const sortedSizes = Object.values(sizeInfo).sort((a, b) => {
+        const indexA = sizeOrder.indexOf(a.size.toUpperCase());
+        const indexB = sizeOrder.indexOf(b.size.toUpperCase());
+
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+    });
+
+    const handleSizeSelect = (sizeData) => {
+        if (sizeData.inStock) {
+            setSelectedSize(sizeData.size);
+            // TODO: Add to cart with selected size
+            onClose();
+        }
+    };
 
     return (
         <>
@@ -35,16 +83,26 @@ const SelectSize = ({ isOpen, onClose }) => {
                         </svg>
                     </div>
                     <div className={styles.sizeList}>
-                        <p>XS</p>
-                        <p>S</p>
-                        <p>M</p>
-                        <p>L</p>
-                        <p>XL</p>
-                        <p>2XL</p>
-                        <div className={styles.outOfStock}>
-                            <p>3XL</p>
-                            <span>Notify Me</span>
-                        </div>
+                        {sortedSizes.length > 0 ? (
+                            sortedSizes.map((sizeData) => (
+                                sizeData.inStock ? (
+                                    <p
+                                        key={sizeData.size}
+                                        onClick={() => handleSizeSelect(sizeData)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        {sizeData.size}
+                                    </p>
+                                ) : (
+                                    <div key={sizeData.size} className={styles.outOfStock}>
+                                        <p>{sizeData.size}</p>
+                                        <span>Notify Me</span>
+                                    </div>
+                                )
+                            ))
+                        ) : (
+                            <p style={{ textAlign: 'center', color: '#999' }}>No sizes available</p>
+                        )}
                     </div>
                 </div>
                 <div className={styles.footer}>

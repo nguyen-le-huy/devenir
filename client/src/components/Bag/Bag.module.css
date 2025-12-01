@@ -1,18 +1,20 @@
 .bag {
     position: fixed;
+    /* top is set via inline style based on headerHeight */
     right: 0;
     background-color: var(--white);
     padding: 0 10px 30px 10px;
-    z-index: 100;
+    z-index: 1002;
 }
 
 .backdrop {
     position: fixed;
+    /* top is set via inline style based on headerHeight */
     left: 0;
     width: 100%;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 90;
+    z-index: 1001;
 }
 
 .emptyText {
