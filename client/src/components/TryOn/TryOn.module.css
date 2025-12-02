@@ -1,0 +1,47 @@
+.tryOn {
+    width: fit-content;
+    background-color: var(--white);
+    padding: 10px;
+    z-index: 100;
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tryOn.fixed {
+    position: fixed;
+    bottom: 20px;
+    left: 40px;
+}
+
+.tryOn.absolute {
+    position: absolute;
+    bottom: 20px;
+    left: 40px;
+}
+
+.text {
+    position: relative;
+    font-weight: 500;
+}
+
+.text::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    top: 100%;
+    left: 0;
+    pointer-events: none;
+    transform-origin: 100% 50%;
+    transform: scale3d(0, 1, 1);
+    transition: transform 0.3s;
+}
+
+.tryOn:hover>.text::before {
+    transform-origin: 0% 50%;
+    transform: scale3d(1, 1, 1);
+}

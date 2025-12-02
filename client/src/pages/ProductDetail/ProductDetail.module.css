@@ -10,9 +10,16 @@
     gap: 40px;
 }
 
+.leftCenterContainer {
+    display: flex;
+    width: 70%;
+    position: relative;
+    min-height: 100vh;
+}
+
 .left,
 .center {
-    width: 35%;
+    width: 50%;
 }
 
 .left {
@@ -351,6 +358,7 @@
         /* Smooth animation */
     }
 
+    .leftCenterContainer,
     .left,
     .center {
         display: none;

@@ -15,6 +15,7 @@ import ColourVarients from '../../components/ColourVarients/ColourVarients.jsx';
 import SelectSize from '../../components/SelectSize/SelectSize.jsx';
 import SizeAndFit from '../../components/SizeAndFit/SizeAndFit.jsx';
 import AddToBagNoti from '../../components/Notification/AddToBagNoti.jsx';
+import TryOn from '../../components/TryOn/TryOn.jsx';
 
 export default function ProductDetail() {
     const [searchParams] = useSearchParams();
@@ -221,13 +222,16 @@ export default function ProductDetail() {
     return (
         <div className={styles.productDetail}>
             <div className={styles.product}>
-                <div className={styles.left} style={{ top: `${headerHeight}px` }}>
-                    <img src={mainImage} alt={product.name} />
-                </div>
-                <div className={styles.center}>
-                    {otherImages.map((image, index) => (
-                        <img key={index} src={image} alt={`${product.name} ${index + 1}`} />
-                    ))}
+                <div className={styles.leftCenterContainer} data-tryon-container>
+                    <TryOn />
+                    <div className={styles.left} style={{ top: `${headerHeight}px` }}>
+                        <img src={mainImage} alt={product.name} />
+                    </div>
+                    <div className={styles.center}>
+                        {otherImages.map((image, index) => (
+                            <img key={index} src={image} alt={`${product.name} ${index + 1}`} />
+                        ))}
+                    </div>
                 </div>
 
                 {/* ✅ Mobile Gallery với Custom Progress Bar */}

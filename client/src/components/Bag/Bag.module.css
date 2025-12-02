@@ -5,6 +5,16 @@
     background-color: var(--white);
     padding: 0 10px 30px 10px;
     z-index: 5000;
+    /* Initial state for animation */
+    opacity: 0;
+    /* GPU acceleration */
+    will-change: opacity;
+    /* Smooth transition */
+    transition: opacity 0.3s ease-out;
+}
+
+.bag.visible {
+    opacity: 1;
 }
 
 .backdrop {
@@ -15,6 +25,19 @@
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1001;
+    /* Initial state for animation */
+    opacity: 0;
+    /* GPU acceleration */
+    will-change: opacity;
+    /* Smooth transition */
+    transition: opacity 0.3s ease-out;
+    /* Prevent pointer events during animation */
+    pointer-events: none;
+}
+
+.backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .emptyText {
@@ -30,6 +53,14 @@
     gap: 5px;
 }
 
+.bagContent {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    /* Optimize rendering */
+    contain: layout style paint;
+}
+
 .productList {
     display: flex;
     flex-direction: column;
@@ -42,12 +73,18 @@
     padding-bottom: 20px;
     scrollbar-width: thin;
     border-bottom: 1px solid var(--gray);
+    /* Optimize scrolling performance */
+    will-change: scroll-position;
+    /* Enable GPU acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .product {
     display: flex;
     gap: 15px;
-    cursor: pointer;
+    /* Prevent layout shifts */
+    contain: layout;
 }
 
 .productInfo {
@@ -59,6 +96,8 @@
 .product>img {
     width: 150px;
     height: auto;
+    /* Prevent image loading flicker */
+    image-rendering: -webkit-optimize-contrast;
 }
 
 .productName,
@@ -67,12 +106,6 @@
     font-size: 14px;
     font-weight: 400;
     color: var(--black);
-}
-
-.bagContent {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
 }
 
 .totalPrice {

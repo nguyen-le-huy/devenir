@@ -1,6 +1,8 @@
 import styles from "./ProductCheckout.module.css";
+import { useNavigate } from "react-router-dom";
 
-const ProductCheckout = ({ item, onRemove, onUpdateQuantity }) => {
+const ProductCheckout = ({ item, onRemove, onUpdateQuantity, onEdit }) => {
+    const navigate = useNavigate();
     const variant = item?.productVariant;
     const productName = variant?.product_id?.name || 'Product';
     const image = variant?.mainImage || '/images/placeholder.png';
@@ -17,34 +19,62 @@ const ProductCheckout = ({ item, onRemove, onUpdateQuantity }) => {
         }
     };
 
+    const handleEdit = () => {
+        if (onEdit) {
+            onEdit(item);
+        }
+    };
+
+    const handleProductClick = () => {
+        if (variant?._id) {
+            navigate(`/product-detail?variant=${variant._id}`);
+        }
+    };
+
     return (
         <div className={styles.productCheckout}>
-            <div className={styles.productImage}>
-                <img src={image} alt={productName} />
-            </div>
-            <div className={styles.productInfo}>
-                <div className={styles.box1}>
-                    <h3 className={styles.productName}>{productName}</h3>
-                    <div className={styles.productDetail}>
-                        <p>Item: {sku}</p>
-                        <p>{color}</p>
-                        <div className={styles.sizeQtyEdit}>
-                            {size && size !== 'Free Size' && (
-                                <>
-                                    <p>Size: {size}</p>
-                                    <span>|</span>
-                                </>
-                            )}
-                            <p>Qty: {quantity}</p>
-                            <span>|</span>
-                            <p className={styles.editButton}>Edit</p>
+            <div className={styles.topSection}>
+                <div className={styles.productImage}>
+                    <img
+                        src={image}
+                        alt={productName}
+                        onClick={handleProductClick}
+                        style={{ cursor: 'pointer' }}
+                    />
+                </div>
+                <div className={styles.productInfo}>
+                    <div className={styles.box1}>
+                        <h3
+                            className={styles.productName}
+                            onClick={handleProductClick}
+                        >{productName}</h3>
+                        <div className={styles.productDetail}>
+                            <p>Item: {sku}</p>
+                            <p>{color}</p>
+                            <div className={styles.sizeQtyEdit}>
+                                {size && size !== 'Free Size' && (
+                                    <>
+                                        <p>Size: {size}</p>
+                                        <span>|</span>
+                                    </>
+                                )}
+                                <p>Qty: {quantity}</p>
+                                <span>|</span>
+                                <p className={styles.editButton} onClick={handleEdit} style={{ cursor: 'pointer' }}>Edit</p>
+                            </div>
                         </div>
                     </div>
+                    {/* Desktop: box2 in .productInfo */}
+                    <div className={`${styles.box2} ${styles.desktopOnly}`}>
+                        <p className={styles.deleteButton} onClick={handleDelete} style={{ cursor: 'pointer' }}>Delete</p>
+                        <p className={styles.productPrice}>USD {totalPrice.toFixed(2)}</p>
+                    </div>
                 </div>
-                <div className={styles.box2}>
-                    <p className={styles.deleteButton} onClick={handleDelete} style={{ cursor: 'pointer' }}>Delete</p>
-                    <p className={styles.productPrice}>USD {totalPrice.toFixed(2)}</p>
-                </div>
+            </div>
+            {/* Mobile: box2 outside .topSection */}
+            <div className={`${styles.box2} ${styles.mobileOnly}`}>
+                <p className={styles.deleteButton} onClick={handleDelete} style={{ cursor: 'pointer' }}>Delete</p>
+                <p className={styles.productPrice}>USD {totalPrice.toFixed(2)}</p>
             </div>
         </div>
     );

@@ -1,5 +1,5 @@
 import styles from './Search.module.css';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -34,13 +34,23 @@ const Search = ({ onClose }) => {
         timeline.fromTo(
             backdropRef.current,
             { opacity: 0 },
-            { opacity: 1, duration: 0.4, ease: 'power2.out' }
+            {
+                opacity: 1,
+                duration: 0.4,
+                ease: 'power2.out',
+                onComplete: () => {
+                    // Enable pointer events after animation
+                    if (backdropRef.current) {
+                        backdropRef.current.style.pointerEvents = 'auto';
+                    }
+                }
+            }
         );
 
         // Animate search container với clipPath để tránh scrollbar flash
         timeline.fromTo(
             searchContainerRef.current,
-            { 
+            {
                 clipPath: 'inset(0 0 100% 0)',
                 opacity: 0
             },
@@ -133,6 +143,11 @@ const Search = ({ onClose }) => {
     }, [searchQuery]);
 
     const handleClose = useCallback(() => {
+        // Disable backdrop interactions immediately
+        if (backdropRef.current) {
+            backdropRef.current.style.pointerEvents = 'none';
+        }
+
         // GSAP Animation khi đóng
         const timeline = gsap.timeline({
             onComplete: onClose
@@ -197,6 +212,31 @@ const Search = ({ onClose }) => {
         }
     }, [navigate, handleClose]);
 
+    // Memoize search results rendering để tránh re-render không cần thiết
+    const renderedResults = useMemo(() => {
+        if (isSearching) {
+            return <p className={styles.searchStatus}>Searching...</p>;
+        }
+
+        if (!searchQuery) {
+            return <p className={styles.searchStatus}>Start typing to search products...</p>;
+        }
+
+        if (searchResults.length === 0) {
+            return <p className={styles.searchStatus}>No products found</p>;
+        }
+
+        return searchResults.map((product) => (
+            <div
+                key={product._id}
+                className={styles.result}
+                onClick={() => handleResultClick(product)}
+            >
+                {product.name}
+            </div>
+        ));
+    }, [searchResults, isSearching, searchQuery, handleResultClick]);
+
     return (
         <div ref={containerRef} data-lenis-prevent>
             <div
@@ -225,29 +265,7 @@ const Search = ({ onClose }) => {
                     </svg>
                 </div>
                 <div className={styles.results} ref={resultsRef}>
-                    {isSearching && (
-                        <p className={styles.searchStatus}>Searching...</p>
-                    )}
-
-                    {!isSearching && searchQuery && searchResults.length === 0 && (
-                        <p className={styles.searchStatus}>No products found</p>
-                    )}
-
-                    {!isSearching && searchResults.length > 0 && (
-                        searchResults.map((product) => (
-                            <div
-                                key={product._id}
-                                className={styles.result}
-                                onClick={() => handleResultClick(product)}
-                            >
-                                {product.name}
-                            </div>
-                        ))
-                    )}
-
-                    {!searchQuery && (
-                        <p className={styles.searchStatus}>Start typing to search products...</p>
-                    )}
+                    {renderedResults}
                 </div>
             </div>
         </div>

@@ -7,6 +7,13 @@
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1001;
     cursor: pointer;
+    /* Initial state to prevent flash */
+    opacity: 0;
+    pointer-events: none;
+    /* GPU acceleration */
+    will-change: opacity;
+    /* Prevent layout shifts */
+    backface-visibility: hidden;
 }
 
 .searchContainer {
@@ -21,6 +28,16 @@
     flex-direction: column;
     gap: 50px;
     overflow: hidden;
+    /* Initial state to prevent flash */
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    /* GPU acceleration */
+    will-change: opacity, clip-path;
+    /* Optimize rendering */
+    contain: layout style paint;
+    /* Prevent flickering */
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 .inputWrapper {
@@ -29,6 +46,8 @@
     align-items: center;
     padding: 20px 0;
     border-bottom: 1px solid var(--black);
+    /* Initial state to prevent flash */
+    opacity: 0;
 }
 
 .inputWrapper>input {
@@ -59,6 +78,16 @@
     max-height: 50vh;
     overflow-y: auto;
     padding-right: 10px;
+    /* Initial state to prevent flash */
+    opacity: 0;
+    /* Optimize scrolling */
+    overscroll-behavior: contain;
+    /* GPU acceleration for scrolling */
+    will-change: scroll-position;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    /* Better scrollbar */
+    scrollbar-width: thin;
 }
 
 .result {
@@ -66,10 +95,12 @@
     color: var(--black);
     cursor: pointer;
     text-decoration: none;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, background-color 0.2s;
     font-size: 16px;
     padding: 8px 12px;
     border-radius: 4px;
+    /* Prevent layout shifts */
+    contain: layout;
 }
 
 .result:hover {

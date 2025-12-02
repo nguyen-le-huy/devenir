@@ -3,13 +3,18 @@ import ProductCheckout from "../../components/ProductCard/ProductCheckout";
 import ProductCarousel from "../../components/ProductCarousel/ProductCarousel";
 import { useCart, useRemoveFromCart } from "../../hooks/useCart.js";
 import { useLatestVariants } from "../../hooks/useProducts.js";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import EditItem from "../../components/EditItem/EditItem";
 
 const Checkout = () => {
+    // State for EditItem modal
+    const [showEditItem, setShowEditItem] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
+
     // Fetch real cart data
     const { data: cartData, isLoading } = useCart();
     const cart = cartData?.data || { items: [], totalItems: 0, totalPrice: 0 };
-    
+
     // Remove from cart mutation
     const removeFromCartMutation = useRemoveFromCart();
 
@@ -47,6 +52,16 @@ const Checkout = () => {
         });
     };
 
+    const handleEditItem = (item) => {
+        setEditingItem(item);
+        setShowEditItem(true);
+    };
+
+    const handleCloseEditItem = () => {
+        setShowEditItem(false);
+        setEditingItem(null);
+    };
+
     return (
         <>
             <div className={styles.checkout}>
@@ -58,10 +73,11 @@ const Checkout = () => {
                     <div className={styles.left}>
                         {cart.items.length > 0 ? (
                             cart.items.map((item, index) => (
-                                <ProductCheckout 
-                                    key={item.productVariant?._id || index} 
-                                    item={item} 
+                                <ProductCheckout
+                                    key={item.productVariant?._id || index}
+                                    item={item}
                                     onRemove={handleRemoveItem}
+                                    onEdit={handleEditItem}
                                 />
                             ))
                         ) : (
@@ -143,6 +159,9 @@ const Checkout = () => {
                 products={recommendedProducts}
                 showViewAll={false}
             />
+            {showEditItem && editingItem && (
+                <EditItem item={editingItem} onClose={handleCloseEditItem} />
+            )}
         </>
     );
 };
