@@ -123,7 +123,6 @@
     font-weight: 600;
     color: white;
     cursor: pointer;
-    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -152,7 +151,6 @@
     font-weight: 500;
     color: #666;
     cursor: pointer;
-    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -217,7 +215,6 @@
     flex: 1;
     background: #fff;
     padding: 40px;
-    border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
@@ -278,7 +275,6 @@
 
     .mainContent {
         padding: 24px 16px;
-        border-radius: 0;
         box-shadow: none;
         border-top: 1px solid #e0e0e0;
         border-bottom: 1px solid #e0e0e0;
@@ -293,7 +289,6 @@
         margin-bottom: 24px;
         padding: 16px;
         background: #f9f9f9;
-        border-radius: 4px;
     }
 
     .logoutBtn {

@@ -73,7 +73,6 @@
     border: 1px solid #f99;
     color: #c00;
     padding: 12px 15px;
-    border-radius: 6px;
     margin-bottom: 20px;
     font-size: 14px;
     text-align: center;
@@ -124,7 +123,6 @@
     color: var(--brown);
     font-size: 15px;
     font-weight: 600;
-    border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

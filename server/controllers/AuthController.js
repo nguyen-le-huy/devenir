@@ -14,10 +14,10 @@ import asyncHandler from 'express-async-handler';
  */
 const generateToken = (userId, role) => {
   return jwt.sign(
-    { userId, role }, 
-    process.env.JWT_SECRET, 
-    {expiresIn: process.env.JWT_EXPIRE || '7d'}
- );
+    { userId, role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE || '7d' }
+  );
 }
 
 /**
@@ -52,65 +52,65 @@ const googleClient = new OAuth2Client(
  * @access Public
  */
 export const register = asyncHandler(async (req, res) => {
-    const { username, email, phone, password } = req.body;
+  const { username, email, phone, password } = req.body;
 
-    // valodation - check input
-    if (!username || !email || !phone || !password) {
-        return res.status(400).json({ 
-            message: 'Please provide all required fields' 
-        });
-    }
-
-    // check if email already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-        return res.status(400).json({ 
-            message: 'Email already in use' 
-        });
-    }
-
-    // check if username already exists
-    const existingUsername = await User.findOne({ username: username.toLowerCase() });
-    if (existingUsername) {
-        return res.status(400).json({ 
-            message: 'Username already in use' 
-        });
-    }
-
-    // Generate email verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-    // create new user (not verified yet)
-    const user = await User.create({
-        username: username.toLowerCase(),
-        email: email.toLowerCase(),
-        phone: phone,
-        password,
-        role: 'user', // default role
-        isEmailVerified: false,
-        emailVerificationToken: verificationToken,
-        emailVerificationExpires: verificationExpires
+  // valodation - check input
+  if (!username || !email || !phone || !password) {
+    return res.status(400).json({
+      message: 'Please provide all required fields'
     });
+  }
 
-    // Send verification email
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-    await sendResetEmail({
-        email: user.email,
-        subject: 'Verify your email - Devenir',
-        message: `Please click the link below to verify your email:\n\n${verificationUrl}\n\nThis link expires in 24 hours.`
+  // check if email already exists
+  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  if (existingUser) {
+    return res.status(400).json({
+      message: 'Email already in use'
     });
+  }
 
-    res.status(201).json({
-        success: true,
-        message: 'Registration successful. Please check your email to verify your account.',
-        user: {
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            isEmailVerified: user.isEmailVerified
-        }
+  // check if username already exists
+  const existingUsername = await User.findOne({ username: username.toLowerCase() });
+  if (existingUsername) {
+    return res.status(400).json({
+      message: 'Username already in use'
     });
+  }
+
+  // Generate email verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+  // create new user (not verified yet)
+  const user = await User.create({
+    username: username.toLowerCase(),
+    email: email.toLowerCase(),
+    phone: phone,
+    password,
+    role: 'user', // default role
+    isEmailVerified: false,
+    emailVerificationToken: verificationToken,
+    emailVerificationExpires: verificationExpires
+  });
+
+  // Send verification email
+  const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+  await sendResetEmail({
+    email: user.email,
+    subject: 'Verify your email - Devenir',
+    message: `Please click the link below to verify your email:\n\n${verificationUrl}\n\nThis link expires in 24 hours.`
+  });
+
+  res.status(201).json({
+    success: true,
+    message: 'Registration successful. Please check your email to verify your account.',
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      isEmailVerified: user.isEmailVerified
+    }
+  });
 });
 
 /**
@@ -119,80 +119,80 @@ export const register = asyncHandler(async (req, res) => {
  * @access Public
  */
 export const login = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    // validation - check input
-    if (!email || !password) {
-        return res.status(400).json({
-            success: false,
-            message: 'Email and password is required!'
-        });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-
-    if (!user) {
-        return res.status(400).json({
-            success: false,
-            message: 'Invalid email or password!'
-        });
-    }
-
-    // Check if account is locked
-    if (user.isLocked()) {
-        const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
-        return res.status(423).json({
-            success: false,
-            message: `Account is locked due to too many failed login attempts. Please try again in ${lockTimeRemaining} minutes.`
-        });
-    }
-
-    // check password
-    const isPasswordMatch = await user.matchPassword(password);
-    if (!isPasswordMatch) {
-        // Increment login attempts
-        const isNowLocked = await user.incLoginAttempts();
-        
-        if (isNowLocked) {
-            return res.status(423).json({
-                success: false,
-                message: 'Account locked due to too many failed login attempts. Please try again in 2 hours.'
-            });
-        }
-        
-        const remainingAttempts = 5 - user.loginAttempts;
-        return res.status(401).json({
-            success: false,
-            message: `Invalid password! ${remainingAttempts} attempts remaining before account lock.`
-        });
-    }
-
-    // Reset login attempts after successful login
-    await user.resetLoginAttempts();
-
-    // Check if email is verified
-    if (!user.isEmailVerified) {
-        return res.status(403).json({
-            success: false,
-            message: 'Please verify your email first. Check your inbox for the verification link.'
-        });
-    }
-
-    // create token
-    const token = generateToken(user._id, user.role);
-    res.status(200).json({
-        success: true,
-        message: 'Đăng nhập thành công',
-        token,
-        user: {
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            lastLogin: user.lastLogin,
-        }
+  // validation - check input
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email and password is required!'
     });
+  }
+
+  // Find user by email
+  const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid email or password!'
+    });
+  }
+
+  // Check if account is locked
+  if (user.isLocked()) {
+    const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
+    return res.status(423).json({
+      success: false,
+      message: `Account is locked due to too many failed login attempts. Please try again in ${lockTimeRemaining} minutes.`
+    });
+  }
+
+  // check password
+  const isPasswordMatch = await user.matchPassword(password);
+  if (!isPasswordMatch) {
+    // Increment login attempts
+    const isNowLocked = await user.incLoginAttempts();
+
+    if (isNowLocked) {
+      return res.status(423).json({
+        success: false,
+        message: 'Account locked due to too many failed login attempts. Please try again in 2 hours.'
+      });
+    }
+
+    const remainingAttempts = 5 - user.loginAttempts;
+    return res.status(401).json({
+      success: false,
+      message: `Invalid password! ${remainingAttempts} attempts remaining before account lock.`
+    });
+  }
+
+  // Reset login attempts after successful login
+  await user.resetLoginAttempts();
+
+  // Check if email is verified
+  if (!user.isEmailVerified) {
+    return res.status(403).json({
+      success: false,
+      message: 'Please verify your email first. Check your inbox for the verification link.'
+    });
+  }
+
+  // create token
+  const token = generateToken(user._id, user.role);
+  res.status(200).json({
+    success: true,
+    message: 'Đăng nhập thành công',
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      lastLogin: user.lastLogin,
+    }
+  });
 });
 
 /**
@@ -201,12 +201,12 @@ export const login = asyncHandler(async (req, res) => {
 * @access Private
 */
 export const logout = asyncHandler(async (req, res, next) => {
-    // JWT không có state ở server, logout chỉ cần xóa token ở client
-    res.status(200).json({
-        success: true,
-        message: 'Đăng xuất thành công'
-      });
-    });
+  // JWT không có state ở server, logout chỉ cần xóa token ở client
+  res.status(200).json({
+    success: true,
+    message: 'Đăng xuất thành công'
+  });
+});
 
 /**
  * GOOGLE OAUTH LOGIN
@@ -289,7 +289,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
       userExists = await User.findOne({ username });
       counter++;
     }
-    
+
     user = await User.create({
       username,
       email: email.toLowerCase(),
@@ -304,7 +304,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     });
 
     const token = generateToken(user._id, user.role);
-    
+
     res.status(201).json({
       success: true,
       message: 'Đăng ký và đăng nhập thành công',
@@ -355,7 +355,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   // 2️⃣ Tạo reset token
   // Token là một chuỗi ngẫu nhiên được hash
   const resetToken = crypto.randomBytes(32).toString('hex');
-  
+
   // 3️⃣ Lưu token vào database
   user.resetPasswordToken = crypto
     .createHash('sha256')
@@ -372,7 +372,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
       subject: 'Devenir - Reset Your Password',
       message: `You requested to reset your password. Click the link below:\n\n${resetLink}\n\nThis link expires in 1 hour.`
     });
-    
+
     res.status(200).json({
       success: true,
       message: 'Email reset password đã được gửi'
@@ -470,7 +470,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
       emailVerificationToken: token
     });
     console.log('User without expiry check:', userNoExpiry ? `${userNoExpiry.email}, expires at: ${userNoExpiry.emailVerificationExpires}` : 'NOT FOUND');
-    
+
     return res.status(400).json({
       success: false,
       message: 'Invalid or expired verification token'
@@ -527,7 +527,7 @@ export const addPhone = asyncHandler(async (req, res) => {
 
       // Check if user already has phone
       let user = await User.findOne({ googleId });
-      
+
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -743,6 +743,172 @@ export const updatePreferences = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * GET SHIPPING ADDRESS - Lấy địa chỉ giao hàng
+ * @route GET /api/auth/shipping-address
+ * @access Private
+ */
+export const getShippingAddress = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized'
+    });
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  // Find default address or first address
+  const defaultAddress = user.addresses.find(addr => addr.isDefault) || user.addresses[0];
+
+  res.status(200).json({
+    success: true,
+    data: defaultAddress || null
+  });
+});
+
+/**
+ * SAVE SHIPPING ADDRESS - Lưu địa chỉ giao hàng mới
+ * @route POST /api/auth/shipping-address
+ * @access Private
+ */
+export const saveShippingAddress = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  const { firstName, lastName, phoneNumber, address, city, district, zipCode } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized'
+    });
+  }
+
+  // Validate required fields
+  if (!firstName || !lastName || !phoneNumber || !address || !city || !district || !zipCode) {
+    return res.status(400).json({
+      success: false,
+      message: 'All fields are required'
+    });
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  // Create new address object
+  const newAddress = {
+    fullName: `${firstName} ${lastName}`,
+    phone: phoneNumber,
+    street: address,
+    city,
+    district,
+    postalCode: zipCode,
+    isDefault: user.addresses.length === 0 // First address is default
+  };
+
+  // If this is not the first address, unset other default addresses
+  if (user.addresses.length > 0) {
+    user.addresses.forEach(addr => {
+      addr.isDefault = false;
+    });
+    newAddress.isDefault = true; // Latest address becomes default
+  }
+
+  user.addresses.push(newAddress);
+  await user.save();
+
+  res.status(201).json({
+    success: true,
+    message: 'Shipping address saved successfully',
+    data: newAddress
+  });
+});
+
+/**
+ * UPDATE SHIPPING ADDRESS - Cập nhật địa chỉ giao hàng
+ * @route PUT /api/auth/shipping-address
+ * @access Private
+ */
+export const updateShippingAddress = asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  const { firstName, lastName, phoneNumber, address, city, district, zipCode } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized'
+    });
+  }
+
+  // Validate required fields
+  if (!firstName || !lastName || !phoneNumber || !address || !city || !district || !zipCode) {
+    return res.status(400).json({
+      success: false,
+      message: 'All fields are required'
+    });
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  // Find default address or first address
+  const defaultAddressIndex = user.addresses.findIndex(addr => addr.isDefault);
+  const targetIndex = defaultAddressIndex !== -1 ? defaultAddressIndex : 0;
+
+  if (user.addresses.length === 0) {
+    // No address exists, create new one
+    const newAddress = {
+      fullName: `${firstName} ${lastName}`,
+      phone: phoneNumber,
+      street: address,
+      city,
+      district,
+      postalCode: zipCode,
+      isDefault: true
+    };
+    user.addresses.push(newAddress);
+  } else {
+    // Update existing address
+    user.addresses[targetIndex] = {
+      fullName: `${firstName} ${lastName}`,
+      phone: phoneNumber,
+      street: address,
+      city,
+      district,
+      postalCode: zipCode,
+      isDefault: true
+    };
+  }
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Shipping address updated successfully',
+    data: user.addresses[targetIndex]
+  });
+});
+
 export default {
   register,
   login,
@@ -754,6 +920,9 @@ export default {
   addPhone,
   updateProfile,
   changePassword,
-  updatePreferences
+  updatePreferences,
+  getShippingAddress,
+  saveShippingAddress,
+  updateShippingAddress
 };
 

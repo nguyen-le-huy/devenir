@@ -5,8 +5,11 @@ import { useCart, useRemoveFromCart } from "../../hooks/useCart.js";
 import { useLatestVariants } from "../../hooks/useProducts.js";
 import { useMemo, useState } from "react";
 import EditItem from "../../components/EditItem/EditItem";
+import { useNavigate } from "react-router-dom";
 
 const Checkout = () => {
+    const navigate = useNavigate();
+
     // State for EditItem modal
     const [showEditItem, setShowEditItem] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
@@ -62,6 +65,17 @@ const Checkout = () => {
         setEditingItem(null);
     };
 
+    const handleCheckout = () => {
+        // Check if cart is not empty
+        if (cart.items.length === 0) {
+            alert('Your bag is empty. Please add items to checkout.');
+            return;
+        }
+
+        // Navigate to shipping page
+        navigate('/shipping');
+    };
+
     return (
         <>
             <div className={styles.checkout}>
@@ -105,7 +119,9 @@ const Checkout = () => {
                             <p className={styles.totalPrice}>USD {cart.totalPrice.toFixed(2)}</p>
                         </div>
                         <div className={styles.checkoutButtonList}>
-                            <button className={styles.checkoutButton}>Checkout ({cart.totalItems})</button>
+                            <button className={styles.checkoutButton} onClick={handleCheckout}>
+                                Checkout ({cart.totalItems})
+                            </button>
                             <div className={styles.coinbaseButton}>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 101 18" fill="none">
                                     <g clip-path="url(#clip0_334_284)">

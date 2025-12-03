@@ -19,6 +19,7 @@ import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import ProductDetail from './pages/ProductDetail/ProductDetail.jsx';
 import Checkout from './pages/Checkout/Checkout';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
+import Shipping from './pages/Checkout/Shipping.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -87,6 +88,7 @@ function App() {
 
             <Route element={<CheckoutLayout />}>
               <Route path="/checkout" element={<Checkout />} />
+              <Route path="/shipping" element={<Shipping />} />
             </Route>
           </Routes>
         </AuthProvider>
