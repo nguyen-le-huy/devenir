@@ -8,7 +8,7 @@ import { API_BASE_URL } from '../config/api.js';
 export const saveShippingAddress = async (addressData) => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/shipping-address`, {
+    const response = await fetch(`${API_BASE_URL}/auth/shipping-address`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ export const saveShippingAddress = async (addressData) => {
 export const getShippingAddress = async () => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/shipping-address`, {
+    const response = await fetch(`${API_BASE_URL}/auth/shipping-address`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -74,7 +74,7 @@ export const getShippingAddress = async () => {
 export const updateShippingAddress = async (addressData) => {
     const token = localStorage.getItem('token');
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/shipping-address`, {
+    const response = await fetch(`${API_BASE_URL}/auth/shipping-address`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
