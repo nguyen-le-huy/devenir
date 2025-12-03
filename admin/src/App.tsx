@@ -14,6 +14,7 @@ import BrandsPage from './pages/brands/BrandsPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import CustomersPage from './pages/customers/CustomersPage'
 import InventoryPage from './pages/inventory/InventoryPage'
+import InventoryAlertsPage from './pages/inventory/InventoryAlertsPage'
 import PromotionsPage from './pages/marketing/PromotionsPage'
 import AnalyticsPage from './pages/analytics/AnalyticsPage'
 import SettingsPage from './pages/settings/SettingsPage'
@@ -65,7 +66,7 @@ function App() {
 
           {/* Inventory */}
           <Route path="/admin/inventory" element={<ProtectedRoute><InventoryPage /></ProtectedRoute>} />
-          <Route path="/admin/inventory/alerts" element={<ProtectedRoute><InventoryPage /></ProtectedRoute>} />
+          <Route path="/admin/inventory/alerts" element={<ProtectedRoute><InventoryAlertsPage /></ProtectedRoute>} />
 
           {/* Marketing */}
           <Route path="/admin/promotions" element={<ProtectedRoute><PromotionsPage /></ProtectedRoute>} />

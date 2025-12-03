@@ -107,6 +107,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   const [categories, setCategories] = useState<Category[]>([])
   const [colors, setColors] = useState<Color[]>([])
   const [loadingColors, setLoadingColors] = useState(false)
+  const [colorSearchTerm, setColorSearchTerm] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
   const [variantImages, setVariantImages] = useState<Array<{ url: string; id: string }>>([])
   const [selectedMainImage, setSelectedMainImage] = useState<string>("")
@@ -230,6 +231,18 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   // Get unique sizes and colors from variants
   const variantSizes = Array.from(new Set(formData.variants.map((v) => v.size)))
   const variantColors = Array.from(new Set(formData.variants.map((v) => v.color).filter(Boolean)))
+  const filteredColorOptions = useMemo(() => {
+    if (!colorSearchTerm.trim()) {
+      return colors
+    }
+    const term = colorSearchTerm.trim().toLowerCase()
+    return colors.filter((color) => {
+      return (
+        color.name.toLowerCase().includes(term) ||
+        (color.hex ? color.hex.toLowerCase().includes(term) : false)
+      )
+    })
+  }, [colors, colorSearchTerm])
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(categorySearch.toLowerCase())
   )
@@ -800,44 +813,54 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                   {/* Color */}
                   <div className="space-y-2">
                     <Label htmlFor="color">Color *</Label>
-                    <Select
-                      value={newVariant.color}
-                      onValueChange={(value) => {
-                        const selectedColor = colors.find(c => c.name === value)
-                        setNewVariant((prev) => ({
-                          ...prev,
-                          color: value,
-                          colorId: selectedColor?._id || "",
-                        }))
-                      }}
-                    >
-                      <SelectTrigger id="color">
-                        <SelectValue placeholder="Select color" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingColors ? (
-                          <SelectItem value="loading" disabled>
-                            Loading colors...
-                          </SelectItem>
-                        ) : colors.length === 0 ? (
-                          <SelectItem value="empty" disabled>
-                            No colors available
-                          </SelectItem>
-                        ) : (
-                          colors.map((color) => (
-                            <SelectItem key={color._id} value={color.name}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-4 h-4 rounded border"
-                                  style={{ backgroundColor: color.hex }}
-                                />
-                                {color.name}
-                              </div>
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={newVariant.color}
+                          onValueChange={(value) => {
+                            const selectedColor = colors.find(c => c.name === value)
+                            setNewVariant((prev) => ({
+                              ...prev,
+                              color: value,
+                              colorId: selectedColor?._id || "",
+                            }))
+                          }}
+                        >
+                          <SelectTrigger id="color">
+                            <SelectValue placeholder="Select color" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {loadingColors ? (
+                              <SelectItem value="loading" disabled>
+                                Loading colors...
+                              </SelectItem>
+                            ) : filteredColorOptions.length === 0 ? (
+                              <SelectItem value="no-results" disabled>
+                                No colors match search
+                              </SelectItem>
+                            ) : (
+                              filteredColorOptions.map((color) => (
+                                <SelectItem key={color._id} value={color.name}>
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-4 h-4 rounded border"
+                                      style={{ backgroundColor: color.hex }}
+                                    />
+                                    {color.name}
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Input
+                        placeholder="Search color"
+                        value={colorSearchTerm}
+                        onChange={(event) => setColorSearchTerm(event.target.value)}
+                        className="w-44"
+                      />
+                    </div>
                   </div>
 
                   {/* Size - Checkboxes (Horizontal) */}

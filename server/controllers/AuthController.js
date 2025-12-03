@@ -189,6 +189,10 @@ export const login = asyncHandler(async (req, res) => {
       id: user._id,
       username: user.username,
       email: user.email,
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      birthday: user.birthday,
       role: user.role,
       lastLogin: user.lastLogin,
     }
@@ -247,6 +251,10 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
           id: user._id,
           username: user.username,
           email: user.email,
+          phone: user.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          birthday: user.birthday,
           role: user.role
         }
       });
@@ -273,6 +281,10 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
           id: user._id,
           username: user.username,
           email: user.email,
+          phone: user.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          birthday: user.birthday,
           role: user.role
         }
       });
@@ -313,6 +325,10 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
         id: user._id,
         username: user.username,
         email: user.email,
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        birthday: user.birthday,
         role: user.role
       }
     });

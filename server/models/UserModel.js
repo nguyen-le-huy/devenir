@@ -1,6 +1,17 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// Utility helpers
+const normalizeTags = (tags = []) => {
+  if (!Array.isArray(tags)) return [];
+  return [...new Set(
+    tags
+      .filter(tag => typeof tag === 'string')
+      .map(tag => tag.trim().toLowerCase())
+      .filter(Boolean)
+  )];
+};
+
 // Sub-document schema for addresses
 const addressSchema = new mongoose.Schema(
   {
@@ -38,6 +49,62 @@ const addressSchema = new mongoose.Schema(
     },
   },
   { _id: false } // Do not create _id for sub-document
+);
+
+// Sub-document schema for CRM-specific fields
+const customerProfileSchema = new mongoose.Schema(
+  {
+    loyaltyTier: {
+      type: String,
+      enum: ['bronze', 'silver', 'gold', 'platinum'],
+      default: 'bronze',
+    },
+    status: {
+      type: String,
+      enum: ['prospect', 'active', 'inactive', 'vip', 'at-risk'],
+      default: 'prospect',
+    },
+    preferredChannel: {
+      type: String,
+      enum: ['email', 'phone', 'messaging', 'in-person'],
+      default: 'email',
+    },
+    marketingOptIn: {
+      type: Boolean,
+      default: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
+      set: normalizeTags,
+    },
+    notes: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    source: {
+      type: String,
+      default: 'organic',
+      trim: true,
+    },
+    relationshipScore: {
+      type: Number,
+      default: 50,
+      min: 0,
+      max: 100,
+    },
+    accountManager: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    lastContactedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
 );
 
 // Main User schema
@@ -157,6 +224,18 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     addresses: [addressSchema],
+    customerProfile: {
+      type: customerProfileSchema,
+      default: () => ({}),
+    },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true, // Auto create createdAt and updatedAt

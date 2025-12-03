@@ -18,6 +18,16 @@ const sanitizeString = (str) => {
         .replace(/on\w+=/gi, ''); // Remove event handlers
 };
 
+const normalizeCustomerTags = (tags = []) => {
+    if (!Array.isArray(tags)) return [];
+    return [...new Set(
+        tags
+            .filter(tag => typeof tag === 'string')
+            .map(tag => sanitizeString(tag.toLowerCase()))
+            .filter(Boolean)
+    )];
+};
+
 /**
  * Validate MongoDB ObjectId
  */
@@ -141,6 +151,93 @@ export const validateBrandInput = (req, res, next) => {
 
     if (isActive !== undefined) {
         req.body.isActive = Boolean(isActive);
+    }
+
+    next();
+};
+
+export const validateCustomerInput = (req, res, next) => {
+    const { email, phone, customerProfile = {}, preferences = {} } = req.body;
+
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/;
+    const phoneRegex = /^(\+84|0)[0-9]{9,10}$/;
+    const loyaltyTiers = ['bronze', 'silver', 'gold', 'platinum'];
+    const statuses = ['prospect', 'active', 'inactive', 'vip', 'at-risk'];
+    const channels = ['email', 'phone', 'messaging', 'in-person'];
+
+    if (req.method === 'POST') {
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid email is required',
+            });
+        }
+    }
+
+    if (email) {
+        const sanitizedEmail = email.trim().toLowerCase();
+        if (!emailRegex.test(sanitizedEmail)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a valid email address',
+            });
+        }
+        req.body.email = sanitizedEmail;
+    }
+
+    if (phone) {
+        if (!phoneRegex.test(phone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a valid phone number',
+            });
+        }
+    }
+
+    if (customerProfile.loyaltyTier && !loyaltyTiers.includes(customerProfile.loyaltyTier)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid loyalty tier value',
+        });
+    }
+
+    if (customerProfile.status && !statuses.includes(customerProfile.status)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid customer status value',
+        });
+    }
+
+    if (customerProfile.preferredChannel && !channels.includes(customerProfile.preferredChannel)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid preferred channel value',
+        });
+    }
+
+    if (customerProfile.tags) {
+        req.body.customerProfile = {
+            ...customerProfile,
+            tags: normalizeCustomerTags(customerProfile.tags),
+        };
+    }
+
+    if (customerProfile.notes) {
+        req.body.customerProfile = {
+            ...req.body.customerProfile,
+            notes: sanitizeString(customerProfile.notes),
+        };
+    }
+
+    if (preferences.channels) {
+        const channelsObj = preferences.channels;
+        Object.keys(channelsObj).forEach(key => {
+            channelsObj[key] = Boolean(channelsObj[key]);
+        });
+        req.body.preferences = {
+            ...preferences,
+            channels: channelsObj,
+        };
     }
 
     next();

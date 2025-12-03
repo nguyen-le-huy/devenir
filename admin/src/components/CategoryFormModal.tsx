@@ -303,9 +303,9 @@ export function CategoryFormModal({
     <form onSubmit={handleSubmit}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="basic">1. Basic Information</TabsTrigger>
-          <TabsTrigger value="hierarchy">2. Hierarchy & Relationships</TabsTrigger>
-          <TabsTrigger value="seo">3. SEO & Settings</TabsTrigger>
+          <TabsTrigger value="basic">Basic Info</TabsTrigger>
+          <TabsTrigger value="hierarchy">Relationship</TabsTrigger>
+          <TabsTrigger value="seo">SEO &amp; Setting</TabsTrigger>
         </TabsList>
 
         {/* TAB 1: BASIC INFORMATION */}

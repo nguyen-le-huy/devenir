@@ -22,11 +22,14 @@ import {
   IconSettings,
   IconUser,
 } from "@tabler/icons-react"
-import { useState } from "react"
+import { useTheme } from "next-themes"
+import { useLocale } from "@/contexts/LocaleContext"
 
 export function SiteHeader() {
-  const [isDark, setIsDark] = useState(false)
   const { user, logout } = useAdminAuth()
+  const { theme, setTheme } = useTheme()
+  const isDark = theme === "dark"
+  const { locale, setLocale } = useLocale()
   
   // Get display name and email
   const displayName = user?.username || user?.email?.split('@')[0] || 'Admin'
@@ -131,7 +134,7 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             className="h-9 w-9"
-            onClick={() => setIsDark(!isDark)}
+            onClick={() => setTheme(isDark ? "light" : "dark")}
           >
             {isDark ? (
               <IconSun className="h-5 w-5" />
@@ -152,11 +155,21 @@ export function SiteHeader() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                🇻🇳 Tiếng Việt
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault()
+                  setLocale("vi")
+                }}
+              >
+                <span className="mr-2">{locale === "vi" ? "✓" : ""}</span>🇻🇳 Tiếng Việt
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                🇺🇸 English
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault()
+                  setLocale("en")
+                }}
+              >
+                <span className="mr-2">{locale === "en" ? "✓" : ""}</span>🇺🇸 English
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

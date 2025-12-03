@@ -19,7 +19,7 @@ export default function AddVariantPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {isEdit ? '✏️ Edit Variant' : '➕ Add New Variant'}
+              {isEdit ? 'Edit Variant' : 'Add New Variant'}
             </h1>
             <p className="text-muted-foreground">
               {isEdit ? 'Modify variant details and inventory' : 'Create a new product variant'}

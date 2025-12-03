@@ -142,7 +142,7 @@ export default function ViewVariantPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">👁️ Variant Details</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Variant Details</h1>
             <p className="text-muted-foreground">SKU: {variant.sku}</p>
           </div>
           <div className="space-x-2">
@@ -150,7 +150,7 @@ export default function ViewVariantPage() {
               ← Back
             </Button>
             <Button onClick={() => setDrawerOpen(true)}>
-              ✏️ Edit
+              Edit
             </Button>
           </div>
         </div>
@@ -299,7 +299,7 @@ export default function ViewVariantPage() {
         {/* Actions */}
         <div className="flex gap-2">
           <Button onClick={() => setDrawerOpen(true)}>
-            ✏️ Edit Variant
+            Edit Variant
           </Button>
           <Button variant="outline" onClick={() => navigate(`/admin/variants?page=${preservedPage}`)}>
             ← Back to List

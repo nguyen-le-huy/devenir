@@ -14,6 +14,7 @@ export { default as CustomersPage } from "./customers/CustomersPage"
 
 // Inventory Management
 export { default as InventoryPage } from "./inventory/InventoryPage"
+export { default as InventoryAlertsPage } from "./inventory/InventoryAlertsPage"
 
 // Marketing & Promotions
 export { default as PromotionsPage } from "./marketing/PromotionsPage"

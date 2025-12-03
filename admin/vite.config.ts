@@ -1,7 +1,7 @@
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { defineConfig } from "vitest/config"
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -55,5 +55,11 @@ export default defineConfig({
       '@radix-ui/react-dropdown-menu',
       '@radix-ui/react-select',
     ],
+  },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    css: true,
+    setupFiles: "./src/test/setup.ts",
   },
 })

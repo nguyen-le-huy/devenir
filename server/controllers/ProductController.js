@@ -327,7 +327,24 @@ export const deleteProduct = asyncHandler(async (req, res) => {
  */
 export const createVariant = asyncHandler(async (req, res) => {
   try {
-    const { sku, size, color, price, stock, images, mainImage, hoverImage, lowStockThreshold } = req.body;
+    const {
+      sku,
+      size,
+      color,
+      price,
+      stock,
+      images,
+      mainImage,
+      hoverImage,
+      lowStockThreshold,
+      binLocation,
+      reorderPoint,
+      reorderQuantity,
+      reorderQty,
+      safetyStock,
+      reserved,
+      incoming,
+    } = req.body;
 
     const product = await Product.findById(req.params.id);
     if (!product) {
@@ -358,7 +375,17 @@ export const createVariant = asyncHandler(async (req, res) => {
       images: images || [],
       mainImage: mainImage || '',
       hoverImage: hoverImage || '',
-      lowStockThreshold: lowStockThreshold || 10,
+      lowStockThreshold: typeof lowStockThreshold === 'number' ? lowStockThreshold : 10,
+      binLocation,
+      reorderPoint: typeof reorderPoint === 'number' ? reorderPoint : 0,
+      reorderQuantity: typeof reorderQuantity === 'number'
+        ? reorderQuantity
+        : typeof reorderQty === 'number'
+          ? reorderQty
+          : 0,
+      safetyStock: typeof safetyStock === 'number' ? safetyStock : 0,
+      reserved: typeof reserved === 'number' && reserved > 0 ? reserved : 0,
+      incoming: typeof incoming === 'number' && incoming > 0 ? incoming : 0,
     });
 
     const variantObj = variant.toObject();
@@ -391,7 +418,26 @@ export const createVariant = asyncHandler(async (req, res) => {
  */
 export const updateVariant = asyncHandler(async (req, res) => {
   try {
-    const { price, stock, images, lowStockThreshold, weight, barcode, sku, size, color, mainImage, hoverImage } = req.body;
+    const {
+      price,
+      stock,
+      images,
+      lowStockThreshold,
+      weight,
+      barcode,
+      sku,
+      size,
+      color,
+      mainImage,
+      hoverImage,
+      binLocation,
+      reorderPoint,
+      reorderQuantity,
+      reorderQty,
+      safetyStock,
+      reserved,
+      incoming,
+    } = req.body;
     const skuOrId = req.params.skuOrId;
 
     // Try to find by SKU first (case-insensitive), then by ID
@@ -426,6 +472,16 @@ export const updateVariant = asyncHandler(async (req, res) => {
     if (barcode !== undefined && barcode !== null) variant.barcode = barcode;
     if (mainImage !== undefined && mainImage !== null) variant.mainImage = mainImage;
     if (hoverImage !== undefined && hoverImage !== null) variant.hoverImage = hoverImage;
+    if (binLocation !== undefined && binLocation !== null) variant.binLocation = binLocation;
+    if (reorderPoint !== undefined && reorderPoint !== null) variant.reorderPoint = reorderPoint;
+    if (reorderQuantity !== undefined && reorderQuantity !== null) {
+      variant.reorderQuantity = reorderQuantity;
+    } else if (reorderQty !== undefined && reorderQty !== null) {
+      variant.reorderQuantity = reorderQty;
+    }
+    if (safetyStock !== undefined && safetyStock !== null) variant.safetyStock = safetyStock;
+    if (reserved !== undefined && reserved !== null) variant.reserved = Math.max(0, reserved);
+    if (incoming !== undefined && incoming !== null) variant.incoming = Math.max(0, incoming);
 
     variant = await variant.save();
     const variantObj = variant.toObject();

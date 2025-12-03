@@ -49,6 +49,7 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
   const [products, setProducts] = useState<Product[]>([])
   const [colors, setColors] = useState<Color[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [colorSearchTerm, setColorSearchTerm] = useState('')
   const [loading, setLoading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -105,6 +106,7 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
     setSelectedMainImage('')
     setSelectedHoverImage('')
     setSearchTerm('')
+    setColorSearchTerm('')
   }
 
   const fetchProducts = async () => {
@@ -250,6 +252,16 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
     ? products.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
     : products
 
+  const filteredColors = colorSearchTerm
+    ? colors.filter((color) => {
+        const term = colorSearchTerm.toLowerCase()
+        return (
+          color.name.toLowerCase().includes(term) ||
+          (color.hex ? color.hex.toLowerCase().includes(term) : false)
+        )
+      })
+    : colors
+
   // Auto-generate SKU based on product, color, and size
   const generateSKU = (productId: string, color: string, size: string) => {
     const product = products.find((p) => p._id === productId)
@@ -368,7 +380,7 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
         {/* Header - Sticky */}
         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between shrink-0 z-10">
           <h2 className="text-lg font-bold">
-            {isEdit ? '✏️ Edit Variant' : '➕ Add Variant'}
+            {isEdit ? 'Edit Variant' : 'Add Variant'}
           </h2>
           <button
             onClick={onClose}
@@ -574,24 +586,40 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
             <Label htmlFor="color" className="font-medium">
               Color *
             </Label>
-            <Select value={formData.color} onValueChange={(value) => setFormData({ ...formData, color: value })}>
-              <SelectTrigger className="text-sm">
-                <SelectValue placeholder="Select color" />
-              </SelectTrigger>
-              <SelectContent>
-                {colors.map((color) => (
-                  <SelectItem key={color._id} value={color.name}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-sm border border-gray-300"
-                        style={{ backgroundColor: color.hex }}
-                      />
-                      {color.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Select value={formData.color} onValueChange={(value) => setFormData({ ...formData, color: value })}>
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Select color" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredColors.length === 0 ? (
+                      <SelectItem value="no-color" disabled>
+                        No colors match search
+                      </SelectItem>
+                    ) : (
+                      filteredColors.map((color) => (
+                        <SelectItem key={color._id} value={color.name}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-sm border border-gray-300"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            {color.name}
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                placeholder="Search color"
+                value={colorSearchTerm}
+                onChange={(event) => setColorSearchTerm(event.target.value)}
+                className="w-36 text-sm"
+              />
+            </div>
           </div>
 
           {/* Price */}

@@ -35,6 +35,40 @@ const productVariantSchema = new mongoose.Schema(
       min: [0, 'Stock must not be negative'],
       default: 0,
     },
+    reserved: {
+      type: Number,
+      min: [0, 'Reserved stock must not be negative'],
+      default: 0,
+    },
+    incoming: {
+      type: Number,
+      min: [0, 'Incoming stock must not be negative'],
+      default: 0,
+    },
+    lowStockThreshold: {
+      type: Number,
+      min: [0, 'Low stock threshold must not be negative'],
+      default: 10,
+    },
+    reorderPoint: {
+      type: Number,
+      min: [0, 'Reorder point must not be negative'],
+      default: 0,
+    },
+    reorderQuantity: {
+      type: Number,
+      min: [0, 'Reorder quantity must not be negative'],
+      default: 0,
+    },
+    safetyStock: {
+      type: Number,
+      min: [0, 'Safety stock must not be negative'],
+      default: 0,
+    },
+    binLocation: {
+      type: String,
+      trim: true,
+    },
     mainImage: {
       type: String,
       required: false,
@@ -68,6 +102,17 @@ productVariantSchema.virtual('stock').get(function () {
   return this.quantity;
 }).set(function (value) {
   this.quantity = value;
+});
+
+productVariantSchema.virtual('available').get(function () {
+  const qty = this.quantity ?? 0;
+  const reserved = this.reserved ?? 0;
+  const available = qty - reserved;
+  return available < 0 ? 0 : available;
+});
+
+productVariantSchema.virtual('inventoryValue').get(function () {
+  return (this.price || 0) * (this.quantity || 0);
 });
 
 /**
@@ -204,6 +249,10 @@ productVariantSchema.index({ size: 1 });
 productVariantSchema.index({ product_id: 1, color: 1, size: 1 });
 productVariantSchema.index({ quantity: 1 });
 productVariantSchema.index({ price: 1 });
+productVariantSchema.index({ binLocation: 1 });
+productVariantSchema.index({ lowStockThreshold: 1 });
+productVariantSchema.index({ reorderPoint: 1 });
+productVariantSchema.index({ reserved: 1 });
 
 // ============ OPTIONS ============
 

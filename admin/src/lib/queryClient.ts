@@ -77,9 +77,26 @@ export const QUERY_KEYS = {
     lists: () => [...QUERY_KEYS.colors.all, 'list'] as const,
     list: () => [...QUERY_KEYS.colors.lists()] as const,
   },
+  inventory: {
+    all: ['inventory'] as const,
+    overview: () => [...QUERY_KEYS.inventory.all, 'overview'] as const,
+    list: (filters?: any) => [...QUERY_KEYS.inventory.all, 'list', filters] as const,
+    alerts: () => [...QUERY_KEYS.inventory.all, 'alerts'] as const,
+    adjustments: (filters?: any) => [...QUERY_KEYS.inventory.all, 'adjustments', filters] as const,
+    variant: (id: string) => [...QUERY_KEYS.inventory.all, 'variant', id] as const,
+  },
   brands: {
     all: ['brands'] as const,
     lists: () => [...QUERY_KEYS.brands.all, 'list'] as const,
     list: () => [...QUERY_KEYS.brands.lists()] as const,
+  },
+  customers: {
+    all: ['customers'] as const,
+    lists: () => [...QUERY_KEYS.customers.all, 'list'] as const,
+    list: (filters?: Record<string, unknown>) => [...QUERY_KEYS.customers.lists(), filters] as const,
+    overview: () => [...QUERY_KEYS.customers.all, 'overview'] as const,
+    details: () => [...QUERY_KEYS.customers.all, 'detail'] as const,
+    detail: (id: string) => [...QUERY_KEYS.customers.details(), id] as const,
+    orders: (id: string, params?: Record<string, unknown>) => [...QUERY_KEYS.customers.all, 'orders', id, params] as const,
   },
 } as const

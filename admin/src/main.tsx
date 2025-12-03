@@ -5,13 +5,18 @@ import { queryClient } from '@/lib/queryClient'
 import './index.css'
 import App from './App.tsx'
 import { Toaster } from 'sonner'
+import { ThemeProvider } from '@/components/providers/theme-provider'
+import { LocaleProvider } from '@/contexts/LocaleContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-      <Toaster position="bottom-right" richColors closeButton />
-      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-    </QueryClientProvider>
+    <ThemeProvider>
+      <LocaleProvider>
+        <QueryClientProvider client={queryClient}>
+          <App />
+          <Toaster position="bottom-right" richColors closeButton />
+        </QueryClientProvider>
+      </LocaleProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

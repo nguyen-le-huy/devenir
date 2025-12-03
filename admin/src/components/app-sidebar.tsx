@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { useAdminAuth } from "@/contexts/AdminAuthContext"
+import { useInventoryAlerts } from "@/hooks/useInventory"
 import {
   IconDashboard,
   IconShoppingCart,
@@ -413,6 +414,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setUserData(getUserData())
   }, [user])
 
+  const { data: alertData } = useInventoryAlerts()
+  const inventoryAlertBadge = React.useMemo(() => {
+    const low = alertData?.lowStock?.length ?? 0
+    const out = alertData?.outOfStock?.length ?? 0
+    const over = alertData?.overstock?.length ?? 0
+    const reservation = alertData?.reservationIssues?.length ?? 0
+    const total = low + out + over + reservation
+
+    if (!total) {
+      return { total: 0, className: "bg-muted text-muted-foreground" }
+    }
+
+    if (out > 0) {
+      return { total, className: "bg-destructive text-destructive-foreground" }
+    }
+
+    if (low > 0 || reservation > 0) {
+      return { total, className: "bg-amber-500 text-white" }
+    }
+
+    return { total, className: "bg-sky-500 text-white" }
+  }, [alertData])
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -464,20 +488,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                               <SidebarMenuSub>
-                                {item.items.map((subItem: any) => (
-                                  <SidebarMenuSubItem key={subItem.title}>
-                                    <SidebarMenuSubButton asChild>
-                                      <Link to={subItem.url}>
-                                        <span>{subItem.title}</span>
-                                        {'badge' in subItem && subItem.badge ? (
-                                          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-destructive px-2 py-1 text-xs font-semibold text-destructive-foreground">
-                                            {subItem.badge}
-                                          </span>
-                                        ) : null}
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
+                                {item.items.map((subItem: any) => {
+                                  const isStockAlertsLink = subItem.url === "/admin/inventory/alerts"
+                                  const badgeValue = isStockAlertsLink ? inventoryAlertBadge.total : subItem.badge
+                                  const badgeClassName = isStockAlertsLink
+                                    ? inventoryAlertBadge.className
+                                    : "bg-destructive text-destructive-foreground"
+
+                                  return (
+                                    <SidebarMenuSubItem key={subItem.title}>
+                                      <SidebarMenuSubButton asChild>
+                                        <Link to={subItem.url}>
+                                          <span>{subItem.title}</span>
+                                          {badgeValue ? (
+                                            <span
+                                              className={`ml-auto inline-flex items-center justify-center rounded-full px-2 py-1 text-xs font-semibold ${badgeClassName}`}
+                                            >
+                                              {badgeValue}
+                                            </span>
+                                          ) : null}
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  )
+                                })}
                               </SidebarMenuSub>
                             </CollapsibleContent>
                           </SidebarMenuItem>
