@@ -16,7 +16,7 @@ const Header = () => {
     const [isBagOpen, setIsBagOpen] = useState(false);
     const bagTimeoutRef = useRef(null);
     const [categories, setCategories] = useState([]);
-    
+
     // Fetch real cart data for badge count
     const { data: cartData } = useCart();
     const bagCount = cartData?.data?.totalItems || 0;
