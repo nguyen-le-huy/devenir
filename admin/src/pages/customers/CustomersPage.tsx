@@ -4,7 +4,6 @@ import { IconAlertTriangle, IconDownload, IconPlus, IconRefresh, IconSparkles, I
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { MetricCard } from '@/components/metric-card'

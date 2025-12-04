@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '@/lib/queryClient'
 import {
   customerService,
@@ -30,7 +30,7 @@ export const useCustomerList = (filters: CustomerListFilters) => {
   return useQuery<CustomerListResponse>({
     queryKey: QUERY_KEYS.customers.list(normalizedFilters),
     queryFn: () => customerService.getCustomers(filters),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 }
 

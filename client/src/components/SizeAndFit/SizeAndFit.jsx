@@ -34,90 +34,93 @@ const SizeAndFit = ({ isOpen, onClose }) => {
                             <thead>
                                 <tr>
                                     <th>Size</th>
-                                    <th>CN</th>
+                                    <th>Height & Weight</th>
                                     <th>Measurements</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>XXXS</td>
-                                    <td>175/76A</td>
-                                    <td>
-                                        Chest 74cm<br />
-                                        Waist 59cm<br />
-                                        Hip 73cm
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>XXS</td>
-                                    <td>175/80A</td>
-                                    <td>
-                                        Chest 80cm<br />
-                                        Waist 65cm<br />
-                                        Hip 79cm
-                                    </td>
-                                </tr>
-                                <tr>
                                     <td>XS</td>
-                                    <td>180/88A</td>
                                     <td>
-                                        Chest 86cm<br />
-                                        Waist 71cm<br />
-                                        Hip 85cm
+                                        &lt; 1m60<br />
+                                        &lt; 50kg
+                                    </td>
+                                    <td>
+                                        Chest 82cm<br />
+                                        Waist 64cm<br />
+                                        Hip 86cm
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>S</td>
-                                    <td>180/92A</td>
                                     <td>
-                                        Chest 92cm<br />
-                                        Waist 77cm<br />
-                                        Hip 91cm
+                                        1m60 - 1m65<br />
+                                        50 - 60kg
+                                    </td>
+                                    <td>
+                                        Chest 86cm<br />
+                                        Waist 68cm<br />
+                                        Hip 90cm
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>M</td>
-                                    <td>180/96A</td>
                                     <td>
-                                        Chest 98cm<br />
-                                        Waist 83cm<br />
-                                        Hip 97cm
+                                        1m65 - 1m70<br />
+                                        60 - 70kg
+                                    </td>
+                                    <td>
+                                        Chest 90cm<br />
+                                        Waist 72cm<br />
+                                        Hip 94cm
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>L</td>
-                                    <td>180/104A</td>
                                     <td>
-                                        Chest 104cm<br />
-                                        Waist 89cm<br />
-                                        Hip 103cm
+                                        1m70 - 1m75<br />
+                                        70 - 80kg
+                                    </td>
+                                    <td>
+                                        Chest 94cm<br />
+                                        Waist 76cm<br />
+                                        Hip 98cm
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>XL</td>
-                                    <td>180/108A</td>
                                     <td>
-                                        Chest 110cm<br />
-                                        Waist 95cm<br />
-                                        Hip 109cm
+                                        1m75 - 1m80<br />
+                                        80 - 90kg
+                                    </td>
+                                    <td>
+                                        Chest 98cm<br />
+                                        Waist 80cm<br />
+                                        Hip 102cm
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>XXL</td>
-                                    <td>185/116A</td>
                                     <td>
-                                        Chest 116cm<br />
-                                        Waist 101cm<br />
-                                        Hip 115cm
+                                        1m80 - 1m85<br />
+                                        90 - 100kg
+                                    </td>
+                                    <td>
+                                        Chest 102cm<br />
+                                        Waist 84cm<br />
+                                        Hip 106cm
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>XXXL</td>
-                                    <td>185/120A</td>
                                     <td>
-                                        Chest 122cm<br />
-                                        Waist 107cm<br />
-                                        Hip 121cm
+                                        &gt; 1m85<br />
+                                        &gt; 100kg
+                                    </td>
+                                    <td>
+                                        Chest 106cm<br />
+                                        Waist 88cm<br />
+                                        Hip 110cm
                                     </td>
                                 </tr>
                             </tbody>
