@@ -86,7 +86,12 @@ const generateGatewayOrderCode = async () => {
 export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
   const user = req.user;
   const userId = req.userId;
-  const { shippingMethod, deliveryTime, address: addressPayload } = req.body;
+  const { shippingMethod, deliveryTime, address: addressPayload, giftCode } = req.body;
+
+  // Check for valid gift code - fixed price 5000 VND
+  const VALID_GIFT_CODE = 'emanhhuy';
+  const GIFT_CODE_FIXED_PRICE = 5000; // 5000 VND
+  const isGiftCodeApplied = giftCode && giftCode.toLowerCase() === VALID_GIFT_CODE;
 
   if (!SHIPPING_METHODS.includes(shippingMethod)) {
     return res.status(400).json({
@@ -155,8 +160,9 @@ export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
       deliveryWindow: deliveryTime,
       paymentMethod: 'Bank',
       paymentGateway: 'PayOS',
-      totalPrice,
-      shippingPrice: shippingFee,
+      totalPrice: isGiftCodeApplied ? GIFT_CODE_FIXED_PRICE : totalPrice,
+      shippingPrice: isGiftCodeApplied ? 0 : shippingFee,
+      appliedGiftCode: isGiftCodeApplied ? giftCode : null,
       status: 'pending',
     });
 
@@ -174,7 +180,22 @@ export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
       });
     }
 
-    const payableAmount = payosItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // Calculate payable amount - use fixed price if gift code is applied
+    let payableAmount;
+    let finalPayosItems;
+
+    if (isGiftCodeApplied) {
+      // Gift code applied - fixed price 1000 VND
+      payableAmount = GIFT_CODE_FIXED_PRICE;
+      finalPayosItems = [{
+        name: 'Gift Code Order (emanhhuy)',
+        quantity: 1,
+        price: GIFT_CODE_FIXED_PRICE,
+      }];
+    } else {
+      payableAmount = payosItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      finalPayosItems = payosItems;
+    }
 
     const paymentDescription = buildPayOSDescription(gatewayOrderCode);
 
@@ -188,7 +209,7 @@ export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
       buyerEmail: user.email,
       buyerPhone: String(shippingAddress.phoneNumber),
       buyerAddress,
-      items: payosItems,
+      items: finalPayosItems,
       expiredAt: Math.floor(Date.now() / 1000) + 30 * 60,
     });
 
@@ -237,7 +258,31 @@ export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
 
 export const handlePayOSWebhook = asyncHandler(async (req, res) => {
   try {
-    const verifiedData = await payosClient.webhooks.verify(req.body);
+    // Handle PayOS webhook test/ping (empty body or test data)
+    if (!req.body || Object.keys(req.body).length === 0) {
+      logger.info('PayOS webhook test ping received');
+      return res.status(200).json({ success: true, message: 'Webhook is active' });
+    }
+
+    // Handle PayOS webhook confirmation test
+    if (req.body.code === 'test' || req.body.desc === 'test') {
+      logger.info('PayOS webhook confirmation test received');
+      return res.status(200).json({ success: true, message: 'Webhook confirmed' });
+    }
+
+    let verifiedData;
+    try {
+      verifiedData = await payosClient.webhooks.verify(req.body);
+    } catch (verifyError) {
+      // If verification fails but has orderCode, it might be a test or malformed request
+      logger.warn('PayOS webhook verification failed', {
+        error: verifyError.message,
+        body: req.body,
+      });
+      // Return 200 to acknowledge receipt (PayOS expects 200)
+      return res.status(200).json({ success: true, message: 'Webhook received but verification failed' });
+    }
+
     const order = await Order.findOne({ 'paymentIntent.gatewayOrderCode': verifiedData.orderCode }).populate('user', 'email firstName lastName username');
 
     if (!order) {

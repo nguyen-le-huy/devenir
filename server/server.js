@@ -20,6 +20,7 @@ import cartRoutes from './routes/cartRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import { handlePayOSWebhook } from './controllers/PaymentController.js';
 
 
 dotenv.config();
@@ -28,6 +29,10 @@ connectDB();
 
 const app = express();
 const server = http.createServer(app);
+
+// ============ WEBHOOK ROUTES (BEFORE CORS - Allow external services) ============
+// PayOS webhook - must be before CORS middleware
+app.post('/api/payments/payos/webhook', express.json(), handlePayOSWebhook);
 
 // ============ CORS MIDDLEWARE (MUST BE FIRST!) ============
 // Middleware - CORS configuration cho nhiều origins

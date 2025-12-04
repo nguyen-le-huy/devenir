@@ -26,6 +26,13 @@ const Shipping = () => {
     const [deliveryTime, setDeliveryTime] = useState(""); // "standard", "next", "nominated"
     const [paymentMethod, setPaymentMethod] = useState(""); // "payos" or "coinbase"
 
+    // Gift code state
+    const [giftCode, setGiftCode] = useState("");
+    const [giftCodeApplied, setGiftCodeApplied] = useState(false);
+    const [giftCodeError, setGiftCodeError] = useState("");
+    // Fixed prices when gift code is applied: 1000 VND for PayOS, 0.1 USDT for Coinbase
+    const giftCodeFixedPrice = { vnd: 1000, usdt: 0.1 };
+
     // Form data
     const [formData, setFormData] = useState({
         firstName: "",
@@ -134,6 +141,31 @@ const Shipping = () => {
         // Keep savedAddress to populate form with existing data
     };
 
+    // Handle gift code application
+    const handleApplyGiftCode = () => {
+        setGiftCodeError("");
+
+        if (!giftCode.trim()) {
+            setGiftCodeError("Please enter a gift code");
+            return;
+        }
+
+        if (giftCode.toLowerCase() === "emanhhuy") {
+            setGiftCodeApplied(true);
+            setGiftCodeError("");
+        } else {
+            setGiftCodeApplied(false);
+            setGiftCodeError("Invalid gift code");
+        }
+    };
+
+    // Handle remove gift code
+    const handleRemoveGiftCode = () => {
+        setGiftCode("");
+        setGiftCodeApplied(false);
+        setGiftCodeError("");
+    };
+
     const handlePayWithPayOS = async () => {
         if (isProcessingPayment) return;
         setPaymentError("");
@@ -165,6 +197,7 @@ const Shipping = () => {
                 shippingMethod,
                 deliveryTime,
                 address: savedAddress,
+                giftCode: giftCodeApplied ? giftCode : null, // Send gift code if applied
             });
 
             if (response?.success && response?.data?.checkoutUrl) {
@@ -484,13 +517,66 @@ const Shipping = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Gift Code Section */}
+                    <div className={styles.giftCodeSection}>
+                        <div className={styles.shippingTitleHeader}>
+                            <h2>Gift Code</h2>
+                            <p>Enter your gift code to get a discount</p>
+                        </div>
+                        <div className={styles.giftCodeInput}>
+                            <div className={styles.formItem}>
+                                <input
+                                    type="text"
+                                    id="giftCode"
+                                    placeholder=" "
+                                    value={giftCode}
+                                    onChange={(e) => {
+                                        setGiftCode(e.target.value);
+                                        setGiftCodeError("");
+                                    }}
+                                    disabled={giftCodeApplied}
+                                />
+                                <label htmlFor="giftCode">Gift Code</label>
+                            </div>
+                            {!giftCodeApplied ? (
+                                <button
+                                    type="button"
+                                    className={styles.applyGiftCodeBtn}
+                                    onClick={handleApplyGiftCode}
+                                >
+                                    Apply
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className={styles.removeGiftCodeBtn}
+                                    onClick={handleRemoveGiftCode}
+                                >
+                                    Remove
+                                </button>
+                            )}
+                        </div>
+                        {giftCodeError && (
+                            <p className={styles.giftCodeError}>{giftCodeError}</p>
+                        )}
+                        {giftCodeApplied && (
+                            <div className={styles.giftCodeSuccess}>
+                                <p>✓ Gift code "{giftCode}" applied successfully!</p>
+                                <p className={styles.discountInfo}>
+                                    Fixed price: <strong>5,000 VND</strong> (PayOS) | <strong>0.1 USDT</strong> (Coinbase)
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
                     <button
                         type="button"
                         className={`${styles.confirmButton} ${styles.continueToPayment}`}
                         onClick={handlePayWithPayOS}
                         disabled={payButtonDisabled}
                     >
-                        <p>{isProcessingPayment ? "Redirecting to PayOS..." : `Pay USD ${formattedTotalWithShipping}`}</p>
+                        <p>{isProcessingPayment ? "Redirecting to PayOS..." : (giftCodeApplied && paymentMethod === "payos" ? "Pay 5,000 VND" : `Pay USD ${formattedTotalWithShipping}`)}</p>
                     </button>
                     {paymentError && (
                         <p className={styles.paymentError} role="alert">

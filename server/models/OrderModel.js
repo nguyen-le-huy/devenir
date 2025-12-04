@@ -18,7 +18,7 @@ const orderSchema = new mongoose.Schema(
           type: String,
           required: [true, 'SKU is required'],
         },
-        
+
         // Variant details (snapshot at order time)
         color: {
           type: String,
@@ -28,7 +28,7 @@ const orderSchema = new mongoose.Schema(
           type: String,
           required: [true, 'Size is required'],
         },
-        
+
         // Order details
         quantity: {
           type: Number,
@@ -40,7 +40,7 @@ const orderSchema = new mongoose.Schema(
           required: [true, 'Price is required'],
           min: [0, 'Price cannot be negative'],
         },
-        
+
         // Images (snapshot)
         image: {
           type: String,
@@ -52,7 +52,7 @@ const orderSchema = new mongoose.Schema(
         hoverImage: {
           type: String,
         },
-        
+
         // Reference to original variant (for tracking, optional)
         // Nếu variant bị xóa, order vẫn giữ nguyên thông tin snapshot
         productVariant: {
@@ -60,14 +60,14 @@ const orderSchema = new mongoose.Schema(
           ref: 'ProductVariant',
           required: false, // Đổi thành optional vì đã có snapshot
         },
-        
+
         // Reference to product (for tracking)
         product: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Product',
           required: false,
         },
-        
+
         _id: false,
       },
     ],
@@ -144,6 +144,11 @@ const orderSchema = new mongoose.Schema(
       required: [true, 'Total price is required'],
       min: [0, 'Total price cannot be negative'],
     },
+    originalTotalPrice: {
+      type: Number,
+      min: [0, 'Original total price cannot be negative'],
+      default: null, // Will be set when gift code is applied
+    },
     shippingPrice: {
       type: Number,
       required: [true, 'Shipping price is required'],
@@ -167,6 +172,10 @@ const orderSchema = new mongoose.Schema(
     },
     cancelledAt: {
       type: Date,
+    },
+    appliedGiftCode: {
+      type: String,
+      default: null,
     },
     confirmationEmailSentAt: {
       type: Date,
@@ -222,7 +231,7 @@ orderSchema.methods.markAsPaid = async function (paymentResult = {}) {
     update_time: paymentResult.update_time || new Date().toISOString(),
     email_address: paymentResult.email_address || '',
   };
-  
+
   await this.save();
   return this;
 };
@@ -234,7 +243,7 @@ orderSchema.methods.markAsShipped = async function () {
   if (this.status !== 'paid') {
     throw new Error('Order must be paid before shipping');
   }
-  
+
   this.status = 'shipped';
   await this.save();
   return this;
@@ -247,7 +256,7 @@ orderSchema.methods.markAsDelivered = async function () {
   if (this.status !== 'shipped') {
     throw new Error('Order must be shipped before delivery');
   }
-  
+
   this.status = 'delivered';
   this.deliveredAt = Date.now();
   await this.save();
@@ -261,30 +270,30 @@ orderSchema.methods.cancelOrder = async function () {
   if (this.status === 'delivered') {
     throw new Error('Cannot cancel delivered order');
   }
-  
+
   // Restore stock for each item
   const ProductVariant = mongoose.model('ProductVariant');
-  
+
   for (const item of this.orderItems) {
     // Thử tìm variant bằng reference trước
     let variant = null;
-    
+
     if (item.productVariant) {
       variant = await ProductVariant.findById(item.productVariant);
     }
-    
+
     // Nếu không tìm thấy, thử tìm bằng SKU
     if (!variant) {
       variant = await ProductVariant.findOne({ sku: item.sku });
     }
-    
+
     // Nếu tìm thấy variant, hoàn trả stock
     if (variant) {
       await variant.increaseQuantity(item.quantity);
     }
     // Nếu không tìm thấy, bỏ qua (variant có thể đã bị xóa)
   }
-  
+
   this.status = 'cancelled';
   this.cancelledAt = Date.now();
   await this.save();
@@ -322,10 +331,10 @@ orderSchema.statics.getTotalRevenue = async function (startDate, endDate) {
   const match = {
     status: { $in: ['paid', 'shipped', 'delivered'] },
   };
-  
+
   if (startDate) match.createdAt = { $gte: startDate };
   if (endDate) match.createdAt = { ...match.createdAt, $lte: endDate };
-  
+
   const result = await this.aggregate([
     { $match: match },
     {
@@ -336,7 +345,7 @@ orderSchema.statics.getTotalRevenue = async function (startDate, endDate) {
       },
     },
   ]);
-  
+
   return result[0] || { totalRevenue: 0, orderCount: 0 };
 };
 
@@ -349,23 +358,23 @@ orderSchema.pre('save', async function (next) {
   // Only decrease stock when creating new order (not on update)
   if (this.isNew) {
     const ProductVariant = mongoose.model('ProductVariant');
-    
+
     try {
       for (const item of this.orderItems) {
         // Nếu có productVariant reference, dùng nó để giảm stock
         if (item.productVariant) {
           const variant = await ProductVariant.findById(item.productVariant);
-          
+
           if (!variant) {
             throw new Error(`Product variant ${item.sku} not found`);
           }
-          
+
           // Giảm stock (sử dụng method decreaseQuantity thay vì decreaseStock)
           await variant.decreaseQuantity(item.quantity);
         } else {
           // Fallback: tìm variant bằng SKU nếu không có reference
           const variant = await ProductVariant.findOne({ sku: item.sku });
-          
+
           if (variant) {
             await variant.decreaseQuantity(item.quantity);
           }
@@ -376,7 +385,7 @@ orderSchema.pre('save', async function (next) {
       return next(error);
     }
   }
-  
+
   next();
 });
 

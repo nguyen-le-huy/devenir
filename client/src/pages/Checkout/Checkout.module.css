@@ -706,3 +706,105 @@ form {
         width: 40px;
     }
 }
+
+/* Gift Code Section */
+.giftCodeSection {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray);
+}
+
+.giftCodeInput {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.giftCodeInput .formItem {
+    flex: 1;
+    margin: 0;
+}
+
+.applyGiftCodeBtn,
+.removeGiftCodeBtn {
+    padding: 12px 25px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.applyGiftCodeBtn {
+    background-color: var(--brown);
+    color: var(--white);
+}
+
+.applyGiftCodeBtn:hover {
+    background-color: var(--black);
+}
+
+.removeGiftCodeBtn {
+    background-color: transparent;
+    color: var(--brown);
+    border: 1px solid var(--brown);
+}
+
+.removeGiftCodeBtn:hover {
+    background-color: var(--brown);
+    color: var(--white);
+}
+
+.giftCodeError {
+    color: #d14343;
+    font-size: 14px;
+    margin-top: -10px;
+}
+
+.giftCodeSuccess {
+    background-color: rgba(0, 128, 0, 0.08);
+    border: 1px solid var(--green);
+    padding: 15px 20px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.giftCodeSuccess p {
+    font-size: 14px;
+    color: var(--green);
+}
+
+.giftCodeSuccess p:first-child {
+    font-weight: 500;
+}
+
+.discountInfo {
+    color: var(--black) !important;
+}
+
+.discountInfo strong {
+    color: var(--green);
+}
+
+@media (max-width: 768px) {
+    .giftCodeSection {
+        width: 100%;
+    }
+
+    .giftCodeInput {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .applyGiftCodeBtn,
+    .removeGiftCodeBtn {
+        width: 100%;
+        padding: 15px;
+    }
+}

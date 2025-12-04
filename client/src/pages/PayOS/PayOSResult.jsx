@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import styles from "./PayOSResult.module.css";
 import { fetchPayOSOrderStatus } from "../../features/payos";
+import { cartKeys } from "../../hooks/useCart";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -16,6 +18,7 @@ const deliveryWindowCopy = {
 
 const PayOSResult = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [searchParams] = useSearchParams();
     const orderCode = searchParams.get("orderCode");
 
@@ -68,11 +71,14 @@ const PayOSResult = () => {
         loadStatus(true);
     }, [loadStatus]);
 
+    // Invalidate cart when payment is successful
     useEffect(() => {
         if (orderStatus?.status === "paid") {
+            // Clear cart cache so it refetches with empty cart
+            queryClient.invalidateQueries({ queryKey: cartKeys.all });
             setCountdown((prev) => (prev === null ? 8 : prev));
         }
-    }, [orderStatus]);
+    }, [orderStatus, queryClient]);
 
     useEffect(() => {
         if (countdown === null) return;
