@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import styles from './ChatWindow.module.css';
 import Devi from './Devi';
 import ChatMessage from './ChatMessage';
+import { useAuth } from '../../contexts/AuthContext';
 import gsap from 'gsap';
 import SplitText from 'gsap/src/SplitText';
 
@@ -13,6 +14,8 @@ const ChatWindow = ({ onClose }) => {
     const promptsRef = useRef(null);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+
+    const { user, isAuthenticated } = useAuth();
 
     const [messages, setMessages] = useState([]);
     const [inputValue, setInputValue] = useState('');
@@ -160,8 +163,9 @@ const ChatWindow = ({ onClose }) => {
         }
     };
 
-    const handleSendMessage = () => {
-        if (!inputValue.trim()) return;
+    const handleSendMessage = (directText = null) => {
+        const messageText = directText || inputValue;
+        if (!messageText.trim()) return;
 
         // Hide initial view
         setShowInitialView(false);
@@ -169,7 +173,7 @@ const ChatWindow = ({ onClose }) => {
         // Add user message
         const userMessage = {
             id: Date.now(),
-            text: inputValue,
+            text: messageText,
             sender: 'user',
             timestamp: new Date()
         };
@@ -184,7 +188,7 @@ const ChatWindow = ({ onClose }) => {
         setTimeout(() => {
             const botMessage = {
                 id: Date.now() + 1,
-                text: getBotResponse(inputValue),
+                text: getBotResponse(messageText),
                 sender: 'bot',
                 timestamp: new Date()
             };
@@ -202,11 +206,7 @@ const ChatWindow = ({ onClose }) => {
     };
 
     const handlePromptClick = (promptText) => {
-        setInputValue(promptText);
-        // Optionally auto-send the prompt
-        setTimeout(() => {
-            handleSendMessage();
-        }, 300);
+        handleSendMessage(promptText);
     };
 
     const focusInput = () => {
@@ -241,8 +241,12 @@ const ChatWindow = ({ onClose }) => {
                             <Devi width={75} height={75} />
                         </div>
                         <div className={styles.content} ref={contentRef}>
-                            <p className={`${styles.contentHi} splitChat`}>Hi Huy,</p>
-                            <p className={`${styles.contentText} splitChat`}>Welcome back! How can I help? </p>
+                            <p className={`${styles.contentHi} splitChat`}>
+                                Hi {isAuthenticated && user?.username ? user.username : 'there'},
+                            </p>
+                            <p className={`${styles.contentText} splitChat`}>
+                                {isAuthenticated ? 'Welcome back! How can I help?' : 'Welcome! How can I help?'}
+                            </p>
                             <p className={`${styles.contentHi} splitChat`}>
                                 I'm here to help you tackle your questions.<br />
                                 Choose from the prompts below or just tell<br />

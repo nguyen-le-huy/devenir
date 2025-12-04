@@ -3,7 +3,7 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import ScarfCard from '../ProductCard/ScarfCard.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
@@ -21,8 +21,34 @@ const ProductCarousel = ({
     const containerRef = useRef(null);
     const prevRef = useRef(null);
     const nextRef = useRef(null);
-    const [isBeginning, setIsBeginning] = useState(true);
-    const [isEnd, setIsEnd] = useState(false);
+    const [swiperInstance, setSwiperInstance] = useState(null);
+
+    // Initialize navigation when swiper and refs are ready
+    useEffect(() => {
+        if (swiperInstance && prevRef.current && nextRef.current) {
+            // Assign navigation elements
+            swiperInstance.params.navigation.prevEl = prevRef.current;
+            swiperInstance.params.navigation.nextEl = nextRef.current;
+
+            // Re-init navigation
+            swiperInstance.navigation.destroy();
+            swiperInstance.navigation.init();
+            swiperInstance.navigation.update();
+        }
+    }, [swiperInstance]);
+
+    // Manual navigation handlers as fallback
+    const handlePrev = useCallback(() => {
+        if (swiperInstance) {
+            swiperInstance.slidePrev();
+        }
+    }, [swiperInstance]);
+
+    const handleNext = useCallback(() => {
+        if (swiperInstance) {
+            swiperInstance.slideNext();
+        }
+    }, [swiperInstance]);
 
     useGSAP(() => {
         const container = containerRef.current;
@@ -88,10 +114,8 @@ const ProductCarousel = ({
                     slidesPerView={4}
                     slidesPerGroup={1}
                     allowTouchMove={true}
-                    touchStartPreventDefault={false}
                     loop={true}
-                    simulateTouch={true}
-                    threshold={10}
+                    speed={400}
                     navigation={{
                         prevEl: prevRef.current,
                         nextEl: nextRef.current,
@@ -114,30 +138,7 @@ const ProductCarousel = ({
                             spaceBetween: 2,
                         },
                     }}
-                    onSwiper={(swiper) => {
-                        // Delay to ensure refs are populated
-                        setTimeout(() => {
-                            if (swiper && swiper.params && swiper.navigation && prevRef.current && nextRef.current) {
-                                // Ensure navigation params exist
-                                swiper.params.navigation = swiper.params.navigation || {};
-
-                                swiper.params.navigation.prevEl = prevRef.current;
-                                swiper.params.navigation.nextEl = nextRef.current;
-
-                                swiper.navigation.destroy();
-                                swiper.navigation.init();
-                                swiper.navigation.update();
-                            }
-                        });
-                    }}
-                    onSlideChange={(swiper) => {
-                        setIsBeginning(swiper.isBeginning);
-                        setIsEnd(swiper.isEnd);
-                    }}
-                    onInit={(swiper) => {
-                        setIsBeginning(swiper.isBeginning);
-                        setIsEnd(swiper.isEnd);
-                    }}
+                    onSwiper={setSwiperInstance}
                 >
                     {products.map((product) => (
                         <SwiperSlide key={product.id}>
@@ -149,7 +150,8 @@ const ProductCarousel = ({
                 <div className={styles.arrows}>
                     <svg
                         ref={prevRef}
-                        className={isBeginning ? 'swiper-button-disabled' : ''}
+                        onClick={handlePrev}
+                        style={{ cursor: 'pointer' }}
                         xmlns="http://www.w3.org/2000/svg"
                         width="50"
                         height="50"
@@ -160,7 +162,8 @@ const ProductCarousel = ({
                     </svg>
                     <svg
                         ref={nextRef}
-                        className={isEnd ? 'swiper-button-disabled' : ''}
+                        onClick={handleNext}
+                        style={{ cursor: 'pointer' }}
                         xmlns="http://www.w3.org/2000/svg"
                         width="50"
                         height="50"
