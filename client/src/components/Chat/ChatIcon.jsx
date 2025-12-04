@@ -1,24 +1,6 @@
-import { useState, useEffect } from 'react';
 import styles from './ChatIcon.module.css';
 
 const ChatIcon = ({ onClick }) => {
-    const [isVisible, setIsVisible] = useState(false);
-
-    useEffect(() => {
-        // Listen for preloader complete event
-        const handlePreloaderComplete = () => {
-            setIsVisible(true);
-        };
-
-        window.addEventListener('preloaderComplete', handlePreloaderComplete);
-
-        return () => {
-            window.removeEventListener('preloaderComplete', handlePreloaderComplete);
-        };
-    }, []);
-
-    if (!isVisible) return null;
-
     return (
         <div className={styles.chatIcon} onClick={onClick}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 46 45" fill="none">

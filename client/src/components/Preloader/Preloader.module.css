@@ -7,7 +7,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 9999;
+    z-index: 99999;
     color: var(--white);
 }
 
@@ -19,7 +19,8 @@
     position: relative;
 }
 
-.firstLoaderNumber, .secondLoaderNumber {
+.firstLoaderNumber,
+.secondLoaderNumber {
     font-size: 10vw;
     font-weight: 500;
     opacity: 1;
@@ -54,6 +55,7 @@
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -65,7 +67,8 @@
         line-height: 30vw;
     }
 
-    .firstLoaderNumber, .secondLoaderNumber {
+    .firstLoaderNumber,
+    .secondLoaderNumber {
         font-size: 30vw;
     }
 
