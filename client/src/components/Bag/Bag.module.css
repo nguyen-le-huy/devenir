@@ -72,12 +72,29 @@
     padding-right: 20px;
     padding-bottom: 20px;
     scrollbar-width: thin;
+    scrollbar-color: var(--gray) var(--white);
     border-bottom: 1px solid var(--gray);
     /* Optimize scrolling performance */
     will-change: scroll-position;
     /* Enable GPU acceleration */
     transform: translateZ(0);
     backface-visibility: hidden;
+}
+
+.productList::-webkit-scrollbar {
+    width: 5px;
+}
+
+.productList::-webkit-scrollbar-track {
+    background: var(--white);
+}
+
+.productList::-webkit-scrollbar-thumb {
+    background: var(--gray);
+}
+
+.productList::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-gray);
 }
 
 .product {

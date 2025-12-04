@@ -1,0 +1,277 @@
+.chatWindow {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 450px;
+    height: 720px;
+    background-color: var(--white);
+    border-radius: 15px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10001;
+    overflow: hidden;
+    overscroll-behavior: contain;
+}
+
+.top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    overscroll-behavior: contain;
+    /* Override global scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--gray) var(--white);
+}
+
+/* Scrollbar styling for Webkit (Chrome, Safari, Edge) */
+.top::-webkit-scrollbar,
+.messagesArea::-webkit-scrollbar {
+    width: 5px !important;
+}
+
+.top::-webkit-scrollbar-track,
+.messagesArea::-webkit-scrollbar-track {
+    background: var(--white) !important;
+}
+
+.top::-webkit-scrollbar-thumb,
+.messagesArea::-webkit-scrollbar-thumb {
+    background: var(--gray) !important;
+    border: none !important;
+}
+
+.top::-webkit-scrollbar-thumb:hover,
+.messagesArea::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-gray) !important;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.model {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.model>p {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--black);
+}
+
+.button {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.button>svg {
+    cursor: pointer;
+}
+
+.deviIcon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.deviIcon>svg {
+    cursor: pointer;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 16px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.contentHi {
+    color: var(--dark-gray);
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+}
+
+.prompts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bottom {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.prompt {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--gray);
+    cursor: pointer;
+    opacity: 0;
+}
+
+.prompt>p {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.prompt:hover {
+    border-color: var(--black);
+}
+
+.input {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 25px 10px;
+    border-radius: 15px;
+    border: 1px solid var(--gray);
+}
+
+.input>input {
+    outline: none;
+    border: none;
+    font-size: 15px;
+    flex: auto
+}
+
+.input>svg {
+    cursor: pointer;
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.action {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.action>p {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--dark-gray);
+}
+
+.shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .chatWindow {
+        display: none;
+    }
+}
+
+.close:hover {
+    rotate: 90deg;
+    transition: all 0.3s ease-in-out;
+}
+
+.splitChat {
+    opacity: 0;
+}
+
+/* Messages Area */
+.messagesArea {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 0;
+    padding-right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-height: 0;
+    overscroll-behavior: contain;
+    /* Override global scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--gray) var(--white);
+}
+
+/* Typing Message */
+.typingMessage {
+    display: flex;
+    padding: 10px;
+    background-color: var(--light-gray);
+    border: 1px solid var(--gray);
+    border-radius: 10px;
+    border-bottom-left-radius: 4px;
+    width: fit-content;
+}
+
+/* Typing Indicator */
+.typingIndicator {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.typingIndicator span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typingIndicator span:nth-child(1) {
+    background-color: #4285F4;
+}
+
+.typingIndicator span:nth-child(2) {
+    background-color: #FBBC04;
+    animation-delay: 0.2s;
+}
+
+.typingIndicator span:nth-child(3) {
+    background-color: #34A853;
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}

@@ -1,0 +1,61 @@
+.userMessage,
+.botMessage {
+    display: flex;
+    animation: slideIn 0.3s ease-out;
+}
+
+.userMessage {
+    flex-direction: row-reverse;
+}
+
+.botMessage {
+    flex-direction: row;
+}
+
+.messageBubble {
+    max-width: 70%;
+    padding: 10px;
+    border-radius: 10px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.userMessage .messageBubble {
+    background-color: var(--black);
+    color: var(--white);
+    border-bottom-right-radius: 4px;
+}
+
+.botMessage .messageBubble {
+    background-color: var(--light-gray);
+    color: var(--black);
+    border: 1px solid var(--gray);
+    border-bottom-left-radius: 4px;
+}
+
+.messageBubble p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

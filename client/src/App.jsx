@@ -10,7 +10,7 @@ import CheckoutLayout from './components/checkoutLayout/CheckoutLayout.jsx'
 import UserProfile from './pages/UserProfile/UserProfile.jsx'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import Lenis from 'lenis';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/all';
 import ProductByCategory from './pages/ProductByCategory/ProductByCategory.jsx';
@@ -20,6 +20,8 @@ import ProductDetail from './pages/ProductDetail/ProductDetail.jsx';
 import Checkout from './pages/Checkout/Checkout';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
 import Shipping from './pages/Checkout/Shipping.jsx';
+import ChatIcon from './components/Chat/ChatIcon';
+import ChatWindow from './components/Chat/ChatWindow';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,6 +30,11 @@ export let lenisInstance
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 function App() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const handleOpenChat = () => setIsChatOpen(true);
+  const handleCloseChat = () => setIsChatOpen(false);
+
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.2,
@@ -91,6 +98,8 @@ function App() {
               <Route path="/shipping" element={<Shipping />} />
             </Route>
           </Routes>
+          <ChatIcon onClick={handleOpenChat} />
+          {isChatOpen && <ChatWindow onClose={handleCloseChat} />}
         </AuthProvider>
       </BrowserRouter>
     </GoogleOAuthProvider>

@@ -1,0 +1,26 @@
+.chatIcon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--white);
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    cursor: pointer;
+    z-index: 10000;
+}
+
+.chatIcon>svg {
+    width: 30px;
+    height: 30px;
+}
+
+@media (max-width: 768px) {
+    .chatIcon {
+        display: none;
+    }
+}
