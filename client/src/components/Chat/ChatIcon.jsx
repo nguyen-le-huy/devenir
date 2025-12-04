@@ -5,14 +5,6 @@ const ChatIcon = ({ onClick }) => {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        // Check if preloader was already shown (navigated within app)
-        const hasNavigated = sessionStorage.getItem('hasNavigated');
-
-        if (hasNavigated) {
-            // Preloader already completed or skipped, show icon immediately
-            setIsVisible(true);
-        }
-
         // Listen for preloader complete event
         const handlePreloaderComplete = () => {
             setIsVisible(true);
