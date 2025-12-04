@@ -478,6 +478,11 @@ form {
     margin-top: 20px;
 }
 
+.confirmButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 
 .checkInfo {
     padding: 40px 145px;
@@ -624,6 +629,12 @@ form {
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.paymentError {
+    margin-top: 12px;
+    color: #d14343;
+    font-size: 14px;
 }
 
 .payOS,

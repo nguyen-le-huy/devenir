@@ -90,6 +90,16 @@ const orderSchema = new mongoose.Schema(
         match: [/^(\+84|0)[0-9]{9,10}$/, 'Invalid phone number'],
       },
     },
+    deliveryMethod: {
+      type: String,
+      enum: ['home', 'store'],
+      default: 'home',
+    },
+    deliveryWindow: {
+      type: String,
+      enum: ['standard', 'next', 'nominated'],
+      default: 'standard',
+    },
     paymentMethod: {
       type: String,
       required: [true, 'Payment method is required'],
@@ -103,6 +113,31 @@ const orderSchema = new mongoose.Schema(
       status: String, // Payment status (success, failed, pending)
       update_time: String, // Last update timestamp
       email_address: String, // Payer email
+    },
+    paymentGateway: {
+      type: String,
+      enum: ['PayOS', 'Coinbase', 'COD'],
+      default: 'PayOS',
+    },
+    paymentIntent: {
+      type: {
+        gatewayOrderCode: Number,
+        paymentLinkId: String,
+        checkoutUrl: String,
+        qrCode: String,
+        amount: Number,
+        currency: {
+          type: String,
+          default: 'VND',
+        },
+        rawResponse: mongoose.Schema.Types.Mixed,
+        status: {
+          type: String,
+          enum: ['PENDING', 'PAID', 'CANCELLED', 'FAILED', 'EXPIRED'],
+          default: 'PENDING',
+        },
+      },
+      default: () => ({}),
     },
     totalPrice: {
       type: Number,
@@ -131,6 +166,9 @@ const orderSchema = new mongoose.Schema(
       type: Date,
     },
     cancelledAt: {
+      type: Date,
+    },
+    confirmationEmailSentAt: {
       type: Date,
     },
   },
@@ -348,6 +386,7 @@ orderSchema.index({ user: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ 'paymentResult.id': 1 });
+orderSchema.index({ 'paymentIntent.gatewayOrderCode': 1 });
 
 // ============ OPTIONS ============
 

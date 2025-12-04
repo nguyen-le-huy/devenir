@@ -22,6 +22,7 @@ import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
 import Shipping from './pages/Checkout/Shipping.jsx';
 import ChatIcon from './components/Chat/ChatIcon';
 import ChatWindow from './components/Chat/ChatWindow';
+import PayOSResult from './pages/PayOS/PayOSResult.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -96,6 +97,14 @@ function App() {
             <Route element={<CheckoutLayout />}>
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/shipping" element={<Shipping />} />
+              <Route
+                path="/checkout/payos/success"
+                element={
+                  <ProtectedRoute>
+                    <PayOSResult />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
           </Routes>
           <ChatIcon onClick={handleOpenChat} />

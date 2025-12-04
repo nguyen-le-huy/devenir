@@ -3,6 +3,7 @@ import styles from "./Checkout.module.css";
 import { useShippingAddress, useSaveShippingAddress, useUpdateShippingAddress } from "../../hooks/useShipping.js";
 import { useCart } from "../../hooks/useCart.js";
 import { useNavigate } from "react-router-dom";
+import { createPayOSPaymentSession } from "../../features/payos";
 
 const Shipping = () => {
     const navigate = useNavigate();
@@ -17,6 +18,8 @@ const Shipping = () => {
     const updateAddressMutation = useUpdateShippingAddress();
     const [showAddressForm, setShowAddressForm] = useState(false);
     const [savedAddress, setSavedAddress] = useState(null);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [paymentError, setPaymentError] = useState("");
 
     // State management
     const [shippingMethod, setShippingMethod] = useState(""); // "home" or "store"
@@ -34,11 +37,20 @@ const Shipping = () => {
         zipCode: ""
     });
 
+    const cartTotal = Number(cart.totalPrice || 0);
+    const shippingCharge = deliveryTime === "next" ? 5 : deliveryTime === "nominated" ? 10 : 0;
+    const totalWithShipping = cartTotal + shippingCharge;
+    const shippingCostLabel = shippingCharge > 0 ? `USD ${shippingCharge.toFixed(2)}` : "Free";
+    const formattedCartTotal = cartTotal.toFixed(2);
+    const formattedTotalWithShipping = totalWithShipping.toFixed(2);
+    const canProceedToPayment = Boolean(deliveryTime && savedAddress && !showAddressForm);
+    const payButtonDisabled = isProcessingPayment || paymentMethod !== "payos" || !canProceedToPayment;
+
 
     // Load existing address if available
     useEffect(() => {
         if (addressData?.data) {
-            setSavedAddress(addressData.data);
+            setSavedAddress({ ...addressData.data });
             setFormData(addressData.data);
         }
     }, [addressData]);
@@ -49,6 +61,10 @@ const Shipping = () => {
             navigate('/checkout');
         }
     }, [cart.items.length, cartData, navigate]);
+
+    useEffect(() => {
+        setPaymentError("");
+    }, [paymentMethod, deliveryTime, shippingMethod, showAddressForm]);
 
 
     // Handle shipping method selection
@@ -101,8 +117,9 @@ const Shipping = () => {
                 await saveAddressMutation.mutateAsync(formData);
             }
 
-            setSavedAddress(formData);
+            setSavedAddress({ ...formData });
             setShowAddressForm(false);
+            setPaymentError("");
 
             console.log("Address saved:", formData);
         } catch (error) {
@@ -115,6 +132,53 @@ const Shipping = () => {
     const handleEditAddress = () => {
         setShowAddressForm(true);
         // Keep savedAddress to populate form with existing data
+    };
+
+    const handlePayWithPayOS = async () => {
+        if (isProcessingPayment) return;
+        setPaymentError("");
+
+        if (shippingMethod !== "home") {
+            setPaymentError("PayOS is available for home delivery only.");
+            return;
+        }
+
+        if (!deliveryTime) {
+            setPaymentError("Please choose a delivery time before paying.");
+            return;
+        }
+
+        if (!savedAddress) {
+            setShowAddressForm(true);
+            setPaymentError("Please confirm your shipping address to continue.");
+            return;
+        }
+
+        if (paymentMethod !== "payos") {
+            setPaymentError("Select PayOS as your payment method to continue.");
+            return;
+        }
+
+        try {
+            setIsProcessingPayment(true);
+            const response = await createPayOSPaymentSession({
+                shippingMethod,
+                deliveryTime,
+                address: savedAddress,
+            });
+
+            if (response?.success && response?.data?.checkoutUrl) {
+                window.location.href = response.data.checkoutUrl;
+                return;
+            }
+
+            throw new Error(response?.message || "Failed to start PayOS payment.");
+        } catch (error) {
+            console.error("PayOS payment error:", error);
+            setPaymentError(error.message || "Failed to start PayOS payment. Please try again.");
+        } finally {
+            setIsProcessingPayment(false);
+        }
     };
 
     return (
@@ -334,11 +398,11 @@ const Shipping = () => {
                             </div>
                             <div className={styles.summaryItem}>
                                 <p className={styles.subtotalLabel}>Subtotal</p>
-                                <p>USD {cart.totalPrice.toFixed(2)}</p>
+                                <p>USD {formattedCartTotal}</p>
                             </div>
                             <div className={styles.summaryItem}>
                                 <p>Estimated Shipping</p>
-                                <p>{deliveryTime === "next" ? "USD 5.00" : deliveryTime === "nominated" ? "USD 10.00" : "Free"}</p>
+                                <p>{shippingCostLabel}</p>
                             </div>
                             <div className={styles.summaryItem}>
                                 <p>Sales Tax</p>
@@ -347,12 +411,7 @@ const Shipping = () => {
                         </div>
                         <div className={styles.total}>
                             <p className={styles.totalLabel}>Total</p>
-                            <p className={styles.totalPrice}>
-                                USD {(
-                                    cart.totalPrice +
-                                    (deliveryTime === "next" ? 5 : deliveryTime === "nominated" ? 10 : 0)
-                                ).toFixed(2)}
-                            </p>
+                            <p className={styles.totalPrice}>USD {formattedTotalWithShipping}</p>
                         </div>
                     </div>
                 </div>
@@ -425,14 +484,19 @@ const Shipping = () => {
                             </div>
                         </div>
                     </div>
-                    <div className={styles.confirmButton + " " + styles.continueToPayment}>
-                        <p>
-                            Pay USD {(
-                                cart.totalPrice +
-                                (deliveryTime === "next" ? 5 : deliveryTime === "nominated" ? 10 : 0)
-                            ).toFixed(2)}
+                    <button
+                        type="button"
+                        className={`${styles.confirmButton} ${styles.continueToPayment}`}
+                        onClick={handlePayWithPayOS}
+                        disabled={payButtonDisabled}
+                    >
+                        <p>{isProcessingPayment ? "Redirecting to PayOS..." : `Pay USD ${formattedTotalWithShipping}`}</p>
+                    </button>
+                    {paymentError && (
+                        <p className={styles.paymentError} role="alert">
+                            {paymentError}
                         </p>
-                    </div>
+                    )}
                 </div>
             )}
         </>

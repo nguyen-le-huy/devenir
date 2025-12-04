@@ -19,6 +19,7 @@ import brandRoutes from './routes/brandRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 
 dotenv.config();
@@ -157,6 +158,7 @@ app.use('/api/brands', brandRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

@@ -1,0 +1,144 @@
+.wrapper {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    background: var(--light-gray);
+}
+
+.card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--white);
+    border: 1px solid #e6e6e6;
+    border-radius: 18px;
+    padding: 48px 40px;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+}
+
+.statusTag {
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--dark-gray);
+}
+
+.success {
+    border-color: var(--green);
+}
+
+.pending {
+    border-color: var(--dark-gray);
+}
+
+.failed {
+    border-color: #d14343;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--black);
+}
+
+.subtitle {
+    color: var(--dark-gray);
+    font-size: 16px;
+}
+
+.countdown {
+    color: var(--green);
+    font-weight: 500;
+}
+
+.loader {
+    margin: 12px auto;
+    color: var(--dark-gray);
+}
+
+.summaryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    text-align: left;
+    margin: 16px 0 8px;
+}
+
+.summaryItem {
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.summaryLabel {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--dark-gray);
+}
+
+.summaryValue {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--black);
+}
+
+.errorMessage {
+    color: #d14343;
+    font-weight: 500;
+}
+
+.actions {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.primaryAction,
+.secondaryAction {
+    border: none;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.primaryAction {
+    background: var(--brown);
+    color: var(--white);
+}
+
+.secondaryAction {
+    background: var(--white);
+    color: var(--black);
+    border: 1px solid var(--dark-gray);
+}
+
+.primaryAction:disabled,
+.secondaryAction:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .card {
+        padding: 32px 24px;
+    }
+
+    .title {
+        font-size: 26px;
+    }
+
+    .summaryGrid {
+        grid-template-columns: 1fr;
+    }
+}
