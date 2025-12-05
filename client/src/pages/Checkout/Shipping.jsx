@@ -4,6 +4,9 @@ import { useShippingAddress, useSaveShippingAddress, useUpdateShippingAddress } 
 import { useCart } from "../../hooks/useCart.js";
 import { useNavigate } from "react-router-dom";
 import { createPayOSPaymentSession } from "../../features/payos";
+import { createNowPaymentsSession } from "../../features/nowpayments";
+import PaymentOptions from "./PaymentOptions";
+import GiftCodeSection from "./GiftCodeSection";
 
 const Shipping = () => {
     const navigate = useNavigate();
@@ -24,14 +27,14 @@ const Shipping = () => {
     // State management
     const [shippingMethod, setShippingMethod] = useState(""); // "home" or "store"
     const [deliveryTime, setDeliveryTime] = useState(""); // "standard", "next", "nominated"
-    const [paymentMethod, setPaymentMethod] = useState(""); // "payos" or "coinbase"
+    const [paymentMethod, setPaymentMethod] = useState(""); // "payos" or "nowpayments"
 
     // Gift code state
     const [giftCode, setGiftCode] = useState("");
     const [giftCodeApplied, setGiftCodeApplied] = useState(false);
     const [giftCodeError, setGiftCodeError] = useState("");
-    // Fixed prices when gift code is applied: 1000 VND for PayOS, 0.1 USDT for Coinbase
-    const giftCodeFixedPrice = { vnd: 1000, usdt: 0.1 };
+    // Fixed prices when gift code is applied: 5000 VND for PayOS, 0.1 USDT for NowPayments
+    const giftCodeFixedPrice = { vnd: 5000, usdt: 0.1 };
 
     // Form data
     const [formData, setFormData] = useState({
@@ -51,7 +54,7 @@ const Shipping = () => {
     const formattedCartTotal = cartTotal.toFixed(2);
     const formattedTotalWithShipping = totalWithShipping.toFixed(2);
     const canProceedToPayment = Boolean(deliveryTime && savedAddress && !showAddressForm);
-    const payButtonDisabled = isProcessingPayment || paymentMethod !== "payos" || !canProceedToPayment;
+    const payButtonDisabled = isProcessingPayment || !paymentMethod || !canProceedToPayment;
 
 
     // Load existing address if available
@@ -212,6 +215,72 @@ const Shipping = () => {
         } finally {
             setIsProcessingPayment(false);
         }
+    };
+
+    const handlePayWithNowPayments = async () => {
+        if (isProcessingPayment) return;
+        setPaymentError("");
+
+        if (shippingMethod !== "home") {
+            setPaymentError("NowPayments is available for home delivery only.");
+            return;
+        }
+
+        if (!deliveryTime) {
+            setPaymentError("Please choose a delivery time before paying.");
+            return;
+        }
+
+        if (!savedAddress) {
+            setShowAddressForm(true);
+            setPaymentError("Please confirm your shipping address to continue.");
+            return;
+        }
+
+        if (paymentMethod !== "nowpayments") {
+            setPaymentError("Select NowPayments as your payment method to continue.");
+            return;
+        }
+
+        try {
+            setIsProcessingPayment(true);
+            const response = await createNowPaymentsSession({
+                shippingMethod,
+                deliveryTime,
+                address: savedAddress,
+                giftCode: giftCodeApplied ? giftCode : null,
+            });
+
+            if (response?.success && response?.data?.invoiceUrl) {
+                window.location.href = response.data.invoiceUrl;
+                return;
+            }
+
+            throw new Error(response?.message || "Failed to start NowPayments payment.");
+        } catch (error) {
+            console.error("NowPayments payment error:", error);
+            setPaymentError(error.message || "Failed to start NowPayments payment. Please try again.");
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
+    const handlePay = () => {
+        if (paymentMethod === "payos") {
+            handlePayWithPayOS();
+        } else if (paymentMethod === "nowpayments") {
+            handlePayWithNowPayments();
+        }
+    };
+
+    const getPayButtonText = () => {
+        if (isProcessingPayment) {
+            return paymentMethod === "payos" ? "Redirecting to PayOS..." : "Redirecting to NowPayments...";
+        }
+        if (giftCodeApplied) {
+            return paymentMethod === "payos" ? "Pay 5,000 VND" : "Pay 0.1 USDT";
+        }
+        return paymentMethod === "nowpayments" ? `Pay ${formattedTotalWithShipping} USDT` : `Pay USD ${formattedTotalWithShipping}`;
     };
 
     return (
@@ -477,106 +546,28 @@ const Shipping = () => {
                             <p>Add complimentary gift packaging</p>
                         </div>
                     </div>
-                    <div className={styles.paymentMethod}>
-                        <div className={styles.shippingTitleHeader}>
-                            <h2>Payment Method</h2>
-                            <p>Choose your payment method</p>
-                        </div>
-                        <div className={styles.paymentList}>
-                            <div
-                                className={styles.payOS}
-                                onClick={() => setPaymentMethod("payos")}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <div className={styles.shippingMethodItem + " " + styles.paymentMethodItem}>
-                                    <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        checked={paymentMethod === "payos"}
-                                        onChange={() => setPaymentMethod("payos")}
-                                    />
-                                    <p>PayOS</p>
-                                </div>
-                                <img src="/images/payos.png" alt="payos" />
-                            </div>
-                            <div
-                                className={styles.coinBase}
-                                onClick={() => setPaymentMethod("coinbase")}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <div className={styles.shippingMethodItem + " " + styles.paymentMethodItem}>
-                                    <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        checked={paymentMethod === "coinbase"}
-                                        onChange={() => setPaymentMethod("coinbase")}
-                                    />
-                                    <p>Coinbase</p>
-                                </div>
-                                <img src="/images/coinbase.png" alt="coinbase" />
-                            </div>
-                        </div>
-                    </div>
+                    <PaymentOptions
+                        paymentMethod={paymentMethod}
+                        setPaymentMethod={setPaymentMethod}
+                    />
 
-                    {/* Gift Code Section */}
-                    <div className={styles.giftCodeSection}>
-                        <div className={styles.shippingTitleHeader}>
-                            <h2>Gift Code</h2>
-                            <p>Enter your gift code to get a discount</p>
-                        </div>
-                        <div className={styles.giftCodeInput}>
-                            <div className={styles.formItem}>
-                                <input
-                                    type="text"
-                                    id="giftCode"
-                                    placeholder=" "
-                                    value={giftCode}
-                                    onChange={(e) => {
-                                        setGiftCode(e.target.value);
-                                        setGiftCodeError("");
-                                    }}
-                                    disabled={giftCodeApplied}
-                                />
-                                <label htmlFor="giftCode">Gift Code</label>
-                            </div>
-                            {!giftCodeApplied ? (
-                                <button
-                                    type="button"
-                                    className={styles.applyGiftCodeBtn}
-                                    onClick={handleApplyGiftCode}
-                                >
-                                    Apply
-                                </button>
-                            ) : (
-                                <button
-                                    type="button"
-                                    className={styles.removeGiftCodeBtn}
-                                    onClick={handleRemoveGiftCode}
-                                >
-                                    Remove
-                                </button>
-                            )}
-                        </div>
-                        {giftCodeError && (
-                            <p className={styles.giftCodeError}>{giftCodeError}</p>
-                        )}
-                        {giftCodeApplied && (
-                            <div className={styles.giftCodeSuccess}>
-                                <p>✓ Gift code "{giftCode}" applied successfully!</p>
-                                <p className={styles.discountInfo}>
-                                    Fixed price: <strong>5,000 VND</strong> (PayOS) | <strong>0.1 USDT</strong> (Coinbase)
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                    <GiftCodeSection
+                        giftCode={giftCode}
+                        setGiftCode={setGiftCode}
+                        giftCodeApplied={giftCodeApplied}
+                        giftCodeError={giftCodeError}
+                        setGiftCodeError={setGiftCodeError}
+                        onApplyGiftCode={handleApplyGiftCode}
+                        onRemoveGiftCode={handleRemoveGiftCode}
+                    />
 
                     <button
                         type="button"
                         className={`${styles.confirmButton} ${styles.continueToPayment}`}
-                        onClick={handlePayWithPayOS}
+                        onClick={handlePay}
                         disabled={payButtonDisabled}
                     >
-                        <p>{isProcessingPayment ? "Redirecting to PayOS..." : (giftCodeApplied && paymentMethod === "payos" ? "Pay 5,000 VND" : `Pay USD ${formattedTotalWithShipping}`)}</p>
+                        <p>{getPayButtonText()}</p>
                     </button>
                     {paymentError && (
                         <p className={styles.paymentError} role="alert">

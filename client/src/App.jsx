@@ -23,6 +23,7 @@ import Shipping from './pages/Checkout/Shipping.jsx';
 import ChatIcon from './components/Chat/ChatIcon';
 import ChatWindow from './components/Chat/ChatWindow';
 import PayOSResult from './pages/PayOS/PayOSResult.jsx';
+import NowPaymentsResult from './pages/NowPayments/NowPaymentsResult.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -102,6 +103,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <PayOSResult />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout/nowpayments/success"
+                element={
+                  <ProtectedRoute>
+                    <NowPaymentsResult />
                   </ProtectedRoute>
                 }
               />

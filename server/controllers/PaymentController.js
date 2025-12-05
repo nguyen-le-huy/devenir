@@ -4,6 +4,8 @@ import Cart from '../models/CartModel.js';
 import Order from '../models/OrderModel.js';
 import logger from '../config/logger.js';
 import { sendOrderConfirmationEmail } from '../utils/emailService.js';
+import nowpaymentsClient from '../services/nowpayments/nowpaymentsClient.js';
+import crypto from 'crypto';
 
 const DELIVERY_OPTIONS = ['standard', 'next', 'nominated'];
 const SHIPPING_METHODS = ['home'];
@@ -400,3 +402,295 @@ export const getPayOSOrderStatus = asyncHandler(async (req, res) => {
     },
   });
 });
+
+// ============================================
+// NowPayments Integration (USDT BSC)
+// ============================================
+
+const serverBaseUrl = process.env.SERVER_URL || 'http://localhost:3111';
+
+/**
+ * Create NowPayments invoice for USDT BSC payment
+ */
+export const createNowPaymentsInvoice = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const userId = req.userId;
+  const { shippingMethod, deliveryTime, address: addressPayload, giftCode } = req.body;
+
+  // Check for valid gift code - fixed price 0.1 USDT
+  const VALID_GIFT_CODE = 'emanhhuy';
+  const GIFT_CODE_FIXED_PRICE = 0.1; // 0.1 USDT
+  const isGiftCodeApplied = giftCode && giftCode.toLowerCase() === VALID_GIFT_CODE;
+
+  if (!SHIPPING_METHODS.includes(shippingMethod)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Currently only home delivery is supported for NowPayments.',
+    });
+  }
+
+  if (!DELIVERY_OPTIONS.includes(deliveryTime)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid delivery option selected.',
+    });
+  }
+
+  let shippingAddress;
+  try {
+    shippingAddress = ensureAddressPayload(addressPayload);
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+
+  const cart = await Cart.findOne({ user: userId }).populate({
+    path: 'items.productVariant',
+    populate: { path: 'product_id', select: 'name images brand' },
+  });
+
+  if (!cart || cart.items.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Your cart is empty. Please add items before checking out.',
+    });
+  }
+
+  let orderItems;
+  try {
+    orderItems = buildOrderItems(cart.items);
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+
+  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const shippingFee = getShippingFee(deliveryTime);
+  const totalPrice = Number((subtotal + shippingFee).toFixed(2));
+
+  const streetLine = [shippingAddress.address, shippingAddress.district].filter(Boolean).join(', ');
+
+  const gatewayOrderCode = await generateGatewayOrderCode();
+
+  // Calculate final price (in USD, which equals USDT)
+  const finalPrice = isGiftCodeApplied ? GIFT_CODE_FIXED_PRICE : totalPrice;
+
+  let orderDoc = null;
+
+  try {
+    orderDoc = await Order.create({
+      user: userId,
+      orderItems,
+      shippingAddress: {
+        street: streetLine,
+        city: shippingAddress.city,
+        postalCode: String(shippingAddress.zipCode),
+        phone: String(shippingAddress.phoneNumber),
+      },
+      deliveryMethod: shippingMethod,
+      deliveryWindow: deliveryTime,
+      paymentMethod: 'Crypto',
+      paymentGateway: 'NowPayments',
+      totalPrice: finalPrice,
+      shippingPrice: isGiftCodeApplied ? 0 : shippingFee,
+      appliedGiftCode: isGiftCodeApplied ? giftCode : null,
+      status: 'pending',
+    });
+
+    // Create NowPayments invoice
+    const invoice = await nowpaymentsClient.createInvoice({
+      price_amount: finalPrice,
+      price_currency: 'usd',
+      pay_currency: 'usdtbsc',
+      order_id: String(orderDoc._id),
+      order_description: `Devenir Order #${gatewayOrderCode}`,
+      ipn_callback_url: `${serverBaseUrl}/api/payments/nowpayments/webhook`,
+      success_url: `${clientBaseUrl}/checkout/nowpayments/success?orderId=${orderDoc._id}`,
+      cancel_url: `${clientBaseUrl}/shipping?payment=cancelled`,
+    });
+
+    orderDoc.paymentIntent = {
+      gatewayOrderCode,
+      paymentLinkId: invoice.id,
+      checkoutUrl: invoice.invoice_url,
+      amount: finalPrice,
+      currency: 'USDT',
+      rawResponse: invoice,
+      status: 'PENDING',
+    };
+    await orderDoc.save();
+
+    return res.status(201).json({
+      success: true,
+      message: 'NowPayments invoice created successfully.',
+      data: {
+        invoiceUrl: invoice.invoice_url,
+        invoiceId: invoice.id,
+        orderId: orderDoc._id,
+        orderCode: gatewayOrderCode,
+        amount: finalPrice,
+        currency: 'USDT',
+        payCurrency: 'USDTBSC',
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to initiate NowPayments payment', {
+      userId,
+      error: error.message,
+    });
+
+    if (orderDoc?._id) {
+      await Order.findByIdAndDelete(orderDoc._id);
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to initiate NowPayments payment. Please try again later.',
+    });
+  }
+});
+
+/**
+ * Handle NowPayments IPN webhook
+ */
+export const handleNowPaymentsWebhook = asyncHandler(async (req, res) => {
+  try {
+    // Handle empty body (test ping)
+    if (!req.body || Object.keys(req.body).length === 0) {
+      logger.info('NowPayments webhook test ping received');
+      return res.status(200).json({ success: true, message: 'Webhook is active' });
+    }
+
+    const signature = req.headers['x-nowpayments-sig'];
+
+    // Verify IPN signature
+    if (signature) {
+      const isValid = nowpaymentsClient.verifyIPN(req.body, signature);
+      if (!isValid) {
+        logger.warn('NowPayments IPN signature verification failed');
+        return res.status(200).json({ success: true, message: 'Invalid signature' });
+      }
+    }
+
+    const { order_id, payment_status, pay_amount, pay_currency, actually_paid } = req.body;
+
+    if (!order_id) {
+      return res.status(200).json({ success: true, message: 'No order_id in payload' });
+    }
+
+    const order = await Order.findById(order_id).populate('user', 'email firstName lastName username');
+
+    if (!order) {
+      logger.error('NowPayments webhook received for unknown order', { order_id });
+      return res.status(200).json({ success: true });
+    }
+
+    if (order.status === 'paid') {
+      return res.status(200).json({ success: true, message: 'Order already processed.' });
+    }
+
+    // Update payment intent with latest status
+    order.paymentIntent = {
+      ...order.paymentIntent,
+      rawResponse: req.body,
+      status: payment_status?.toUpperCase() || 'PENDING',
+    };
+
+    // Check if payment is finished/confirmed
+    if (payment_status === 'finished' || payment_status === 'confirmed') {
+      await order.markAsPaid({
+        id: order.paymentIntent?.paymentLinkId || '',
+        status: 'success',
+        update_time: new Date().toISOString(),
+        email_address: order.user.email,
+      });
+
+      order.paymentIntent.status = 'PAID';
+
+      // Clear cart
+      const cart = await Cart.findOne({ user: order.user._id });
+      if (cart) {
+        try {
+          cart.items = [];
+          await cart.save();
+        } catch (cartError) {
+          logger.error('Failed to clear cart after NowPayments success', {
+            orderId: order._id,
+            error: cartError.message,
+          });
+        }
+      }
+
+      // Send confirmation email
+      if (!order.confirmationEmailSentAt) {
+        try {
+          await sendOrderConfirmationEmail({
+            email: order.user.email,
+            order,
+          });
+          order.confirmationEmailSentAt = new Date();
+        } catch (emailError) {
+          logger.error('Failed to send confirmation email', {
+            orderId: order._id,
+            error: emailError.message,
+          });
+        }
+      }
+    } else if (payment_status === 'failed' || payment_status === 'expired') {
+      order.paymentIntent.status = 'FAILED';
+      order.paymentResult = {
+        id: order.paymentIntent?.paymentLinkId || '',
+        status: 'failed',
+        update_time: new Date().toISOString(),
+        email_address: order.user.email,
+      };
+    }
+
+    await order.save();
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    logger.error('NowPayments webhook error', {
+      error: error.message,
+      payload: req.body,
+    });
+    return res.status(200).json({ success: true, message: error.message });
+  }
+});
+
+/**
+ * Get NowPayments payment status
+ */
+export const getNowPaymentsStatus = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  if (!orderId) {
+    return res.status(400).json({ success: false, message: 'Order ID is required.' });
+  }
+
+  const order = await Order.findOne({
+    _id: orderId,
+    user: req.userId,
+  });
+
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Order not found.' });
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      status: order.status,
+      paymentStatus: order.paymentIntent?.status,
+      orderId: order._id,
+      orderCode: order.paymentIntent?.gatewayOrderCode,
+      totalPrice: order.totalPrice,
+      shippingPrice: order.shippingPrice,
+      paymentMethod: order.paymentMethod,
+      paymentGateway: order.paymentGateway,
+      deliveryMethod: order.deliveryMethod,
+      deliveryWindow: order.deliveryWindow,
+      paymentResult: order.paymentResult,
+      confirmationEmailSentAt: order.confirmationEmailSentAt,
+    },
+  });
+});
+

@@ -116,7 +116,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentGateway: {
       type: String,
-      enum: ['PayOS', 'Coinbase', 'COD'],
+      enum: ['PayOS', 'Coinbase', 'NowPayments', 'COD'],
       default: 'PayOS',
     },
     paymentIntent: {
