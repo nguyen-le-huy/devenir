@@ -1,0 +1,166 @@
+.container {
+    padding: 100px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.paymentSuccessful,
+.paymentFailed {
+    border: 1px solid var(--light-green);
+    padding: 100px 160px;
+    width: 50%;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 100px;
+}
+
+.content {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 100;
+}
+
+.content>svg {
+    height: 70px;
+}
+
+.successfulGradient,
+.failedGradient {
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 400px;
+    filter: blur(100px);
+}
+
+.successfulGradient {
+    background: var(--light-green);
+}
+
+.failedGradient {
+    background: var(--light-red);
+}
+
+.title {
+    font-size: 30px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.content>p {
+    font-size: 18px;
+    text-align: center;
+}
+
+.content>p>span {
+    text-decoration: underline;
+    cursor: pointer;
+    text-underline-offset: 6px;
+}
+
+.orderInfo {
+    font-size: 14px !important;
+    color: var(--gray);
+    opacity: 0.8;
+}
+
+
+.buttonContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.button>p {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--white);
+}
+
+.button {
+    padding: 15px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 30px;
+    cursor: pointer;
+}
+
+.buttonContinue {
+    background: var(--dark-green);
+}
+
+.buttonRetry>p {
+    color: var(--black);
+}
+
+.buttonRetry {
+    background: var(--light-gray);
+    border: 1px solid var(--black);
+}
+
+
+.buttonContainer>p {
+    font-size: 16px;
+    text-align: center;
+}
+
+.buttonContainer>p>span {
+    text-decoration: underline;
+    cursor: pointer;
+    text-underline-offset: 6px;
+}
+
+@media (max-width: 768px) {
+
+    .paymentSuccessful,
+    .paymentFailed {
+        padding: 30px;
+        width: 100%;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    .title {
+        font-size: 22px;
+    }
+
+    .content>p {
+        font-size: 16px;
+    }
+
+    .buttonContainer {
+        gap: 10px;
+    }
+
+    .button {
+        padding: 10px;
+    }
+
+    .button>p {
+        font-size: 16px;
+    }
+
+    .content>svg {
+        height: 60px;
+    }
+
+    .buttonContainer>p {
+        font-size: 14px;
+    }
+}

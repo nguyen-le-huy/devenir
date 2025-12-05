@@ -24,6 +24,8 @@ import ChatIcon from './components/Chat/ChatIcon';
 import ChatWindow from './components/Chat/ChatWindow';
 import PayOSResult from './pages/PayOS/PayOSResult.jsx';
 import NowPaymentsResult from './pages/NowPayments/NowPaymentsResult.jsx';
+import PaymentSuccessful from './pages/PaymentStatus/PaymentSuccessful.jsx';
+import PaymentFailed from './pages/PaymentStatus/PaymentFailed.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -104,6 +106,18 @@ function App() {
                   <ProtectedRoute>
                     <PayOSResult />
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-successful"
+                element={
+                  <PaymentSuccessful />
+                }
+              />
+              <Route
+                path="/payment-failed"
+                element={
+                  <PaymentFailed />
                 }
               />
               <Route
