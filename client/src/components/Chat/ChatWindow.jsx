@@ -1,12 +1,15 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import styles from './ChatWindow.module.css';
 import Devi from './Devi';
 import ChatMessage from './ChatMessage';
 import { useAuth } from '../../contexts/AuthContext';
+import { sendChatMessage } from '../../services/chatService';
 import gsap from 'gsap';
 import SplitText from 'gsap/src/SplitText';
 
 gsap.registerPlugin(SplitText);
+
+const CHAT_STORAGE_KEY = 'devenir_chat_session';
 
 const ChatWindow = ({ onClose }) => {
     const chatWindowRef = useRef(null);
@@ -17,10 +20,34 @@ const ChatWindow = ({ onClose }) => {
 
     const { user, isAuthenticated } = useAuth();
 
-    const [messages, setMessages] = useState([]);
+    // Load messages from sessionStorage on mount
+    const [messages, setMessages] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem(CHAT_STORAGE_KEY);
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [showInitialView, setShowInitialView] = useState(true);
+    // Show initial view only if no messages
+    const [showInitialView, setShowInitialView] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem(CHAT_STORAGE_KEY);
+            const msgs = saved ? JSON.parse(saved) : [];
+            return msgs.length === 0;
+        } catch {
+            return true;
+        }
+    });
+
+    // Save messages to sessionStorage when changed
+    useEffect(() => {
+        if (messages.length > 0) {
+            sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+        }
+    }, [messages]);
 
     // Auto focus input when chat window opens
     useEffect(() => {
@@ -49,32 +76,30 @@ const ChatWindow = ({ onClose }) => {
         if (!chatWindow) return;
 
         const handleWheel = (e) => {
-            // Prevent the wheel event from bubbling to parent (main page)
+            // Always stop propagation to prevent main page scroll
             e.stopPropagation();
 
-            // Check if we're at the scroll boundaries
-            const target = e.currentTarget;
-            const scrollableElements = target.querySelectorAll('[data-scrollable]');
+            // Find scrollable areas
+            const topArea = chatWindow.querySelector('[data-chat-scroll]');
+            const messagesArea = chatWindow.querySelector('[data-scrollable]');
 
-            // If there are scrollable elements inside, let them handle the scroll
-            let hasScrollableElement = false;
-            scrollableElements.forEach(el => {
-                if (el.contains(e.target)) {
-                    hasScrollableElement = true;
-                }
-            });
+            // Check if scrolling within any scrollable area
+            const isInScrollable = (topArea && topArea.contains(e.target)) ||
+                (messagesArea && messagesArea.contains(e.target));
 
-            // If no scrollable element is being scrolled, prevent default to stop main page scroll
-            if (!hasScrollableElement) {
-                e.preventDefault();
+            if (isInScrollable) {
+                // Let the scroll happen naturally within the chat
+                return;
             }
+
+            // If not in scrollable area, prevent scroll
+            e.preventDefault();
         };
 
-        // Use capture phase and passive: false to ensure we can preventDefault
-        chatWindow.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+        chatWindow.addEventListener('wheel', handleWheel, { passive: false });
 
         return () => {
-            chatWindow.removeEventListener('wheel', handleWheel, { capture: true });
+            chatWindow.removeEventListener('wheel', handleWheel);
         };
     }, []);
 
@@ -137,33 +162,30 @@ const ChatWindow = ({ onClose }) => {
         };
     }, []);
 
-    // Scroll to bottom when messages change
+    // Scroll handling
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (messages.length === 0) return;
+
+        const lastMessage = messages[messages.length - 1];
+
+        if (lastMessage.sender === 'user') {
+            // User message: scroll to bottom
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            // Bot message: scroll to the message element (start)
+            setTimeout(() => {
+                const element = document.getElementById(`msg-${lastMessage.id}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 100);
+        }
     }, [messages]);
 
-    // Fake bot responses
-    const getBotResponse = (userMessage) => {
-        const lowerMessage = userMessage.toLowerCase();
-
-        if (lowerMessage.includes('order') || lowerMessage.includes('track')) {
-            return "To track your order, please provide your order number and I'll help you check the status right away!";
-        } else if (lowerMessage.includes('shipping') || lowerMessage.includes('ship')) {
-            return "We offer free standard shipping on orders over $50. Express shipping is available for $15. Delivery typically takes 3-5 business days.";
-        } else if (lowerMessage.includes('payment')) {
-            return "We accept all major credit cards, PayPal, and Coinbase for cryptocurrency payments. All transactions are secure and encrypted.";
-        } else if (lowerMessage.includes('return') || lowerMessage.includes('refund')) {
-            return "We offer a 30-day return policy for all items. Simply contact our support team with your order number to initiate a return.";
-        } else if (lowerMessage.includes('size') || lowerMessage.includes('fit')) {
-            return "Please check our size guide on each product page. If you're between sizes, we recommend sizing up for a comfortable fit.";
-        } else if (lowerMessage.includes('gift') || lowerMessage.includes('birthday')) {
-            return "Great choice! For a birthday gift, I'd recommend checking out our Best Sellers section. We also offer gift wrapping services at checkout!";
-        } else {
-            return "Thanks for reaching out! I'm here to help with orders, shipping, payments, and product information. How can I assist you today?";
-        }
-    };
-
-    const handleSendMessage = (directText = null) => {
+    // Send message to RAG API
+    const handleSendMessage = useCallback(async (directText = null) => {
         const messageText = directText || inputValue;
         if (!messageText.trim()) return;
 
@@ -184,19 +206,40 @@ const ChatWindow = ({ onClose }) => {
         // Show typing indicator
         setIsTyping(true);
 
-        // Simulate bot response with delay
-        setTimeout(() => {
+        try {
+            // Call RAG API - include current user message in history
+            const response = await sendChatMessage(
+                messageText,
+                [...messages, userMessage],
+                isAuthenticated
+            );
+
+            // Create bot message from response
             const botMessage = {
                 id: Date.now() + 1,
-                text: getBotResponse(messageText),
+                text: response.answer || "Xin lỗi, tôi không thể trả lời lúc này.",
+                sender: 'bot',
+                timestamp: new Date(),
+                suggestedProducts: response.suggested_products || []
+            };
+
+            setMessages(prev => [...prev, botMessage]);
+        } catch (err) {
+            console.error('Chat Error:', err);
+
+            // Show error message
+            const errorMessage = {
+                id: Date.now() + 1,
+                text: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
                 sender: 'bot',
                 timestamp: new Date()
             };
 
-            setMessages(prev => [...prev, botMessage]);
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
             setIsTyping(false);
-        }, 1000 + Math.random() * 1000); // Random delay between 1-2 seconds
-    };
+        }
+    }, [inputValue, messages, isAuthenticated]);
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -325,7 +368,7 @@ const ChatWindow = ({ onClose }) => {
                         onKeyPress={handleKeyPress}
                         ref={inputRef}
                     />
-                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="15" viewBox="0 0 19 20" fill="none" onClick={handleSendMessage} style={{ cursor: inputValue.trim() ? 'pointer' : 'default', opacity: inputValue.trim() ? 1 : 0.5 }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="15" viewBox="0 0 19 20" fill="none" onClick={() => handleSendMessage()} style={{ cursor: inputValue.trim() ? 'pointer' : 'default', opacity: inputValue.trim() ? 1 : 0.5 }}>
                         <path d="M9.5 1.90476C8.72934 1.90476 7.99024 2.20578 7.44529 2.7416C6.90035 3.27742 6.59421 4.00414 6.59421 4.7619V10.4762C6.59421 11.234 6.90035 11.9607 7.44529 12.4965C7.99024 13.0323 8.72934 13.3333 9.5 13.3333C10.2707 13.3333 11.0098 13.0323 11.5547 12.4965C12.0996 11.9607 12.4058 11.234 12.4058 10.4762V4.7619C12.4058 4.00414 12.0996 3.27742 11.5547 2.7416C11.0098 2.20578 10.2707 1.90476 9.5 1.90476ZM9.5 0C10.136 0 10.7658 0.12317 11.3533 0.362478C11.9409 0.601787 12.4748 0.952546 12.9245 1.39473C13.3742 1.83691 13.731 2.36186 13.9743 2.9396C14.2177 3.51734 14.343 4.13656 14.343 4.7619V10.4762C14.343 11.7391 13.8327 12.9503 12.9245 13.8434C12.0163 14.7364 10.7844 15.2381 9.5 15.2381C8.21556 15.2381 6.98373 14.7364 6.07549 13.8434C5.16726 12.9503 4.65701 11.7391 4.65701 10.4762V4.7619C4.65701 3.49897 5.16726 2.28776 6.07549 1.39473C6.98373 0.501699 8.21556 0 9.5 0ZM0 12.3448L1.90039 11.9705C2.25334 13.6966 3.20318 15.2494 4.58854 16.3649C5.97391 17.4805 7.70934 18.0901 9.5 18.0901C11.2907 18.0901 13.0261 17.4805 14.4115 16.3649C15.7968 15.2494 16.7467 13.6966 17.0996 11.9705L19 12.3438C18.1166 16.7095 14.1996 20 9.5 20C4.80037 20 0.88336 16.7105 0 12.3448Z" fill="#686868" />
                     </svg>
                 </div>

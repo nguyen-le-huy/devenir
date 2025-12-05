@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+
+
 .userMessage,
 .botMessage {
     display: flex;
@@ -36,6 +39,84 @@
     margin: 0;
     font-size: 14px;
     line-height: 1.5;
+    font-family: 'Google Sans Flex', sans-serif;
+    font-weight: 400;
+    white-space: pre-wrap;
+}
+
+/* Product Cards */
+.products {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--gray);
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+/* Scrollbar styling */
+.products::-webkit-scrollbar {
+    height: 6px;
+}
+
+.products::-webkit-scrollbar-track {
+    background: var(--white);
+    border-radius: 3px;
+}
+
+.products::-webkit-scrollbar-thumb {
+    background: var(--gray);
+    border-radius: 3px;
+}
+
+.products::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-gray);
+}
+
+.productCard {
+    flex: 0 0 100px;
+    text-decoration: none;
+    color: inherit;
+    background: var(--white);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--gray);
+    transition: transform 0.2s ease;
+}
+
+.productCard:hover {
+    transform: translateY(-2px);
+}
+
+.productCard img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+}
+
+.productInfo {
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.productName {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.productPrice {
+    font-size: 10px;
+    color: var(--dark-gray);
+    font-weight: 600;
 }
 
 @keyframes slideIn {

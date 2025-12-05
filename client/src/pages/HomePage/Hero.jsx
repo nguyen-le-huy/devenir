@@ -40,35 +40,57 @@ const Hero = () => {
 
     // Chạy animation
     useEffect(() => {
-        if (!shouldAnimate || hasAnimated.current || !heroRef.current) return;
+        if (!heroRef.current) return;
+
+        // Nếu đã animate rồi, đảm bảo hiển thị
+        if (hasAnimated.current) {
+            const heroTexts = heroRef.current.querySelectorAll('.splitHero');
+            gsap.set(heroTexts, { opacity: 1 });
+            gsap.set(buttonRef.current, { opacity: 1, x: 0 });
+            gsap.set(logoRef.current, { opacity: 1 });
+            if (svgPathRef.current) {
+                gsap.set(svgPathRef.current, { drawSVG: "100%", fill: 'white' });
+            }
+            return;
+        }
+
+        if (!shouldAnimate) return;
 
         document.fonts.ready.then(() => {
             const heroTexts = heroRef.current.querySelectorAll('.splitHero');
 
-            gsap.set(heroTexts, { opacity: 1 });
+            // Set opacity 0 trước khi animate (thay vì dùng CSS)
+            gsap.set(heroTexts, { opacity: 0 });
+            gsap.set(buttonRef.current, { opacity: 0 });
+            gsap.set(logoRef.current, { opacity: 0 });
 
             const tl = gsap.timeline();
 
             heroTexts.forEach((text, index) => {
-                SplitText.create(text, {
+                // Đảm bảo revert split text cũ nếu có
+                if (text._split) text._split.revert();
+
+                const split = new SplitText(text, {
                     type: "words,lines",
                     linesClass: "line",
-                    autoSplit: true,
-                    mask: "lines",
-                    onSplit: (self) => {
-                        tl.from(self.lines, {
-                            delay: 0.5,
-                            duration: 0.8,
-                            yPercent: 100,
-                            opacity: 0,
-                            stagger: 0.1,
-                            ease: "power2.out",
-                        }, index * 0.2);
-                    }
+                    autoSplit: true
                 });
-            });
 
-            gsap.set(buttonRef.current, { opacity: 1 });
+                // Lưu reference để cleanup nếu cần
+                text._split = split;
+
+                // Set opacity 1 cho container cha, nhưng animate các lines con
+                gsap.set(text, { opacity: 1 });
+
+                tl.from(split.lines, {
+                    delay: 0.5,
+                    duration: 0.8,
+                    yPercent: 100,
+                    opacity: 0,
+                    stagger: 0.1,
+                    ease: "power2.out",
+                }, index * 0.2);
+            });
 
             tl.from(buttonRef.current, {
                 opacity: 0,

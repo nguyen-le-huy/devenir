@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+
 .chatWindow {
     position: fixed;
     bottom: 30px;
@@ -156,7 +158,9 @@
     outline: none;
     border: none;
     font-size: 15px;
-    flex: auto
+    flex: auto;
+    font-family: 'Google Sans Flex', sans-serif;
+    font-weight: 400;
 }
 
 .input>svg {

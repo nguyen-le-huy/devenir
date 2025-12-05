@@ -69,7 +69,6 @@
 }
 
 .content :global(.splitHero) {
-    opacity: 0;
     will-change: transform, opacity;
     transform: translateZ(0);
 }
