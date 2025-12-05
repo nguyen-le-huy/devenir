@@ -35,7 +35,7 @@ const PaymentFailed = () => {
                         </p>
                     )}
                     <p>
-                        {errorMessage || "Unfortunately, your payment could not be processed. Please try again or use another payment method."}
+                        Unfortunately, your payment could not be processed. Please try again or use another payment method.
                     </p>
                 </div>
                 <div className={styles.buttonContainer}>
