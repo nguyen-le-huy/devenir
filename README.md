@@ -1,4 +1,4 @@
-# Devenir - Men's Fashion E-commerce Platform
+# Devenir - Fashion E-commerce Platform
 
 **Devenir** is a premium e-commerce solution designed for the fashion industry. Built on the MERN stack, it integrates advanced features such as Retrieval-Augmented Generation (RAG) for AI assistance, n8n for workflow automation, and multi-channel payment gateways including fiat and cryptocurrency.
 
