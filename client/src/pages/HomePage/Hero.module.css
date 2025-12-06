@@ -105,6 +105,10 @@
     font-weight: bold;
 }
 
+.shopButton.visible {
+    opacity: 1 !important;
+}
+
 .shopButton>span {
     display: inline-block;
     font-size: 16px;
