@@ -19,8 +19,24 @@ const VI_TO_EN_COLORS = {
     'cam': 'orange',
     'tím': 'purple',
     'be': 'beige',
-    'kem': 'cream'
+    'kem': 'cream',
+    'đỏ rượu': 'wine red',
+    'xanh navy': 'navy',
+    'xanh đen': 'dark blue'
 };
+
+// Common English compound colors
+const COMPOUND_COLORS = [
+    'wine red', 'dark red', 'light red',
+    'navy blue', 'dark blue', 'light blue', 'sky blue',
+    'dark green', 'light green', 'olive green',
+    'dark brown', 'light brown',
+    'dark gray', 'light gray', 'charcoal',
+    'off white', 'cream white',
+    'hot pink', 'light pink', 'dusty pink',
+    'burgundy', 'maroon', 'coral', 'salmon',
+    'khaki', 'taupe', 'ivory', 'nude'
+];
 
 // Cache for colors from database
 let colorCache = null;
@@ -49,22 +65,33 @@ async function getColorsFromDB() {
 
 /**
  * Find matching color from query
+ * Enhanced to detect compound colors like "wine red", "navy blue"
  */
 async function findColorInQuery(query) {
     const queryLower = query.toLowerCase();
 
-    // Check Vietnamese colors first
-    for (const [vi, en] of Object.entries(VI_TO_EN_COLORS)) {
-        if (queryLower.includes(vi)) {
-            return { vi, en };
-        }
-    }
-
-    // Check colors from database
+    // 1. First check colors from database (highest priority - exact match)
     const dbColors = await getColorsFromDB();
     for (const color of dbColors) {
         if (queryLower.includes(color)) {
+            console.log(`🎨 Found DB color: "${color}"`);
             return { vi: color, en: color };
+        }
+    }
+
+    // 2. Check compound English colors (e.g., "wine red", "navy blue")
+    for (const color of COMPOUND_COLORS) {
+        if (queryLower.includes(color)) {
+            console.log(`🎨 Found compound color: "${color}"`);
+            return { vi: color, en: color };
+        }
+    }
+
+    // 3. Check Vietnamese colors mapping
+    for (const [vi, en] of Object.entries(VI_TO_EN_COLORS)) {
+        if (queryLower.includes(vi)) {
+            console.log(`🎨 Found VI color: "${vi}" → "${en}"`);
+            return { vi, en };
         }
     }
 
@@ -189,16 +216,39 @@ export async function productAdvice(query, context = {}) {
                     contextText += `- **Danh mục:** ${product.category?.name || 'N/A'}\n`;
 
                     if (product.variants && product.variants.length > 0) {
-                        // Find variant with matching color
-                        const matchingVariant = product.variants.find(v =>
-                            v.color?.toLowerCase().includes(requestedColor.en)
+                        // Find variants with matching color
+                        const matchingVariants = product.variants.filter(v =>
+                            v.color?.toLowerCase().includes(requestedColor.en) ||
+                            v.color?.toLowerCase().includes(requestedColor.vi)
                         );
-                        const colors = [...new Set(product.variants.map(v => v.color))];
-                        const prices = product.variants.map(v => v.price);
 
-                        contextText += `- **Màu sắc:** ${matchingVariant?.color || colors.join(', ')}\n`;
-                        contextText += `- **Giá:** $${Math.min(...prices).toLocaleString('en-US')} - $${Math.max(...prices).toLocaleString('en-US')}\n`;
-                        contextText += `- **Còn hàng:** ${product.variants.reduce((sum, v) => sum + v.quantity, 0)} sản phẩm\n`;
+                        if (matchingVariants.length > 0) {
+                            // Get price range for this specific color
+                            const colorPrices = matchingVariants.map(v => v.price);
+                            const colorMinPrice = Math.min(...colorPrices);
+                            const colorMaxPrice = Math.max(...colorPrices);
+                            const colorStock = matchingVariants.reduce((sum, v) => sum + v.quantity, 0);
+                            const colorSizes = [...new Set(matchingVariants.map(v => v.size))];
+
+                            contextText += `- **Màu sắc:** ${matchingVariants[0].color}\n`;
+
+                            // Show exact price if all variants of this color have same price
+                            if (colorMinPrice === colorMaxPrice) {
+                                contextText += `- **Giá màu ${matchingVariants[0].color}:** $${colorMinPrice.toLocaleString('en-US')}\n`;
+                            } else {
+                                contextText += `- **Giá màu ${matchingVariants[0].color}:** $${colorMinPrice.toLocaleString('en-US')} - $${colorMaxPrice.toLocaleString('en-US')}\n`;
+                            }
+
+                            contextText += `- **Sizes có sẵn:** ${colorSizes.join(', ')}\n`;
+                            contextText += `- **Còn hàng:** ${colorStock} sản phẩm\n`;
+                        } else {
+                            // Fallback to all variants if no color match
+                            const colors = [...new Set(product.variants.map(v => v.color))];
+                            const prices = product.variants.map(v => v.price);
+                            contextText += `- **Màu sắc:** ${colors.join(', ')}\n`;
+                            contextText += `- **Giá:** $${Math.min(...prices).toLocaleString('en-US')} - $${Math.max(...prices).toLocaleString('en-US')}\n`;
+                            contextText += `- **Còn hàng:** ${product.variants.reduce((sum, v) => sum + v.quantity, 0)} sản phẩm\n`;
+                        }
                     }
                     contextText += `\n`;
                 }
@@ -310,18 +360,32 @@ export async function productAdvice(query, context = {}) {
         const suggested_products = orderedProducts.slice(0, 3).map(p => {
             // Find variant matching requested color, or fallback to first variant
             let matchingVariant = p.variants?.[0];
+            let matchingVariants = []; // All variants matching the color
 
             if (requestedColor && p.variants?.length > 0) {
-                const colorMatch = p.variants.find(v => {
+                matchingVariants = p.variants.filter(v => {
                     const variantColor = (v.color || '').toLowerCase();
                     // Match by Vietnamese name, English name, or partial match
                     return variantColor.includes(requestedColor.vi) ||
                         variantColor.includes(requestedColor.en) ||
                         requestedColor.en.split(' ').some(part => variantColor.includes(part));
                 });
-                if (colorMatch) {
-                    matchingVariant = colorMatch;
+                if (matchingVariants.length > 0) {
+                    matchingVariant = matchingVariants[0];
                 }
+            }
+
+            // Calculate price based on matching color variants or all variants
+            let minPrice, maxPrice;
+            if (matchingVariants.length > 0) {
+                // Use price range of matching color variants only
+                const colorPrices = matchingVariants.map(v => v.price);
+                minPrice = Math.min(...colorPrices);
+                maxPrice = Math.max(...colorPrices);
+            } else {
+                // Fallback to all variants
+                minPrice = p.variants?.length > 0 ? Math.min(...p.variants.map(v => v.price)) : 0;
+                maxPrice = p.variants?.length > 0 ? Math.max(...p.variants.map(v => v.price)) : 0;
             }
 
             return {
@@ -330,8 +394,8 @@ export async function productAdvice(query, context = {}) {
                 urlSlug: p.urlSlug,
                 variantId: matchingVariant?._id || null,
                 averageRating: p.averageRating,
-                minPrice: p.variants?.length > 0 ? Math.min(...p.variants.map(v => v.price)) : 0,
-                maxPrice: p.variants?.length > 0 ? Math.max(...p.variants.map(v => v.price)) : 0,
+                minPrice,
+                maxPrice,
                 mainImage: matchingVariant?.mainImage || p.images?.[0] || ''
             };
         });
