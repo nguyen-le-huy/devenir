@@ -17,7 +17,7 @@ export class VectorStore {
     }
 
     /**
-     * Search vectors by query
+     * Search vectors by query (with retry for cold start)
      */
     async search(query, options = {}) {
         const {
@@ -26,18 +26,38 @@ export class VectorStore {
             includeMetadata = true
         } = options;
 
-        // Generate embedding for query
-        const queryVector = await getEmbedding(query);
+        const maxRetries = 3;
+        let lastError = null;
 
-        // Search in Pinecone
-        const results = await this.getIndex().query({
-            vector: queryVector,
-            topK,
-            filter,
-            includeMetadata
-        });
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                // Generate embedding for query
+                const queryVector = await getEmbedding(query);
 
-        return results.matches || [];
+                // Search in Pinecone
+                const results = await this.getIndex().query({
+                    vector: queryVector,
+                    topK,
+                    filter,
+                    includeMetadata
+                });
+
+                return results.matches || [];
+            } catch (error) {
+                lastError = error;
+                console.error(`VectorStore search attempt ${attempt} failed:`, error.message);
+
+                if (attempt < maxRetries) {
+                    // Exponential backoff: 500ms, 1000ms, 2000ms
+                    const delay = Math.pow(2, attempt - 1) * 500;
+                    console.log(`Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        console.error('VectorStore search failed after all retries:', lastError);
+        throw lastError;
     }
 
     /**

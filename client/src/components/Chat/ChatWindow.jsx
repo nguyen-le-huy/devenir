@@ -4,6 +4,7 @@ import Devi from './Devi';
 import ChatMessage from './ChatMessage';
 import { useAuth } from '../../contexts/AuthContext';
 import { sendChatMessage } from '../../services/chatService';
+import { useAddToCart } from '../../hooks/useCart';
 import gsap from 'gsap';
 import SplitText from 'gsap/src/SplitText';
 
@@ -220,7 +221,8 @@ const ChatWindow = ({ onClose }) => {
                 text: response.answer || "Xin lỗi, tôi không thể trả lời lúc này.",
                 sender: 'bot',
                 timestamp: new Date(),
-                suggestedProducts: response.suggested_products || []
+                suggestedProducts: response.suggested_products || [],
+                suggestedAction: response.suggested_action || null
             };
 
             setMessages(prev => [...prev, botMessage]);
@@ -251,6 +253,60 @@ const ChatWindow = ({ onClose }) => {
     const handlePromptClick = (promptText) => {
         handleSendMessage(promptText);
     };
+
+    // Add to cart hook
+    const addToCartMutation = useAddToCart();
+
+    // Handle action button clicks (Yes/No for add to cart)
+    const handleActionClick = useCallback((messageId, action, actionData) => {
+        if (action === 'yes' && actionData?.variant_id) {
+            // Add to cart
+            addToCartMutation.mutate(
+                { variantId: actionData.variant_id, quantity: 1 },
+                {
+                    onSuccess: () => {
+                        // Mark action as handled and add confirmation message
+                        setMessages(prev => prev.map(msg =>
+                            msg.id === messageId
+                                ? { ...msg, actionHandled: true, actionResult: 'added' }
+                                : msg
+                        ));
+                        // Add confirmation bot message
+                        const confirmMsg = {
+                            id: Date.now(),
+                            text: `Đã thêm **${actionData.product?.name || 'sản phẩm'}** vào giỏ hàng! 🛒`,
+                            sender: 'bot',
+                            timestamp: new Date()
+                        };
+                        setMessages(prev => [...prev, confirmMsg]);
+                    },
+                    onError: (error) => {
+                        console.error('Add to cart error:', error);
+                        setMessages(prev => prev.map(msg =>
+                            msg.id === messageId
+                                ? { ...msg, actionHandled: true, actionResult: 'error' }
+                                : msg
+                        ));
+                    }
+                }
+            );
+        } else if (action === 'no') {
+            // Dismiss action
+            setMessages(prev => prev.map(msg =>
+                msg.id === messageId
+                    ? { ...msg, actionHandled: true, actionResult: 'dismissed' }
+                    : msg
+            ));
+            // Add follow-up message
+            const followUpMsg = {
+                id: Date.now(),
+                text: 'Không sao! Bạn cần tôi hỗ trợ gì thêm không?',
+                sender: 'bot',
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, followUpMsg]);
+        }
+    }, [addToCartMutation]);
 
     const focusInput = () => {
         if (inputRef.current) {
@@ -343,7 +399,11 @@ const ChatWindow = ({ onClose }) => {
                 ) : (
                     <div className={styles.messagesArea} data-lenis-prevent data-scrollable>
                         {messages.map((message) => (
-                            <ChatMessage key={message.id} message={message} />
+                            <ChatMessage
+                                key={message.id}
+                                message={message}
+                                onActionClick={handleActionClick}
+                            />
                         ))}
                         {isTyping && (
                             <div className={styles.typingMessage}>

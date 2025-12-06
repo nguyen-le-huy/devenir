@@ -76,7 +76,22 @@ Hoặc bạn có thể hỏi về size của sản phẩm cụ thể nhé!`
                     _id: product._id,
                     name: product.name,
                     urlSlug: product.urlSlug
-                }
+                },
+                // Add suggested action for add-to-cart button
+                suggested_action: variants.length > 0 ? {
+                    type: 'add_to_cart',
+                    prompt: 'Bạn có muốn thêm sản phẩm này vào giỏ hàng không?',
+                    product: {
+                        _id: product._id,
+                        name: product.name,
+                        urlSlug: product.urlSlug,
+                        variantId: variants[0]._id,
+                        mainImage: variants[0].mainImage || product.images?.[0] || '',
+                        minPrice: variants[0].price,
+                        maxPrice: variants[0].price
+                    },
+                    variant_id: variants[0]._id
+                } : null
             };
         }
 
@@ -159,7 +174,22 @@ Trả về JSON:
                 _id: product._id,
                 name: product.name,
                 urlSlug: product.urlSlug
-            }
+            },
+            // Add suggested action for add-to-cart button
+            suggested_action: recommendedVariants.length > 0 ? {
+                type: 'add_to_cart',
+                prompt: 'Bạn có muốn thêm sản phẩm này vào giỏ hàng không?',
+                product: {
+                    _id: product._id,
+                    name: product.name,
+                    urlSlug: product.urlSlug,
+                    variantId: recommendedVariants[0]._id,
+                    mainImage: recommendedVariants[0].mainImage || product.images?.[0] || '',
+                    minPrice: recommendedVariants[0].price,
+                    maxPrice: recommendedVariants[0].price
+                },
+                variant_id: recommendedVariants[0]._id
+            } : null
         };
 
     } catch (error) {

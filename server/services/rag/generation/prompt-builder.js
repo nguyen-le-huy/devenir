@@ -65,7 +65,7 @@ Sử dụng conversation history để hiểu ngữ cảnh của câu hỏi foll
 - "size_recommendation": Hỏi về size, số đo, form dáng
 - "style_matching": Hỏi về phối đồ, mix & match, outfit
 - "order_lookup": Tra cứu đơn hàng, tình trạng vận chuyển (cần mã đơn)
-- "return_exchange": Đổi trả, hoàn tiền, chính sách
+- "policy_faq": Hỏi về thanh toán, phương thức payment, shipping, giao hàng, đổi trả, refund
 - "general": Chỉ dùng cho chào hỏi, cảm ơn thuần túy
 
 **Trích xuất thêm thông tin nếu có:**

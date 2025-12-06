@@ -1,7 +1,9 @@
-import { classifyIntent } from '../orchestrators/intent-classifier.js';
+import { hybridClassifyIntent } from '../orchestrators/intent-classifier.js';
 import { productAdvice } from '../specialized/product-advisor.service.js';
 import { sizeRecommendation } from '../specialized/size-advisor.service.js';
 import { orderLookup } from '../specialized/order-lookup.service.js';
+import { policyFAQ } from '../specialized/policy-faq.service.js';
+import { handleAddToCart } from '../specialized/add-to-cart.service.js';
 import { ConversationManager } from '../orchestrators/conversation-manager.js';
 
 export class RAGService {
@@ -14,8 +16,8 @@ export class RAGService {
      */
     async chat(userId, message, conversationHistory = []) {
         try {
-            // 1. Classify intent (with conversation history for context)
-            const { intent, confidence, extracted_info } = await classifyIntent(message, conversationHistory);
+            // 1. Classify intent (hybrid: LLM + keyword fallback)
+            const { intent, confidence, extracted_info } = await hybridClassifyIntent(message, conversationHistory);
 
             console.log(`🎯 Intent: ${intent}, Confidence: ${confidence}`);
             console.log(`📜 History length: ${conversationHistory.length}`);
@@ -45,9 +47,17 @@ export class RAGService {
                     result = await orderLookup(message, extracted_info, userId);
                     break;
 
+                case 'policy_faq':
+                    result = await policyFAQ(message, extracted_info);
+                    break;
+
+                case 'add_to_cart':
+                    result = await handleAddToCart(message, extracted_info, context);
+                    break;
+
                 default:
                     result = {
-                        answer: "Mình có thể giúp bạn:\n• Tư vấn sản phẩm\n• Tư vấn size\n• Gợi ý phối đồ\n• Tra cứu đơn hàng\n\nBạn cần mình hỗ trợ gì nhé?",
+                        answer: "Mình có thể giúp bạn:\n• Tư vấn sản phẩm\n• Tư vấn size\n• Gợi ý phối đồ\n• Tra cứu đơn hàng\n• Thông tin thanh toán & giao hàng\n\nBạn cần mình hỗ trợ gì nhé?",
                         intent: 'general'
                     };
             }

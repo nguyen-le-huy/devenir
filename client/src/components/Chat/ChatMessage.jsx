@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import styles from './ChatMessage.module.css';
 
-const ChatMessage = ({ message }) => {
+const ChatMessage = ({ message, onActionClick }) => {
     const isUser = message.sender === 'user';
 
     // Format price to $
@@ -20,6 +20,19 @@ const ChatMessage = ({ message }) => {
             }
             return part;
         });
+    };
+
+    // Handle action button clicks
+    const handleYesClick = () => {
+        if (onActionClick && message.suggestedAction) {
+            onActionClick(message.id, 'yes', message.suggestedAction);
+        }
+    };
+
+    const handleNoClick = () => {
+        if (onActionClick) {
+            onActionClick(message.id, 'no');
+        }
     };
 
     return (
@@ -53,6 +66,35 @@ const ChatMessage = ({ message }) => {
                                 </div>
                             </Link>
                         ))}
+                    </div>
+                )}
+
+                {/* Action Buttons - Yes/No for Add to Cart */}
+                {!isUser && message.suggestedAction && !message.actionHandled && (
+                    <div className={styles.actionButtons}>
+                        <p className={styles.actionPrompt}>{message.suggestedAction.prompt}</p>
+                        <div className={styles.buttonGroup}>
+                            <button
+                                className={styles.yesButton}
+                                onClick={handleYesClick}
+                            >
+                                Có, thêm vào giỏ
+                            </button>
+                            <button
+                                className={styles.noButton}
+                                onClick={handleNoClick}
+                            >
+                                Không, cảm ơn
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Action Result Feedback */}
+                {message.actionHandled && message.actionResult === 'added' && (
+                    <div className={styles.actionFeedback}>
+                        <span className={styles.successIcon}>✓</span>
+                        <span>Đã thêm vào giỏ hàng</span>
                     </div>
                 )}
             </div>
