@@ -38,45 +38,73 @@ const NewArrivals = () => {
         const container = newArrContainerRef.current;
         if (!container) return;
 
+        let titleSplitInstance = null;
+        let linkSplitInstance = null;
+
         gsap.set([".titleSplit", ".viewAllLinkSplit"], { opacity: 1 });
 
-        const titleSplit = new SplitText(".titleSplit", {
-            type: "words, lines",
-            lineClass: "line"
-        });
+        document.fonts.ready.then(() => {
+            titleSplitInstance = new SplitText(".titleSplit", {
+                type: "words, lines",
+                linesClass: "line"
+            });
 
-        const linkSplit = new SplitText(".viewAllLinkSplit", {
-            type: "words, lines",
-            lineClass: "line"
-        });
+            linkSplitInstance = new SplitText(".viewAllLinkSplit", {
+                type: "words, lines",
+                linesClass: "line"
+            });
 
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: container,
-                start: "top 80%"
-            }
-        });
+            // Wrap lines for overflow hidden (như ChatWindow)
+            titleSplitInstance.lines.forEach(line => {
+                const wrapper = document.createElement('div');
+                wrapper.style.overflow = 'hidden';
+                line.parentNode.insertBefore(wrapper, line);
+                wrapper.appendChild(line);
+            });
 
-        tl.from(titleSplit.lines, {
-            duration: 0.8,
-            yPercent: 50,
-            opacity: 0,
-            ease: "power3.out",
-        })
-            .from(linkSplit.lines, {
+            linkSplitInstance.lines.forEach(line => {
+                const wrapper = document.createElement('div');
+                wrapper.style.overflow = 'hidden';
+                line.parentNode.insertBefore(wrapper, line);
+                wrapper.appendChild(line);
+            });
+
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: container,
+                    start: "top bottom",
+                }
+            });
+
+            tl.from(titleSplitInstance.lines, {
                 duration: 0.8,
-                yPercent: 50,
+                yPercent: 100,
                 opacity: 0,
-                ease: "power3.out",
-            }, "-=0.4")
+                stagger: 0.08,
+                ease: "power2.out",
+            })
+                .from(linkSplitInstance.lines, {
+                    duration: 0.8,
+                    yPercent: 100,
+                    opacity: 0,
+                    stagger: 0.08,
+                    ease: "power2.out",
+                }, "-=0.4")
 
-            .from(`.${styles.productList} > *`, {
-                duration: 0.6,
-                y: 100,
-                opacity: 0,
-                stagger: 0.2,
-                ease: "power2.in",
-            }, "-=0.5");
+                .from(`.${styles.productList} > *`, {
+                    duration: 0.6,
+                    y: 50,
+                    opacity: 0,
+                    stagger: 0.2,
+                    ease: "power2.in",
+                }, "-=0.5");
+        });
+
+        // Cleanup
+        return () => {
+            if (titleSplitInstance) titleSplitInstance.revert();
+            if (linkSplitInstance) linkSplitInstance.revert();
+        };
 
     }, { scope: newArrContainerRef, dependencies: [products] });
 

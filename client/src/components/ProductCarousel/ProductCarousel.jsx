@@ -3,10 +3,9 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
 import ScarfCard from '../ProductCard/ScarfCard.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper/modules';
 
 import 'swiper/css';
 
@@ -19,36 +18,20 @@ const ProductCarousel = ({
     showViewAll = true
 }) => {
     const containerRef = useRef(null);
-    const prevRef = useRef(null);
-    const nextRef = useRef(null);
-    const [swiperInstance, setSwiperInstance] = useState(null);
+    const swiperRef = useRef(null);
 
-    // Initialize navigation when swiper and refs are ready
-    useEffect(() => {
-        if (swiperInstance && prevRef.current && nextRef.current) {
-            // Assign navigation elements
-            swiperInstance.params.navigation.prevEl = prevRef.current;
-            swiperInstance.params.navigation.nextEl = nextRef.current;
-
-            // Re-init navigation
-            swiperInstance.navigation.destroy();
-            swiperInstance.navigation.init();
-            swiperInstance.navigation.update();
-        }
-    }, [swiperInstance]);
-
-    // Manual navigation handlers as fallback
+    // Manual navigation handlers - more reliable than Swiper's built-in navigation with refs
     const handlePrev = useCallback(() => {
-        if (swiperInstance) {
-            swiperInstance.slidePrev();
+        if (swiperRef.current) {
+            swiperRef.current.slidePrev();
         }
-    }, [swiperInstance]);
+    }, []);
 
     const handleNext = useCallback(() => {
-        if (swiperInstance) {
-            swiperInstance.slideNext();
+        if (swiperRef.current) {
+            swiperRef.current.slideNext();
         }
-    }, [swiperInstance]);
+    }, []);
 
     useGSAP(() => {
         const container = containerRef.current;
@@ -109,17 +92,12 @@ const ProductCarousel = ({
 
             <div className={styles.productList}>
                 <Swiper
-                    modules={[Navigation]}
                     spaceBetween={20}
                     slidesPerView={4}
                     slidesPerGroup={1}
                     allowTouchMove={true}
                     loop={true}
                     speed={400}
-                    navigation={{
-                        prevEl: prevRef.current,
-                        nextEl: nextRef.current,
-                    }}
                     breakpoints={{
                         320: {
                             slidesPerView: 2,
@@ -138,7 +116,7 @@ const ProductCarousel = ({
                             spaceBetween: 2,
                         },
                     }}
-                    onSwiper={setSwiperInstance}
+                    onSwiper={(swiper) => { swiperRef.current = swiper; }}
                 >
                     {products.map((product) => (
                         <SwiperSlide key={product.id}>
@@ -149,7 +127,6 @@ const ProductCarousel = ({
 
                 <div className={styles.arrows}>
                     <svg
-                        ref={prevRef}
                         onClick={handlePrev}
                         style={{ cursor: 'pointer' }}
                         xmlns="http://www.w3.org/2000/svg"
@@ -161,7 +138,6 @@ const ProductCarousel = ({
                         <path d="M33.3563 42.7094C33.6289 42.4303 33.7815 42.0557 33.7815 41.6656C33.7815 41.2755 33.6289 40.9009 33.3563 40.6219L18.1282 25L33.3563 9.38126C33.6289 9.10221 33.7815 8.7276 33.7815 8.33751C33.7815 7.94742 33.6289 7.5728 33.3563 7.29376C33.2238 7.15768 33.0654 7.04953 32.8904 6.97569C32.7155 6.90184 32.5275 6.86379 32.3375 6.86379C32.1476 6.86379 31.9596 6.90184 31.7846 6.97569C31.6096 7.04953 31.4513 7.15768 31.3187 7.29376L15.3563 23.9594C15.0837 24.2384 14.9311 24.613 14.9311 25.0031C14.9311 25.3932 15.0837 25.7678 15.3563 26.0469L31.3187 42.7125C31.4513 42.8486 31.6096 42.9567 31.7846 43.0306C31.9596 43.1044 32.1476 43.1425 32.3375 43.1425C32.5275 43.1425 32.7155 43.1044 32.8904 43.0306C33.0654 42.9567 33.2238 42.8486 33.3563 42.7094Z" fill="#0E0E0E" />
                     </svg>
                     <svg
-                        ref={nextRef}
                         onClick={handleNext}
                         style={{ cursor: 'pointer' }}
                         xmlns="http://www.w3.org/2000/svg"

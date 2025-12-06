@@ -3,8 +3,9 @@ import gsap from 'gsap';
 import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import SplitText from 'gsap/src/SplitText';
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText);
 
 const Introduction = () => {
     const cardsContainerRef = useRef(null);
@@ -14,8 +15,9 @@ const Introduction = () => {
     useGSAP(() => {
         const container = cardsContainerRef.current;
         const introContainer = introContainerRef.current;
+        const introText = introTextRef.current;
 
-        if (!container || !introContainer) return;
+        if (!container || !introContainer || !introText) return;
 
         // Lấy chiều rộng của một set cards (5 cards)
         const cardWidth = 460;
@@ -40,30 +42,72 @@ const Introduction = () => {
             ease: 'none'
         });
 
+        // SplitText animation for title (like ChatWindow)
+        let splitInstance = null;
 
-        // ScrollTrigger
+        // Set initial opacity
+        gsap.set(introText, { opacity: 1 });
+
+        document.fonts.ready.then(() => {
+            splitInstance = new SplitText(introText, {
+                type: "words,lines",
+                linesClass: "line"
+            });
+
+            // Wrap lines for overflow hidden (như ChatWindow)
+            splitInstance.lines.forEach(line => {
+                const wrapper = document.createElement('div');
+                wrapper.style.overflow = 'hidden';
+                line.parentNode.insertBefore(wrapper, line);
+                wrapper.appendChild(line);
+            });
+
+            // Set initial state for lines
+            gsap.set(splitInstance.lines, { yPercent: 100, opacity: 0 });
+
+            // ScrollTrigger for text animation
+            ScrollTrigger.create({
+                trigger: introContainer,
+                start: 'top 50%',
+                onEnter: () => {
+                    gsap.to(splitInstance.lines, {
+                        duration: 0.8,
+                        yPercent: 0,
+                        opacity: 1,
+                        stagger: 0.08,
+                        ease: "power2.out",
+                    });
+                }
+            });
+        });
+
+        // ScrollTrigger for background color
         ScrollTrigger.create({
             trigger: introContainer,
-            start: 'top 50%',
+            start: 'top 30%',
             onEnter: () => {
                 gsap.to(introContainer, {
                     backgroundColor: '#5C4439',
                     duration: 0.5
                 });
-                gsap.to(introTextRef.current, {
+                gsap.to(introText, {
                     color: '#FFFFFF',
                     duration: 0.5
                 });
             }
         });
-        
-        
 
+        // Cleanup
+        return () => {
+            if (splitInstance) {
+                splitInstance.revert();
+            }
+        };
 
     }, { scope: introContainerRef });
 
     return (
-        <div className={ `${styles.introduction}`} ref={introContainerRef}>
+        <div className={`${styles.introduction}`} ref={introContainerRef}>
             <h1 className={styles.title} ref={introTextRef}>
                 Timeless, seasonal and unmistakably Burberry, find the perfect gifts for everyone on your list.
             </h1>
@@ -88,7 +132,7 @@ const Introduction = () => {
                     <img src="images/introCard6.png" alt="Intro card 6" />
                 </div>
 
-                
+
                 {/* Set 2: Duplicate để tạo seamless loop */}
                 <div className={styles.introCard}>
                     <img src="images/introCard1.png" alt="Intro card 1 duplicate" />

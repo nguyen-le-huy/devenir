@@ -84,6 +84,14 @@ const Hero = () => {
                 // Lưu reference để cleanup nếu cần
                 text._split = split;
 
+                // Wrap lines for overflow hidden (như ChatWindow)
+                split.lines.forEach(line => {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.overflow = 'hidden';
+                    line.parentNode.insertBefore(wrapper, line);
+                    wrapper.appendChild(line);
+                });
+
                 // Set opacity 1 cho container cha bằng GSAP (override CSS opacity: 0 tạm thời)
                 gsap.set(text, { opacity: 1 });
 
@@ -92,9 +100,9 @@ const Hero = () => {
                     duration: 0.8,
                     yPercent: 100,
                     opacity: 0,
-                    stagger: 0.1,
+                    stagger: 0.08,
                     ease: "power2.out",
-                }, index * 0.2);
+                }, index * 0.15);
             });
 
             // Button animation - set initial state then animate to final
