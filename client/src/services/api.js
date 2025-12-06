@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3111/api'
 // Tạo axios instance
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,12 +38,12 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/auth';
     }
-    
+
     const message = error.response?.data?.message || error.message || 'Lỗi khi kết nối';
     const customError = new Error(message);
     customError.status = error.response?.status;
     customError.data = error.response?.data;
-    
+
     return Promise.reject(customError);
   }
 );

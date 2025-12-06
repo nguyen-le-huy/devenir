@@ -30,7 +30,9 @@ export async function handleAddToCart(query, extractedInfo = {}, context = {}) {
                     // Find the product in database
                     product = await Product.findOne({
                         name: { $regex: productName, $options: 'i' }
-                    }).lean();
+                    })
+                        .select('_id name urlSlug images')
+                        .lean();
 
                     if (product) {
                         // Get first available variant
@@ -38,7 +40,9 @@ export async function handleAddToCart(query, extractedInfo = {}, context = {}) {
                             product_id: product._id,
                             isActive: true,
                             quantity: { $gt: 0 }
-                        }).lean();
+                        })
+                            .select('_id price mainImage')
+                            .lean();
                         break;
                     }
                 }
@@ -51,13 +55,17 @@ export async function handleAddToCart(query, extractedInfo = {}, context = {}) {
             if (searchResults && searchResults.length > 0) {
                 const productId = searchResults[0].metadata?.product_id;
                 if (productId) {
-                    product = await Product.findById(productId).lean();
+                    product = await Product.findById(productId)
+                        .select('_id name urlSlug images')
+                        .lean();
                     if (product) {
                         variant = await ProductVariant.findOne({
                             product_id: product._id,
                             isActive: true,
                             quantity: { $gt: 0 }
-                        }).lean();
+                        })
+                            .select('_id price mainImage')
+                            .lean();
                     }
                 }
             }

@@ -1,4 +1,4 @@
-import { openai, MODELS } from '../../../config/openai.js';
+import { llmProvider } from '../core/LLMProvider.js';
 import Order from '../../../models/OrderModel.js';
 import mongoose from 'mongoose';
 
@@ -39,14 +39,12 @@ Quy tắc:
 - "latest": Muốn xem đơn hàng gần nhất (VD: "đơn gần nhất", "đơn mới nhất", "đơn cuối")
 `;
 
-        const classifyResponse = await openai.chat.completions.create({
-            model: MODELS.CHAT_FAST,
-            response_format: { type: 'json_object' },
-            messages: [{ role: 'user', content: classifyPrompt }],
-            temperature: 0.1
-        });
+        const classifyResult = await llmProvider.jsonCompletion(
+            [{ role: 'user', content: classifyPrompt }],
+            { temperature: 0.1 }
+        );
 
-        const { query_type, order_number, phone, email } = JSON.parse(classifyResponse.choices[0].message.content);
+        const { query_type, order_number, phone, email } = classifyResult;
 
         console.log(`📦 Order Query Type: ${query_type}, UserId: ${validUserId ? 'Yes' : 'No'}`);
 

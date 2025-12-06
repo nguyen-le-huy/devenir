@@ -1,4 +1,4 @@
-import { openai, MODELS } from '../../../config/openai.js';
+import { llmProvider } from '../core/LLMProvider.js';
 import { productAdvice } from './product-advisor.service.js';
 
 /**
@@ -45,14 +45,10 @@ Format trả lời:
 4. Tips phối đồ thêm
 `;
 
-        const response = await openai.chat.completions.create({
-            model: MODELS.CHAT,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.5,
-            max_tokens: 800
-        });
-
-        const styleAnswer = response.choices[0].message.content;
+        const styleAnswer = await llmProvider.chatCompletion(
+            [{ role: 'user', content: prompt }],
+            { temperature: 0.5, maxTokens: 800 }
+        );
 
         return {
             answer: styleAnswer,

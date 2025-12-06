@@ -4,6 +4,7 @@ import { sizeRecommendation } from '../specialized/size-advisor.service.js';
 import { orderLookup } from '../specialized/order-lookup.service.js';
 import { policyFAQ } from '../specialized/policy-faq.service.js';
 import { handleAddToCart } from '../specialized/add-to-cart.service.js';
+import { styleMatcher } from '../specialized/style-matcher.service.js';
 import { ConversationManager } from '../orchestrators/conversation-manager.js';
 
 export class RAGService {
@@ -16,15 +17,15 @@ export class RAGService {
      */
     async chat(userId, message, conversationHistory = []) {
         try {
-            // 1. Classify intent (hybrid: LLM + keyword fallback)
-            const { intent, confidence, extracted_info } = await hybridClassifyIntent(message, conversationHistory);
+            // 1. Parallel: Classify intent + Get conversation context
+            const [intentResult, context] = await Promise.all([
+                hybridClassifyIntent(message, conversationHistory),
+                this.conversationManager.getContext(userId, conversationHistory)
+            ]);
+
+            const { intent, confidence, extracted_info } = intentResult;
 
             console.log(`🎯 Intent: ${intent}, Confidence: ${confidence}`);
-            console.log(`📜 History length: ${conversationHistory.length}`);
-
-            // 2. Get conversation context
-            const context = await this.conversationManager.getContext(userId, conversationHistory);
-
             console.log(`💬 Recent messages: ${context.recent_messages?.length || 0}`);
 
             let result;
@@ -40,7 +41,7 @@ export class RAGService {
                     break;
 
                 case 'style_matching':
-                    result = await productAdvice(`${message} (phối đồ)`, context);
+                    result = await styleMatcher(message, context);
                     break;
 
                 case 'order_lookup':

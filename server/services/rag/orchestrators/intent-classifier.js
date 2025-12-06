@@ -1,4 +1,4 @@
-import { openai, MODELS } from '../../../config/openai.js';
+import { llmProvider } from '../core/LLMProvider.js';
 import { buildIntentClassificationPrompt } from '../generation/prompt-builder.js';
 
 /**
@@ -28,14 +28,9 @@ export async function classifyIntent(message, conversationHistory = []) {
     messages.push({ role: 'user', content: message });
 
     try {
-        const response = await openai.chat.completions.create({
-            model: MODELS.CHAT_FAST, // Use faster model for classification
-            response_format: { type: 'json_object' },
-            messages,
+        const result = await llmProvider.jsonCompletion(messages, {
             temperature: 0.1
         });
-
-        const result = JSON.parse(response.choices[0].message.content);
 
         return {
             intent: result.intent || 'general',

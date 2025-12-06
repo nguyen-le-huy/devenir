@@ -19,7 +19,7 @@ export {
 export { rerankDocuments, rerankSearchResults } from './retrieval/reranking.service.js';
 
 // Generation
-export { generateResponse, generateStreamingResponse, generateJsonResponse } from './generation/response-generator.js';
+export { generateResponse } from './generation/response-generator.js';
 export {
     buildCoVePrompt,
     buildIntentClassificationPrompt,
@@ -36,3 +36,5 @@ export { productAdvice } from './specialized/product-advisor.service.js';
 export { sizeRecommendation, getSizeGuide } from './specialized/size-advisor.service.js';
 export { styleMatcher, getStyleByOccasion } from './specialized/style-matcher.service.js';
 export { orderLookup } from './specialized/order-lookup.service.js';
+export { policyFAQ } from './specialized/policy-faq.service.js';
+export { handleAddToCart } from './specialized/add-to-cart.service.js';

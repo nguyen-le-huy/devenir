@@ -37,13 +37,15 @@ export class LLMProvider {
     }
 
     /**
-     * Generate JSON response
+     * Generate JSON response (uses fast model, returns parsed JSON)
      */
     async jsonCompletion(messages, options = {}) {
-        return this.chatCompletion(messages, {
+        const content = await this.chatCompletion(messages, {
             ...options,
+            model: MODELS.CHAT_FAST,
             responseFormat: { type: 'json_object' }
         });
+        return JSON.parse(content);
     }
 
     /**
