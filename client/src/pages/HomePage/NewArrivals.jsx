@@ -72,7 +72,7 @@ const NewArrivals = () => {
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: container,
-                    start: "top bottom",
+                    start: "top 80%",
                 }
             });
 
@@ -89,7 +89,7 @@ const NewArrivals = () => {
                     opacity: 0,
                     stagger: 0.08,
                     ease: "power2.out",
-                }, "-=0.4")
+                }, "<")
 
                 .from(`.${styles.productList} > *`, {
                     duration: 0.6,
@@ -97,7 +97,7 @@ const NewArrivals = () => {
                     opacity: 0,
                     stagger: 0.2,
                     ease: "power2.in",
-                }, "-=0.5");
+                }, "<");
         });
 
         // Cleanup

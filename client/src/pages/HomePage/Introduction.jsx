@@ -68,7 +68,7 @@ const Introduction = () => {
             // ScrollTrigger for text animation
             ScrollTrigger.create({
                 trigger: introContainer,
-                start: 'top 50%',
+                start: 'top 80%',
                 onEnter: () => {
                     gsap.to(splitInstance.lines, {
                         duration: 0.8,
@@ -84,7 +84,7 @@ const Introduction = () => {
         // ScrollTrigger for background color
         ScrollTrigger.create({
             trigger: introContainer,
-            start: 'top 30%',
+            start: 'top 50%',
             onEnter: () => {
                 gsap.to(introContainer, {
                     backgroundColor: '#5C4439',
