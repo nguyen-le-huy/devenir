@@ -1,108 +1,155 @@
 # Devenir - Fashion E-commerce Platform
 
-**Devenir** is a premium e-commerce solution designed for the fashion industry. Built on the MERN stack, it integrates advanced features such as Retrieval-Augmented Generation (RAG) for AI assistance, n8n for workflow automation, and multi-channel payment gateways including fiat and cryptocurrency.
+**Devenir** is a premium e-commerce solution designed for the fashion industry. Built on the MERN stack, it integrates advanced features such as Retrieval-Augmented Generation (RAG) for AI assistance and multi-channel payment gateways including fiat (PayOS) and cryptocurrency (NowPayments - USDT BSC).
 
 ## Table of Contents
 
-  - [Key Features](https://www.google.com/search?q=%23key-features)
-  - [Tech Stack](https://www.google.com/search?q=%23tech-stack)
-  - [System Architecture](https://www.google.com/search?q=%23system-architecture)
-  - [Prerequisites](https://www.google.com/search?q=%23prerequisites)
-  - [Installation & Setup](https://www.google.com/search?q=%23installation--setup)
-  - [Configuration](https://www.google.com/search?q=%23configuration)
-  - [Deployment](https://www.google.com/search?q=%23deployment)
-  - [API Overview](https://www.google.com/search?q=%23api-overview)
-  - [License](https://www.google.com/search?q=%23license)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [System Architecture](#system-architecture)
+- [Prerequisites](#prerequisites)
+- [Installation & Setup](#installation--setup)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [API Overview](#api-overview)
+- [License](#license)
 
 ## Key Features
 
 ### Customer Interface
 
-  - **Authentication:** Secure login via Email/Password and Google OAuth.
-  - **Product Discovery:** Advanced filtering (size, color, price range) and search capabilities.
-  - **AI Assistant (RAG):** An intelligent chatbot powered by OpenAI and Pinecone to provide sizing advice, outfit coordination, and order tracking.
-  - **Payments:** Seamless checkout supporting domestic transfers (PayOS) and cryptocurrency (Coinbase Commerce).
-  - **User Dashboard:** comprehensive account management and order history tracking.
+- **Authentication:** Secure login via Email/Password and Google OAuth.
+- **Product Discovery:** Advanced filtering (size, color, price range) and search capabilities.
+- **AI Assistant (RAG):** An intelligent chatbot powered by OpenAI and Pinecone with specialized services:
+  - **Product Advisor:** Smart product recommendations based on user preferences
+  - **Size Advisor:** Personalized sizing advice based on height/weight
+  - **Style Matcher:** Outfit coordination and style suggestions
+  - **Order Lookup:** Real-time order tracking and status updates
+  - **Policy FAQ:** Shipping, payment, and return policy information
+- **Payments:** Seamless checkout supporting:
+  - **PayOS:** Domestic bank transfers (VND) with QR code
+  - **NowPayments:** Cryptocurrency payment (USDT on BSC network)
+- **User Dashboard:** Comprehensive account management and order history tracking.
 
 ### Admin Dashboard
 
-  - **Analytics:** Real-time overview of revenue, top-selling products, and user metrics.
-  - **Inventory Management:** Full CRUD operations for products and SKUs (variants, stock levels).
-  - **Order Management:** Centralized processing for orders, shipments, and returns.
-  - **AI Admin Assistant:** Natural language querying for operational data.
-  - **Automation:** Integrated n8n workflows for order confirmation emails and low-stock alerts.
+- **Analytics:** Real-time overview of revenue, top-selling products, and user metrics.
+- **Inventory Management:** Full CRUD operations for products and SKUs (variants, stock levels).
+- **Order Management:** Centralized processing for orders, shipments, and returns.
+- **Customer Management:** User accounts, order history, and analytics.
 
 ## Tech Stack
 
-### Frontend (Client & Admin)
+### Frontend - Client
 
-  - **Framework:** React 18
-  - **Build Tool:** Vite
-  - **State Management & Data Fetching:** React Query, Context API
-  - **Styling:** TailwindCSS, CSS Modules, Shadcn/ui
-  - **Animations:** GSAP
-  - **HTTP Client:** Axios
+| Category | Technology |
+|----------|------------|
+| Framework | React 18 |
+| Build Tool | Vite |
+| State Management | React Query, Context API |
+| Styling | CSS Modules, Vanilla CSS |
+| Animations | GSAP, SplitText, ScrollTrigger |
+| HTTP Client | Axios |
+| Routing | React Router v6 |
+
+### Frontend - Admin
+
+| Category | Technology |
+|----------|------------|
+| Framework | React 18 + TypeScript |
+| Build Tool | Vite |
+| State Management | React Query, Zustand |
+| Styling | TailwindCSS, Shadcn/ui |
+| Charts | Recharts |
+| HTTP Client | Axios |
 
 ### Backend
 
-  - **Runtime:** Node.js
-  - **Framework:** Express.js
-  - **Database:** MongoDB (Primary Data), Pinecone (Vector Database for RAG)
-  - **AI & NLP:** OpenAI API, LangChain
-  - **Authentication:** JWT, Google OAuth
-  - **Payment Gateways:** PayOS, Coinbase Commerce
-  - **Media Storage:** Cloudinary
-  - **Automation:** n8n
+| Category | Technology |
+|----------|------------|
+| Runtime | Node.js (v18+) |
+| Framework | Express.js |
+| Database | MongoDB (Primary), Pinecone (Vector DB for RAG) |
+| AI & NLP | OpenAI API (GPT-4o-mini, Embeddings) |
+| Authentication | JWT, Google OAuth 2.0 |
+| Payment Gateways | PayOS (VND), NowPayments (USDT BSC) |
+| Media Storage | Cloudinary |
+| Email | Nodemailer |
 
 ### Infrastructure
 
-  - **Frontend Hosting:** Vercel
-  - **Backend Hosting:** Self-hosted Linux Server
+| Component | Platform |
+|-----------|----------|
+| Client Frontend | Vercel |
+| Admin Frontend | Vercel |
+| Backend API | Self-hosted Linux Server (PM2 + Nginx) |
 
 ## System Architecture
 
-```text
+```
 devenir/
-├── server/                 # Backend API (Node.js/Express)
-│   ├── config/             # Configuration (DB, Pinecone, Payments)
-│   ├── controllers/        # Business logic
-│   ├── models/             # Mongoose schemas
-│   ├── routes/             # API endpoints
-│   ├── middleware/         # Auth, validation, error handling
-│   ├── rag/                # AI logic (Pinecone vector search)
-│   └── server.js           # Entry point
+├── server/                     # Backend API (Node.js/Express)
+│   ├── config/                 # Configuration (DB, Pinecone, Payments)
+│   ├── controllers/            # Business logic
+│   ├── models/                 # Mongoose schemas
+│   ├── routes/                 # API endpoints
+│   ├── middleware/             # Auth, validation, error handling
+│   ├── services/
+│   │   ├── rag/                # RAG AI System
+│   │   │   ├── core/           # Vector search, context builder
+│   │   │   ├── embeddings/     # OpenAI embeddings
+│   │   │   ├── generation/     # LLM response generation
+│   │   │   ├── orchestrators/  # Intent classification, routing
+│   │   │   ├── retrieval/      # Document retrieval
+│   │   │   └── specialized/    # Domain-specific services
+│   │   │       ├── product-advisor.service.js
+│   │   │       ├── size-advisor.service.js
+│   │   │       ├── style-matcher.service.js
+│   │   │       ├── order-lookup.service.js
+│   │   │       └── policy-faq.service.js
+│   │   ├── payos/              # PayOS payment integration
+│   │   └── nowpayments/        # NowPayments crypto integration
+│   └── server.js               # Entry point
 │
-├── client/                 # Customer Frontend
+├── client/                     # Customer Frontend
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Route pages
-│   │   └── services/       # API integration
+│   │   ├── components/         # Reusable UI components
+│   │   ├── pages/              # Route pages
+│   │   │   ├── HomePage/       # Landing page with GSAP animations
+│   │   │   ├── ProductDetail/  # Product details, size selection
+│   │   │   ├── Checkout/       # Shipping, payment flow
+│   │   │   ├── PayOS/          # PayOS payment result
+│   │   │   └── NowPayments/    # Crypto payment result
+│   │   ├── features/           # Feature modules
+│   │   │   ├── nowpayments/    # NowPayments API
+│   │   │   └── chat/           # AI Chat components
+│   │   └── services/           # API integration
 │
-├── admin/                  # Administration Frontend
+├── admin/                      # Administration Frontend (TypeScript)
 │   ├── src/
-│   │   ├── components/     # Dashboard widgets
-│   │   ├── pages/          # Management views
-│   │   └── services/       # API integration
+│   │   ├── components/         # Dashboard widgets (Shadcn/ui)
+│   │   ├── pages/              # Management views
+│   │   └── services/           # API integration
 ```
 
 ## Prerequisites
 
 Ensure the following are installed on your local machine:
 
-  - Node.js (v18.x or higher)
-  - npm or yarn
-  - MongoDB (Local or Atlas)
+- Node.js (v18.x or higher)
+- npm or yarn
+- MongoDB (Local or Atlas)
 
 ## Installation & Setup
 
-### 1\. Clone the Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/devenir.git
 cd devenir
 ```
 
-### 2\. Backend Setup
+### 2. Backend Setup
 
 ```bash
 cd server
@@ -112,7 +159,7 @@ cp .env.example .env
 npm run dev
 ```
 
-### 3\. Client Setup
+### 3. Client Setup
 
 ```bash
 cd ../client
@@ -121,7 +168,7 @@ cp .env.example .env
 npm run dev
 ```
 
-### 4\. Admin Setup
+### 4. Admin Setup
 
 ```bash
 cd ../admin
@@ -138,7 +185,6 @@ Create a `.env` file in the `server` directory with the following variables:
 # Database
 MONGO_URI=mongodb+srv://...
 PINECONE_API_KEY=...
-PINECONE_ENVIRONMENT=...
 PINECONE_INDEX=...
 
 # Security
@@ -146,17 +192,27 @@ JWT_SECRET=your_secure_secret
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 
-# Services
+# AI Services
 OPENAI_API_KEY=...
+
+# Media Storage
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 
-# Payments
+# Payment - PayOS (VND)
 PAYOS_CLIENT_ID=...
 PAYOS_API_KEY=...
 PAYOS_CHECKSUM_KEY=...
-COINBASE_COMMERCE_API_KEY=...
+
+# Payment - NowPayments (Crypto)
+NOWPAYMENTS_API_KEY=...
+NOWPAYMENTS_IPN_SECRET=...
+NOWPAYMENTS_SANDBOX=false  # Set to 'true' for testing
+
+# URLs
+SERVER_URL=https://your-server-domain.com
+CLIENT_URL=https://your-client-domain.com
 ```
 
 ## Deployment
@@ -165,50 +221,92 @@ COINBASE_COMMERCE_API_KEY=...
 
 Both frontend applications are optimized for deployment on **Vercel**.
 
-1.  Connect your GitHub repository to Vercel.
-2.  Configure the build settings (Output directory: `dist`).
-3.  Add the necessary environment variables (`VITE_API_URL`, etc.) in the Vercel dashboard.
+1. Connect your GitHub repository to Vercel.
+2. Configure the build settings:
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+3. Add the necessary environment variables (`VITE_API_URL`, etc.) in the Vercel dashboard.
 
 ### Backend
 
 The backend is designed to run on a **Linux Server** (e.g., Ubuntu/Debian).
 
-1.  **Environment:** Ensure Node.js and PM2 are installed on the server.
-2.  **Setup:**
-    ```bash
-    git pull origin main
-    npm install --production
-    ```
-3.  **Process Management:** Use PM2 to keep the server running.
-    ```bash
-    pm2 start server.js --name "devenir-api"
-    ```
-4.  **Reverse Proxy:** Configure Nginx to forward requests from port 80/443 to your Node.js port.
+1. **Environment:** Ensure Node.js and PM2 are installed on the server.
+2. **Setup:**
+   ```bash
+   git pull origin main
+   npm install --production
+   ```
+3. **Process Management:** Use PM2 to keep the server running.
+   ```bash
+   pm2 start server.js --name "devenir-api"
+   ```
+4. **Reverse Proxy:** Configure Nginx to forward requests from port 80/443 to your Node.js port.
 
 ## API Overview
 
 ### Authentication
 
-  - `POST /api/auth/register`: Register a new user.
-  - `POST /api/auth/login`: Authenticate user.
-  - `POST /api/auth/google`: Handle Google OAuth.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Authenticate user |
+| POST | `/api/auth/google` | Handle Google OAuth |
 
 ### Products
 
-  - `GET /api/products`: Retrieve product list with pagination and filters.
-  - `GET /api/products/:id`: Retrieve product details.
-  - `POST /api/products`: Create new product (Admin only).
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/products` | Retrieve product list with pagination and filters |
+| GET | `/api/products/:id` | Retrieve product details |
+| POST | `/api/products` | Create new product (Admin only) |
 
-### Orders
+### Cart
 
-  - `POST /api/orders`: Create a new order.
-  - `POST /api/orders/pay-os`: Initiate PayOS transaction.
-  - `POST /api/orders/coinbase`: Initiate Coinbase transaction.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/cart` | Get user's cart |
+| POST | `/api/cart/add` | Add item to cart |
+| PUT | `/api/cart/update` | Update cart item quantity |
+| DELETE | `/api/cart/remove/:variantId` | Remove item from cart |
+
+### Payments
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/payments/payos/session` | Create PayOS payment link |
+| POST | `/api/payments/payos/webhook` | PayOS IPN callback |
+| GET | `/api/payments/payos/order/:orderCode` | Get PayOS order status |
+| POST | `/api/payments/nowpayments/session` | Create NowPayments invoice (USDT BSC) |
+| POST | `/api/payments/nowpayments/webhook` | NowPayments IPN callback |
+| GET | `/api/payments/nowpayments/status/:orderId` | Get NowPayments order status |
+
+### AI Chat
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/chat` | Send message to AI assistant |
+| GET | `/api/chat/history` | Get chat history |
+
+## Payment Integration
+
+### PayOS (Vietnam Bank Transfer)
+
+- Supports QR code and bank transfer
+- Currency: VND
+- Real-time payment confirmation via webhook
+
+### NowPayments (Cryptocurrency)
+
+- Supports USDT on BSC (BEP-20) network
+- Low transaction fees (~$0.10)
+- Blockchain confirmation via IPN webhook
+- Sandbox mode available for testing
 
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
------
+---
 
-### Would you like me to generate a sample Nginx configuration file for your Linux backend server?
+**Built with ❤️ by Devenir Team**
