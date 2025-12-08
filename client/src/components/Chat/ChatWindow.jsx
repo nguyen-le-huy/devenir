@@ -274,7 +274,7 @@ const ChatWindow = ({ onClose }) => {
                         // Add confirmation bot message
                         const confirmMsg = {
                             id: Date.now(),
-                            text: `Đã thêm **${actionData.product?.name || 'sản phẩm'}** vào giỏ hàng! 🛒`,
+                            text: `Đã thêm **${actionData.product?.name || 'sản phẩm'}** vào giỏ hàng!`,
                             sender: 'bot',
                             timestamp: new Date()
                         };
