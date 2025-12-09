@@ -3,18 +3,19 @@
     display: flex;
     flex-direction: column;
     gap: 40px;
+    min-height: 100vh;
 }
 
 .title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 500;
 }
 
-.yourImage,
-.similarProducts {
+.yourImage {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
+    align-items: flex-start;
 }
 
 .imageContainer {
@@ -26,4 +27,103 @@
 .imageContainer>img {
     width: 200px;
     height: auto;
+    object-fit: cover;
+}
+
+/* Similar Products Section */
+.similarProducts {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--light-gray);
+    position: sticky;
+    background-color: var(--white);
+    z-index: 10;
+}
+
+.count {
+    font-size: 14px;
+    color: var(--dark-gray);
+}
+
+/* Product Grid - matches ProductByCategory layout */
+.productList {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Empty State */
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    min-height: 60vh;
+    text-align: center;
+}
+
+.emptyState h2 {
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.emptyState p {
+    font-size: 16px;
+    color: var(--dark-gray);
+}
+
+.emptyState button {
+    padding: 12px 30px;
+    background-color: var(--black);
+    color: var(--white);
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.emptyState button:hover {
+    opacity: 0.8;
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+    .productList {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .visuallySimilar {
+        padding: 40px 15px;
+    }
+
+    .productList {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .productList {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .imageContainer>img {
+        width: 150px;
+    }
 }

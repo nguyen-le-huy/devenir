@@ -1,18 +1,18 @@
 ---
-description: Workflow chi tiết để tích hợp chức năng tìm kiếm sản phẩm bằng hình ảnh (Image Search) sử dụng Pinecone + CLIP - 100% miễn phí với HuggingFace
+description: Workflow tích hợp tìm kiếm sản phẩm bằng hình ảnh (Visual Search) sử dụng OpenAI + Pinecone
 ---
 
-# 🖼️ Image Search với Pinecone + CLIP
+# 🖼️ Visual Search - OpenAI + Pinecone
 
 ## 📋 Tổng Quan
 
 | Thông tin | Chi tiết |
 |-----------|----------|
 | **Mục đích** | Cho phép user upload ảnh để tìm sản phẩm tương tự |
-| **Tech Stack** | HuggingFace CLIP API + Pinecone |
-| **Chi phí** | $0 (free tier) |
-| **Độ chính xác** | 85-95% |
-| **Thời gian implement** | 3-4 giờ |
+| **Tech Stack** | OpenAI GPT-4o-mini + text-embedding-3-small + Pinecone |
+| **Chi phí** | ~$0.01/ảnh (sử dụng OpenAI API key có sẵn) |
+| **Độ chính xác** | 80-85% |
+| **Status** | ✅ Đã implement hoàn chỉnh |
 
 ## 🏗️ Kiến trúc
 
@@ -20,135 +20,67 @@ description: Workflow chi tiết để tích hợp chức năng tìm kiếm sả
 User Upload Image
        │
        ▼
-┌─────────────────┐
-│     SERVER      │
-│                 │
-│  1. Nhận ảnh    │
-│  2. Gọi CLIP    │──────▶ HuggingFace API (free)
-│  3. Vector      │              │
-│     Search      │◀─────────────┘
-│                 │
-│  4. Query       │──────▶ Pinecone (đã có)
-│     Pinecone    │              │
-│                 │◀─────────────┘
-│  5. Return      │
-│     Results     │
-└────────┬────────┘
-         │
-         ▼
-   Similar Products
+┌─────────────────────────────────────────────────┐
+│                    SERVER                        │
+│                                                  │
+│  1. Nhận ảnh (base64)                           │
+│  2. GPT-4o-mini mô tả ảnh                       │  ──▶ OpenAI API
+│  3. text-embedding-3-small tạo embedding (512d) │
+│  4. Query Pinecone tìm similar                  │  ──▶ Pinecone (visual-search)
+│  5. Fetch product details từ MongoDB            │
+│  6. Return results                              │
+│                                                  │
+└──────────────────────┬──────────────────────────┘
+                       │
+                       ▼
+              Similar Products
 ```
 
-## 📁 Files cần tạo
+---
 
-### Server
+## 📁 Cấu trúc Files
+
+### Server-side
 ```
 server/
 ├── services/imageSearch/
-│   ├── clipEmbedding.js      # Gọi HuggingFace CLIP API
-│   └── imageVectorStore.js   # Pinecone operations (512 dims)
+│   ├── clipEmbedding.js      # GPT-4o-mini + text-embedding-3-small (512 dims)
+│   └── imageVectorStore.js   # Pinecone operations (visual-search index)
 ├── controllers/
-│   └── ImageSearchController.js
+│   └── ImageSearchController.js  # API endpoints
 ├── routes/
-│   └── imageSearchRoutes.js
+│   └── imageSearchRoutes.js      # Route definitions
 └── scripts/
     └── ingestImageEmbeddings.js  # Tạo embeddings cho products
 ```
 
-### Client
+### Client-side
 ```
 client/src/
-├── components/ImageSearch/
-│   ├── ImageSearch.jsx       # UI upload + results
-│   └── ImageSearch.module.css
-├── hooks/
-│   └── useImageSearch.js     # Hook xử lý search
-└── services/
-    └── imageSearchService.js # API calls
+├── services/
+│   └── imageSearchService.js     # API calls
+├── components/
+│   └── VisualSearch/
+│       ├── VisualSearch.jsx      # Upload modal với drag-drop
+│       └── VisualSearch.module.css
+└── pages/
+    └── VisuallySimilar/
+        ├── VisuallySimilar.jsx   # Trang kết quả
+        └── VisuallySimilar.module.css
 ```
 
 ---
 
-## 🔧 Implementation Steps
+## 🔧 Environment Variables
 
-### Phase 1: Setup (15 phút)
+Thêm vào `server/.env`:
+```env
+# OpenAI (đã có sẵn)
+OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxx
 
-1. **Lấy HuggingFace API Key**
-   - Đăng ký https://huggingface.co/
-   - Settings → Access Tokens → Create (read permission)
-
-2. **Thêm env variables**
-   ```env
-   HUGGINGFACE_API_KEY=hf_xxxxxxxxxx
-   PINECONE_IMAGE_INDEX_NAME=devenir-images
-   ```
-
-### Phase 2: Server (1.5 giờ)
-
-1. **Tạo CLIP Embedding Service** (`clipEmbedding.js`)
-   - Function `getImageEmbedding(imageUrl)` → 512-dim vector
-   - Function `getImageEmbeddingFromBase64(base64)` → 512-dim vector
-   - Gọi HuggingFace API: `openai/clip-vit-base-patch32`
-
-2. **Tạo Image Vector Store** (`imageVectorStore.js`)
-   - Tạo Pinecone index mới với **512 dimensions** (CLIP)
-   - Functions: `upsertImageEmbeddings()`, `searchSimilarImages()`
-
-3. **Tạo Controller + Routes**
-   - `POST /api/image-search/find-similar` - Nhận base64 image, trả về similar products
-   - `GET /api/image-search/health` - Health check
-
-4. **Tạo Ingestion Script** (`ingestImageEmbeddings.js`)
-   - Lấy tất cả ProductVariant có mainImage
-   - Tạo CLIP embedding cho mỗi ảnh
-   - Upsert vào Pinecone với metadata (variantId, productName, price, etc.)
-
-### Phase 3: Client (1 giờ)
-
-1. **Tạo Service** (`imageSearchService.js`)
-   - `findSimilarProducts(base64Image, topK)`
-
-2. **Tạo Hook** (`useImageSearch.js`)
-   - State: `isSearching`, `results`, `error`
-   - Function: `searchByImage(file)`
-   - Convert file → base64 → gọi API
-
-3. **Tạo Component** (`ImageSearch.jsx`)
-   - Drag & drop zone
-   - Image preview
-   - Results grid với similarity score
-   - Loading/error states
-
-### Phase 4: Integration (30 phút)
-
-1. **Chạy ingestion script**
-   ```bash
-   node scripts/ingestImageEmbeddings.js
-   ```
-
-2. **Thêm nút camera vào Search component**
-   - Icon camera bên cạnh search input
-   - Mở modal ImageSearch khi click
-
-3. **Test end-to-end**
-
----
-
-## ⚠️ Lưu ý quan trọng
-
-### Pinecone Index
-- Index hiện tại dùng **1536 dims** (OpenAI)
-- CLIP cần **512 dims** → Tạo index mới `devenir-images`
-
-### HuggingFace Rate Limits
-- Free tier: **30,000 requests/tháng**
-- Ingestion 500 products = 500 requests
-- Còn ~29,500 searches/tháng
-
-### CLIP Model
-- Model: `openai/clip-vit-base-patch32`
-- Output: 512-dimensional vector
-- Hỗ trợ cả image và text embedding (cùng embedding space)
+# Pinecone Image Search Index
+PINECONE_IMAGE_INDEX_NAME=visual-search
+```
 
 ---
 
@@ -163,8 +95,8 @@ client/src/
 ### Request Body (find-similar)
 ```json
 {
-  "image": "<base64_encoded_image>",
-  "topK": 8
+  "image": "data:image/jpeg;base64,/9j/4AAQ...",
+  "topK": 12
 }
 ```
 
@@ -174,36 +106,141 @@ client/src/
   "success": true,
   "data": [
     {
-      "variantId": "...",
-      "productName": "...",
-      "color": "...",
-      "price": 299,
-      "mainImage": "https://...",
-      "similarity": 92
+      "variantId": "692db287e643bf4d59d9cbe4",
+      "score": 0.85,
+      "similarity": 85,
+      "productName": "Heraldic Knight Wool Sweater",
+      "color": "Night black",
+      "price": 2000,
+      "mainImage": "https://res.cloudinary.com/...",
+      "size": "M",
+      "sku": "HER-M-NIGHT-BLACK",
+      "inStock": true,
+      "urlSlug": "heraldic-knight-wool-sweater"
     }
-  ]
+  ],
+  "count": 12
 }
 ```
 
 ---
 
-## 🧪 Testing Checklist
+## 🚀 Setup & Chạy
 
-- [ ] HuggingFace API key hoạt động
-- [ ] Pinecone index 512 dims được tạo
-- [ ] Script ingestion chạy thành công
-- [ ] API trả về kết quả đúng
-- [ ] UI drag & drop hoạt động
-- [ ] Mobile responsive
-- [ ] Error handling
+### 1. Ingest Product Embeddings (chỉ chạy 1 lần hoặc khi có product mới)
+
+```bash
+cd server
+
+# Ingest tất cả products
+node scripts/ingestImageEmbeddings.js
+
+# Chỉ ingest products mới (chưa có embedding)
+node scripts/ingestImageEmbeddings.js --new
+
+# Clear và ingest lại từ đầu
+node scripts/ingestImageEmbeddings.js --clear
+```
+
+### 2. Test API
+```bash
+# Health check
+curl http://localhost:3111/api/image-search/health
+
+# Find similar (với test image)
+curl -X POST http://localhost:3111/api/image-search/find-similar \
+  -H "Content-Type: application/json" \
+  -d '{"image": "data:image/png;base64,iVBOR...", "topK": 8}'
+```
 
 ---
 
-## 🎯 Kết quả mong đợi
+## 🎯 User Flow
 
-| Metric | Target |
-|--------|--------|
-| Ingestion time | ~2-3 phút (500 products) |
-| Search latency | 500ms - 1.5s |
-| Accuracy | 85-95% |
-| Monthly cost | $0 |
+1. **User mở Search** → Click vào icon Visual Search (camera)
+2. **VisualSearch modal mở** → User upload ảnh (click hoặc drag-drop)
+3. **Loading state** hiển thị preview ảnh + spinner
+4. **API call** → Server xử lý với GPT-4o-mini + Pinecone
+5. **Navigate** đến `/visually-similar` với kết quả
+6. **VisuallySimilar page** hiển thị ảnh đã upload + grid sản phẩm tương tự
+
+---
+
+## ⚙️ Chi tiết Implementation
+
+### Server: clipEmbedding.js
+- Sử dụng **GPT-4o-mini** để mô tả ảnh (fashion-specific prompt)
+- Sử dụng **text-embedding-3-small** với `dimensions: 512`
+- Rate limiting: 200ms giữa các requests
+
+### Server: imageVectorStore.js
+- Index: `visual-search` (512 dimensions)
+- Namespace: `product-images`
+- Metric: cosine similarity
+
+### Server: ImageSearchController.js
+- Validate image size (max 10MB)
+- Generate embedding từ uploaded image
+- Query Pinecone với topK results
+- Fetch full product data từ MongoDB
+- Return formatted results
+
+### Client: VisualSearch.jsx
+- Drag & drop + click to upload
+- File validation (jpeg, png, webp, max 10MB)
+- Preview image + loading spinner
+- Navigate with state to results page
+
+### Client: VisuallySimilar.jsx
+- Nhận data từ navigation state
+- Deduplicate products (by name + color)
+- Display với ScarfCard grid (giống ProductByCategory)
+
+---
+
+## 📈 Performance
+
+| Metric | Value |
+|--------|-------|
+| Ingestion time | ~3 phút cho 119 products |
+| Search latency | 1-3s (GPT-4o-mini + Pinecone) |
+| Pinecone vectors | 119 (1 per product variant) |
+| Embedding dimensions | 512 |
+
+---
+
+## ⚠️ Rate Limits
+
+OpenAI có rate limit **200,000 TPM** cho gpt-4o-mini. Nếu ingestion bị lỗi 429:
+1. Chờ 1-2 phút
+2. Chạy lại với `--new` để tiếp tục từ chỗ dừng
+
+---
+
+## 🧪 Testing Checklist
+
+- [x] API health check trả về `healthy`
+- [x] Ingestion script chạy thành công (119 vectors)
+- [x] Upload ảnh hiển thị loading state
+- [x] Navigate đến kết quả sau khi search
+- [x] Sản phẩm tương tự hiển thị đúng
+- [x] Click vào sản phẩm navigate đến product detail
+
+---
+
+## 🔄 Khi thêm Product mới
+
+Chạy script với `--new` để chỉ ingest products chưa có embedding:
+```bash
+cd server
+node scripts/ingestImageEmbeddings.js --new
+```
+
+---
+
+## 📝 Notes
+
+- Approach: **Description-based** (GPT-4 Vision mô tả → text embedding)
+- Độ chính xác: ~80-85% (tốt cho fashion items)
+- Chi phí: ~$0.01/ảnh mô tả + ~$0.0001/embedding
+- Ưu điểm: Dùng OpenAI API key có sẵn, không cần đăng ký thêm service

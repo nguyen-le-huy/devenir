@@ -37,6 +37,24 @@
     gap: 20px;
     flex-direction: column;
     justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px dashed transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.input:hover {
+    background-color: #f0f0f0;
+}
+
+.input.dragging {
+    border-color: var(--dark-gray);
+    background-color: #e8e8e8;
+}
+
+.input.uploading {
+    cursor: default;
 }
 
 .content {
@@ -69,4 +87,73 @@
     font-size: 16px;
     font-weight: 400;
     color: var(--dark-gray);
+}
+
+/* Preview Image */
+.previewImage {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.3;
+    top: 0;
+    left: 0;
+}
+
+/* Loading Content */
+.loadingContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    z-index: 1;
+}
+
+.loadingContent p {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Spinner */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--light-gray);
+    border-top-color: var(--black);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error Message */
+.error {
+    padding: 10px 15px;
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+}
+
+.error p {
+    color: #dc2626;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Mobile Responsive */
+@media screen and (max-width: 768px) {
+    .visualSearchContainer {
+        width: 95%;
+        height: auto;
+        min-height: 400px;
+        padding: 15px;
+    }
+
+    .input {
+        min-height: 300px;
+    }
 }

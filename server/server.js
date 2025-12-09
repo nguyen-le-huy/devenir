@@ -21,6 +21,7 @@ import inventoryRoutes from './routes/inventoryRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import imageSearchRoutes from './routes/imageSearchRoutes.js';
 import { handlePayOSWebhook } from './controllers/PaymentController.js';
 
 
@@ -166,6 +167,7 @@ app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes); // RAG Chat API
+app.use('/api/image-search', imageSearchRoutes); // Visual Search API
 
 app.get('/', (req, res) => {
   res.send('API is running...');
