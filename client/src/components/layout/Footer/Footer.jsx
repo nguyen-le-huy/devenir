@@ -24,7 +24,7 @@ const Footer = () => {
 
         ScrollTrigger.create({
             trigger: footer,
-            start: 'top 20%',
+            start: 'top 0%',
             onEnter: () => {
                 // Timeline để animate tất cả cùng lúc
                 const tl = gsap.timeline();
