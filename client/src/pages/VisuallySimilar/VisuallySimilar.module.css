@@ -1,0 +1,29 @@
+.visuallySimilar {
+    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.yourImage,
+.similarProducts {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.imageContainer {
+    padding: 5px;
+    border: 1px solid var(--black);
+    width: fit-content;
+}
+
+.imageContainer>img {
+    width: 200px;
+    height: auto;
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './ColourVarients.module.css';
 import ScarfCard from '../ProductCard/ScarfCard';
 import { useLenisControl } from '../../hooks/useLenisControl';
+import Backdrop from '../Backdrop';
 
 const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantId, colorMap = {} }) => {
     const navigate = useNavigate();
@@ -74,7 +75,7 @@ const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantI
 
     return (
         <>
-            <div className={styles.backdrop} onClick={onClose} data-lenis-prevent></div>
+            <Backdrop isOpen={isOpen} onClick={onClose} />
             <div className={styles.colourVarients} data-lenis-prevent>
                 <div className={styles.header}>
                     <p>{uniqueColorVariants.length} {uniqueColorVariants.length === 1 ? 'Colour' : 'Colours'}</p>

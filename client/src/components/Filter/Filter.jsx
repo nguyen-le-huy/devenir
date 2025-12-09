@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './Filter.module.css';
 import { useLenisControl } from '../../hooks/useLenisControl';
 import { lenisInstance } from '../../App';
+import Backdrop from '../Backdrop';
 
 const Filter = ({
     isOpen,
@@ -134,7 +135,7 @@ const Filter = ({
     return (
         <>
             {/* Dark Overlay */}
-            <div className={styles.backdrop} onClick={onClose} data-lenis-prevent></div>
+            <Backdrop isOpen={isOpen} onClick={onClose} zIndex={1999} />
 
             {/* Filter Panel */}
             <div ref={overlayRef} className={`${styles.overlayFilter} ${isOpen ? styles.show : ''} `} data-lenis-prevent>

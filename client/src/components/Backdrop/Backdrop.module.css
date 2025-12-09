@@ -1,0 +1,26 @@
+/* Backdrop Component Styles */
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, var(--backdrop-opacity, 0.5));
+    z-index: var(--backdrop-z-index, 1001);
+
+    /* Initial state - for animated pattern */
+    opacity: 0;
+    pointer-events: none;
+
+    /* GPU acceleration */
+    will-change: opacity;
+    backface-visibility: hidden;
+
+    /* Smooth transition */
+    transition: opacity 0.3s ease-out;
+}
+
+.backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+}

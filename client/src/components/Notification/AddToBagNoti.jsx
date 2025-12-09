@@ -2,6 +2,7 @@ import styles from "./AddToBagNoti.module.css";
 import { useLenisControl } from "../../hooks/useLenisControl";
 import { useNavigate } from "react-router-dom";
 import { useRandomVariants } from "../../hooks/useProducts";
+import Backdrop from "../Backdrop";
 
 const AddToBagNoti = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
@@ -31,11 +32,7 @@ const AddToBagNoti = ({ isOpen, onClose }) => {
     return (
         <>
             {/* Dark Overlay */}
-            <div
-                className={styles.backdrop}
-                onClick={onClose}
-                data-lenis-prevent
-            ></div>
+            <Backdrop isOpen={isOpen} onClick={onClose} />
             {/* Notification */}
             <div className={styles.notification} data-lenis-prevent>
                 <div className={styles.header}>

@@ -1,5 +1,6 @@
 import styles from "./SizeAndFit.module.css";
 import { useLenisControl } from "../../hooks/useLenisControl";
+import Backdrop from "../Backdrop";
 
 const SizeAndFit = ({ isOpen, onClose }) => {
     // Lock scroll khi modal mở using useLenisControl instead of useScrollLock
@@ -7,11 +8,7 @@ const SizeAndFit = ({ isOpen, onClose }) => {
 
     return (
         <>
-            <div
-                className={styles.backdrop}
-                onClick={onClose}
-                data-lenis-prevent
-            ></div>
+            <Backdrop isOpen={isOpen} onClick={onClose} />
             <div className={styles.sizeAndFit} data-lenis-prevent>
                 <div className={styles.header}>
                     <span>Size & Fit</span>

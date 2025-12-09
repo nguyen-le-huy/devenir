@@ -6,6 +6,7 @@ import { useGSAP } from '@gsap/react';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
 import { useLenisControl } from '../../hooks/useLenisControl';
 import { getAllProducts, getProductVariants } from '../../services/productService';
+import VisualSearch from '../VisualSearch/VisualSearch';
 
 const Search = ({ onClose }) => {
     const inputRef = useRef(null);
@@ -22,9 +23,11 @@ const Search = ({ onClose }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
     const debounceTimerRef = useRef(null);
 
-    useLenisControl(true);
+    // Only lock scroll when Search is active (not VisualSearch)
+    useLenisControl(!isVisualSearchOpen);
 
     // ✅ Sử dụng useGSAP cho animations với proper cleanup
     useGSAP(() => {
@@ -184,6 +187,17 @@ const Search = ({ onClose }) => {
         setSearchQuery(e.target.value);
     }, []);
 
+    // Handle Visual Search icon click
+    const handleVisualSearchClick = useCallback(() => {
+        setIsVisualSearchOpen(true);
+    }, []);
+
+    // Handle Visual Search close - close entire Search component
+    const handleVisualSearchClose = useCallback(() => {
+        setIsVisualSearchOpen(false);
+        handleClose(); // Close Search as well
+    }, [handleClose]);
+
     const handleResultClick = useCallback(async (product) => {
         try {
             // Lấy variants của product này
@@ -238,37 +252,56 @@ const Search = ({ onClose }) => {
     }, [searchResults, isSearching, searchQuery, handleResultClick]);
 
     return (
-        <div ref={containerRef} data-lenis-prevent>
-            <div
-                ref={backdropRef}
-                className={styles.backdrop}
-                style={{ top: `${headerHeight}px` }}
-                onClick={handleClose}
-            ></div>
+        <>
+            {/* Visual Search Modal */}
+            <VisualSearch
+                isOpen={isVisualSearchOpen}
+                onClose={handleVisualSearchClose}
+            />
 
-            <div
-                ref={searchContainerRef}
-                className={styles.searchContainer}
-                style={{ top: `${headerHeight}px` }}
-                data-lenis-prevent
-            >
-                <div className={styles.inputWrapper} ref={inputWrapperRef}>
-                    <input
-                        type="text"
-                        placeholder="Search"
-                        ref={inputRef}
-                        value={searchQuery}
-                        onChange={handleInputChange}
-                    />
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 22" fill="none">
-                        <path d="M22.619 1.19043L32.1428 10.719L22.619 20.2452M1.19043 10.7214H32.1428" stroke="#0E0E0E" strokeWidth="2.38095" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+            {/* Search - hide when VisualSearch is open */}
+            {!isVisualSearchOpen && (
+                <div ref={containerRef} data-lenis-prevent>
+                    <div
+                        ref={backdropRef}
+                        className={styles.backdrop}
+                        style={{ top: `${headerHeight}px` }}
+                        onClick={handleClose}
+                    ></div>
+
+                    <div
+                        ref={searchContainerRef}
+                        className={styles.searchContainer}
+                        style={{ top: `${headerHeight}px` }}
+                        data-lenis-prevent
+                    >
+                        <div className={styles.inputWrapper} ref={inputWrapperRef}>
+                            <input
+                                type="text"
+                                placeholder="Search"
+                                ref={inputRef}
+                                value={searchQuery}
+                                onChange={handleInputChange}
+                            />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="22"
+                                height="22"
+                                viewBox="0 0 22 22"
+                                fill="none"
+                                className={styles.visualSearchIcon}
+                                onClick={handleVisualSearchClick}
+                            >
+                                <path d="M1 6V3.5C1 2.83696 1.26339 2.20107 1.73223 1.73223C2.20107 1.26339 2.83696 1 3.5 1H6M1 16V18.5C1 19.163 1.26339 19.7989 1.73223 20.2678C2.20107 20.7366 2.83696 21 3.5 21H6M16 1H18.5C19.163 1 19.7989 1.26339 20.2678 1.73223C20.7366 2.20107 21 2.83696 21 3.5V6M16 21H18.5C19.163 21 19.7989 20.7366 20.2678 20.2678C20.7366 19.7989 21 19.163 21 18.5V16M7.25 11C7.25 11.9946 7.64509 12.9484 8.34835 13.6517C9.05161 14.3549 10.0054 14.75 11 14.75C11.9946 14.75 12.9484 14.3549 13.6517 13.6517C14.3549 12.9484 14.75 11.9946 14.75 11C14.75 10.0054 14.3549 9.05161 13.6517 8.34835C12.9484 7.64509 11.9946 7.25 11 7.25C10.0054 7.25 9.05161 7.64509 8.34835 8.34835C7.64509 9.05161 7.25 10.0054 7.25 11Z" stroke="#0E0E0E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </div>
+                        <div className={styles.results} ref={resultsRef}>
+                            {renderedResults}
+                        </div>
+                    </div>
                 </div>
-                <div className={styles.results} ref={resultsRef}>
-                    {renderedResults}
-                </div>
-            </div>
-        </div>
+            )}
+        </>
     );
 }
 

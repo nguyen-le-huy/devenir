@@ -3,6 +3,7 @@ import { useLenisControl } from '../../hooks/useLenisControl';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useProductVariants } from '../../hooks/useProducts';
 import { useUpdateCartItem, useAddToCart, useRemoveFromCart } from '../../hooks/useCart';
+import Backdrop from '../Backdrop';
 
 const EditItem = ({ item, onClose }) => {
     const [isVisible, setIsVisible] = useState(false);
@@ -156,7 +157,7 @@ const EditItem = ({ item, onClose }) => {
 
     return (
         <div data-lenis-prevent>
-            <div className={`${styles.backdrop} ${isVisible ? styles.visible : ''}`} onClick={handleClose}></div>
+            <Backdrop visible={isVisible} onClick={handleClose} opacity={0.7} />
             <div className={`${styles.editItem} ${isVisible ? styles.visible : ''}`} data-lenis-prevent>
                 <div className={styles.header}>
                     <p>Edit Item</p>

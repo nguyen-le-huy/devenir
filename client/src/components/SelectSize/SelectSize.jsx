@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLenisControl } from "../../hooks/useLenisControl";
 import { useAddToCart } from "../../hooks/useCart.js";
 import SizeAndFit from "../SizeAndFit/SizeAndFit.jsx";
+import Backdrop from "../Backdrop";
 
 const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, product = null, onAddToCartSuccess }) => {
     const [isSizeAndFitOpen, setIsSizeAndFitOpen] = useState(false);
@@ -80,11 +81,7 @@ const SelectSize = ({ isOpen, onClose, variants = [], currentVariant = null, pro
     return (
         <>
             {/* Dark Overlay */}
-            <div
-                className={styles.backdrop}
-                onClick={onClose}
-                data-lenis-prevent
-            ></div>
+            <Backdrop isOpen={true} onClick={onClose} />
             {/* Select Size Panel */}
             <div className={styles.selectSize} data-lenis-prevent>
                 <div className={styles.box}>

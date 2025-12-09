@@ -26,6 +26,7 @@ import PayOSResult from './pages/PayOS/PayOSResult.jsx';
 import NowPaymentsResult from './pages/NowPayments/NowPaymentsResult.jsx';
 import PaymentSuccessful from './pages/PaymentStatus/PaymentSuccessful.jsx';
 import PaymentFailed from './pages/PaymentStatus/PaymentFailed.jsx';
+import VisuallySimilar from './pages/VisuallySimilar/VisuallySimilar.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -95,6 +96,7 @@ function App() {
               <Route path="/products" element={<ProductByCategory />} />
               <Route path="/product-detail" element={<ProductDetail />} />
               <Route path="*" element={<HomePage />} />
+              <Route path="/visually-similar" element={<VisuallySimilar />} />
             </Route>
 
             <Route element={<CheckoutLayout />}>

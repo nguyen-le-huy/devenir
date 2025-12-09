@@ -1,10 +1,10 @@
 import styles from "./Bag.module.css";
 import { useHeaderHeight } from "../../hooks/useHeaderHeight";
-import { lenisInstance } from "../../App";
 import { useEffect, useState, useMemo } from "react";
 import { useLenisControl } from "../../hooks/useLenisControl";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../hooks/useCart.js";
+import Backdrop from "../Backdrop";
 
 export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
     const navigate = useNavigate();
@@ -78,10 +78,10 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
 
     return (
         <>
-            <div
-                className={`${styles.backdrop} ${isVisible ? styles.visible : ''}`}
-                style={{ top: `${headerHeight}px` }}
-            ></div>
+            <Backdrop
+                visible={isVisible}
+                style={{ top: `${headerHeight}px`, bottom: 0 }}
+            />
             <div
                 className={`${styles.bag} ${isVisible ? styles.visible : ''}`}
                 style={{ top: `${headerHeight}px` }}

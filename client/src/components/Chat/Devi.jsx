@@ -1,9 +1,9 @@
 // DeviOrb.jsx
 const Devi = ({ width, height }) => {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 240 240" fill="none">
+        <svg width={width} height={height} viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <filter id="filter0_f_377_447" x="0" y="0" width="240" height="240" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <filter id="filter0_f_377_447" x="0" y="0" width="110" height="110" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
                     <feFlood floodOpacity="0" result="BackgroundImageFix" />
                     <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
                     <feGaussianBlur stdDeviation="10" result="effect1_foregroundBlur_377_447">
@@ -11,194 +11,210 @@ const Devi = ({ width, height }) => {
                     </feGaussianBlur>
                 </filter>
 
-                <clipPath id="paint0_angular_377_447_clip_path"><circle cx="120" cy="120" r="100" /></clipPath>
+                <clipPath id="paint0_angular_377_447_clip_path">
+                    <circle cx="55" cy="55" r="35" />
+                </clipPath>
 
-                <filter id="filter1_f_377_447" x="15" y="15" width="210" height="210" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <filter id="filter1_f_377_447" x="15" y="15" width="80" height="80" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
                     <feFlood floodOpacity="0" result="BackgroundImageFix" />
                     <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
                     <feGaussianBlur stdDeviation="2.5" result="effect1_foregroundBlur_377_447" />
                 </filter>
 
-                <clipPath id="paint1_angular_377_447_clip_path"><circle cx="120" cy="120" r="100" /></clipPath>
+                <clipPath id="paint1_angular_377_447_clip_path">
+                    <circle cx="55" cy="55" r="35" />
+                </clipPath>
 
-                <filter id="filter2_iii_377_447" x="20" y="20" width="200" height="200" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <filter id="filter2_iii_377_447" x="20" y="20" width="70" height="70" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
                     <feFlood floodOpacity="0" result="BackgroundImageFix" />
                     <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
                     <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
                     <feOffset />
                     <feGaussianBlur stdDeviation="20" />
                     <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                    <feColorMatrix type="matrix" values="0 0 0 0 0.251563 0 0 0 0 0.8625 0 0 0 0 0.518125 0 0 0 0.6 0" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0.8625 0 0 0 0 0.251563 0 0 0 0 0.618125 0 0 0 0.6 0" />
                     <feBlend mode="normal" in2="shape" result="effect1_innerShadow_377_447" />
                     <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
                     <feOffset />
                     <feGaussianBlur stdDeviation="15" />
                     <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                    <feColorMatrix type="matrix" values="0 0 0 0 0.185226 0 0 0 0 0.945833 0 0 0 0 0.430862 0 0 0 0.5 0" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0.945833 0 0 0 0 0.185226 0 0 0 0 0.230862 0 0 0 0.5 0" />
                     <feBlend mode="normal" in2="effect1_innerShadow_377_447" result="effect2_innerShadow_377_447" />
                     <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
                     <feOffset />
                     <feGaussianBlur stdDeviation="6" />
                     <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                    <feColorMatrix type="matrix" values="0 0 0 0 0.7375 0 0 0 0 1 0 0 0 0 0.84225 0 0 0 0.6 0" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 0.7375 0 0 0 0 0.94225 0 0 0 0.6 0" />
                     <feBlend mode="normal" in2="effect2_innerShadow_377_447" result="effect3_innerShadow_377_447" />
                 </filter>
 
-                <clipPath id="paint11_angular_377_447_clip_path"><path d="M47.9985 105C24.2215 51.9765 129.999 8 112.76 52.5845C95.522 97.169 139.279 169.544 170.273 114.567C196.76 67.5845 71.7755 158.024 47.9985 105Z" /></clipPath>
+                <clipPath id="paint11_angular_377_447_clip_path">
+                    <path d="M29.8003 49.75C21.4783 31.1917 58.5003 15.8 52.4669 31.4045C46.4335 47.0091 61.7483 72.3403 72.5964 53.0982C81.8669 36.6545 38.1222 68.3082 29.8003 49.75Z" />
+                </clipPath>
 
-                <filter id="filter3_f_377_447" x="74" y="72" width="94" height="96" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                <filter id="filter3_f_377_447" x="36.3008" y="35.6001" width="38.1016" height="38.8" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
                     <feFlood floodOpacity="0" result="BackgroundImageFix" />
                     <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
                     <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_377_447" />
                 </filter>
 
-                <radialGradient id="paint2_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(78 33) rotate(63.4457) scale(97.2598 115.376)">
-                    <stop stopColor="#E4F4ED" stopOpacity="0.15" />
-                    <stop offset="1" stopColor="#D4E2DE" stopOpacity="0" />
+                <radialGradient id="paint2_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(40.3 24.55) rotate(63.4457) scale(34.0409 40.3816)">
+                    <stop stopColor="#DA72FF" stopOpacity="0.63" />
+                    <stop offset="1" stopColor="#344B9D" stopOpacity="0" />
                 </radialGradient>
-                <linearGradient id="paint3_linear_377_447" x1="62.6915" y1="170.158" x2="102.571" y2="104.815" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#DEECE6" stopOpacity="0.12" />
-                    <stop offset="1" stopColor="#E4F0EA" stopOpacity="0" />
+
+                <linearGradient id="paint3_linear_377_447" x1="34.9408" y1="72.5554" x2="48.8988" y2="49.6852" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#9777C0" stopOpacity="0.53" />
+                    <stop offset="1" stopColor="#E95BEC" stopOpacity="0" />
                 </linearGradient>
-                <radialGradient id="paint4_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(71.5216 45.6268 -36.5891 79.5533 59.2991 112.376)">
-                    <stop stopColor="#D4ECE1" />
-                    <stop offset="1" stopColor="#F4FAF8" stopOpacity="0" />
+
+                <radialGradient id="paint4_radial_377_447" cx="0" cy="0" r="1" transformOrigin="translate(33.7535 52.3316)" gradientUnits="userSpaceOnUse" gradientTransform="matrix(25.0325 15.9694 -12.8062 27.8436 33.7535 52.3316)">
+                    <stop stopColor="#C1506B" />
+                    <stop offset="1" stopColor="#F7BADE" stopOpacity="0" />
                 </radialGradient>
-                <linearGradient id="paint5_linear_377_447" x1="78.0921" y1="69.0851" x2="94.8218" y2="90.2598" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#D4ECE1" />
-                    <stop offset="1" stopColor="#EEF8F4" stopOpacity="0" />
+
+                <linearGradient id="paint5_linear_377_447" x1="40.3311" y1="37.1797" x2="46.1865" y2="44.5908" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#C150A2" />
+                    <stop offset="1" stopColor="#E0ADBC" stopOpacity="0" />
                 </linearGradient>
-                <radialGradient id="paint6_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(-16.9068 47.6327 -40.5017 -22.2082 126.72 121.066)">
-                    <stop stopColor="#D4ECE1" />
-                    <stop offset="1" stopColor="#F8FCFA" stopOpacity="0" />
+
+                <radialGradient id="paint6_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(-5.91737 16.6715 -14.1756 -7.77287 57.351 55.373)">
+                    <stop stopColor="#FF2E00" />
+                    <stop offset="1" stopColor="#FFD6CD" stopOpacity="0" />
                 </radialGradient>
-                <linearGradient id="paint7_linear_377_447" x1="178.353" y1="135.827" x2="198.116" y2="98.0207" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#D9F0E7" stopOpacity="0" />
-                    <stop offset="0.665732" stopColor="#D9F0E7" />
-                    <stop offset="0.911525" stopColor="#E4F4EC" />
+
+                <linearGradient id="paint7_linear_377_447" x1="75.4233" y1="60.5394" x2="82.3403" y2="47.3072" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#EE518C" stopOpacity="0" />
+                    <stop offset="0.665732" stopColor="#EE518C" />
+                    <stop offset="0.911525" stopColor="#FF7DAE" />
                 </linearGradient>
-                <radialGradient id="paint8_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(64.0012 117) rotate(30.6997) scale(37.2156 45.4165)">
-                    <stop stopColor="#CDE2D8" />
-                    <stop offset="1" stopColor="#CDE2D8" stopOpacity="0" />
+
+                <radialGradient id="paint8_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(35.4 53.95) rotate(30.6997) scale(13.0255 15.8958)">
+                    <stop stopColor="#8F4791" />
+                    <stop offset="1" stopColor="#8F4791" stopOpacity="0" />
                 </radialGradient>
-                <radialGradient id="paint9_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(-10 -47 60.2224 -12.6639 149 194)">
-                    <stop stopColor="#E1F0E9" stopOpacity="0" />
-                    <stop offset="1" stopColor="#EAF5F0" />
+
+                <radialGradient id="paint9_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(-3.5 -16.45 21.0779 -4.43237 65.15 80.9)">
+                    <stop stopColor="#E375DF" stopOpacity="0" />
+                    <stop offset="1" stopColor="#FF91B2" />
                 </radialGradient>
-                <linearGradient id="paint10_linear_377_447" x1="124.563" y1="128.801" x2="127.574" y2="149.206" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#FAFCFB" />
-                    <stop offset="1" stopColor="#FAFCFB" stopOpacity="0" />
+
+                <linearGradient id="paint10_linear_377_447" x1="56.5971" y1="58.0804" x2="57.651" y2="65.2222" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="white" />
+                    <stop offset="1" stopColor="white" stopOpacity="0" />
                 </linearGradient>
-                <radialGradient id="paint12_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(122.341 120.391) rotate(90) scale(36.3901 36.6523)">
-                    <stop stopColor="#FAFCFB" />
-                    <stop offset="0.165839" stopColor="#F4FAF8" />
-                    <stop offset="0.335281" stopColor="#EAF5F0" />
-                    <stop offset="1" stopColor="#E4F0EA" stopOpacity="0" />
+
+                <radialGradient id="paint12_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(55.82 55.1371) rotate(90) scale(12.7365 12.8283)">
+                    <stop stopColor="white" />
+                    <stop offset="0.165839" stopColor="white" />
+                    <stop offset="0.335281" stopColor="#FFD18B" />
+                    <stop offset="1" stopColor="#FF144D" stopOpacity="0" />
                 </radialGradient>
-                <radialGradient id="paint13_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(118.58 120.775) rotate(-180) scale(30 30)">
-                    <stop stopColor="#FBFDFC" />
-                    <stop offset="0.165839" stopColor="#F6FBF9" />
-                    <stop offset="0.335281" stopColor="#EEF8F4" />
-                    <stop offset="1" stopColor="#E4F0EA" stopOpacity="0" />
+
+                <radialGradient id="paint13_radial_377_447" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(54.5029 55.2711) rotate(-180) scale(10.5 10.5)">
+                    <stop stopColor="white" />
+                    <stop offset="0.165839" stopColor="white" />
+                    <stop offset="0.335281" stopColor="#FFD18B" />
+                    <stop offset="1" stopColor="#FF144D" stopOpacity="0" />
                 </radialGradient>
             </defs>
 
             <g filter="url(#filter0_f_377_447)">
                 <g clipPath="url(#paint0_angular_377_447_clip_path)">
-                    <g transform="matrix(0 0.1 -0.1 0 120 120)">
-                        <foreignObject x="-1010" y="-1010" width="2020" height="2020">
-                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ background: 'conic-gradient(from 90deg,rgba(168, 217, 195, 0.2) 0deg,rgba(155, 195, 177, 0.2) 112.92deg,rgba(195, 230, 215, 0.2) 360deg)', height: '100%', width: '100%', opacity: 0.3 }}></div>
+                    <g transform="matrix(0 0.035 -0.035 0 55 55)">
+                        <foreignObject x="-1028.57" y="-1028.57" width="2057.14" height="2057.14">
+                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ background: 'conic-gradient(from 90deg, rgba(123, 15, 80, 1) 0deg, rgba(65, 18, 66, 1) 112.92deg, rgba(255, 23, 23, 1) 360deg)', height: '100%', width: '100%', opacity: 0.4 }}></div>
                         </foreignObject>
                     </g>
                 </g>
-                <circle cx="120" cy="120" r="100">
-                    <animate attributeName="r" values="100;105;100" dur="2s" repeatCount="indefinite" />
+                <circle cx="55" cy="55" r="35">
+                    <animate attributeName="r" values="35;37;35" dur="2s" repeatCount="indefinite" />
                 </circle>
             </g>
 
             <g filter="url(#filter1_f_377_447)">
                 <g clipPath="url(#paint1_angular_377_447_clip_path)">
-                    <g transform="matrix(0 0.1 -0.1 0 120 120)">
-                        <foreignObject x="-1010" y="-1010" width="2020" height="2020">
-                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ background: 'conic-gradient(from 90deg,rgba(168, 217, 195, 0.35) 0deg,rgba(155, 195, 177, 0.35) 112.92deg,rgba(195, 230, 215, 0.35) 360deg)', height: '100%', width: '100%', opacity: 0.5 }}></div>
+                    <g transform="matrix(0 0.035 -0.035 0 55 55)">
+                        <foreignObject x="-1028.57" y="-1028.57" width="2057.14" height="2057.14">
+                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ background: 'conic-gradient(from 90deg, rgba(123, 15, 80, 1) 0deg, rgba(65, 18, 66, 1) 112.92deg, rgba(255, 23, 23, 1) 360deg)', height: '100%', width: '100%', opacity: 0.8 }}></div>
                         </foreignObject>
                     </g>
                 </g>
-                <circle cx="120" cy="120" r="100">
-                    <animate attributeName="r" values="100;103;100" dur="1.5s" repeatCount="indefinite" />
+                <circle cx="55" cy="55" r="35">
+                    <animate attributeName="r" values="35;36.5;35" dur="1.5s" repeatCount="indefinite" />
                 </circle>
             </g>
 
             <g filter="url(#filter2_iii_377_447)">
-                <circle cx="120" cy="120" r="100" fill="#2A4238">
-                    <animate attributeName="r" values="100;102;100" dur="3s" repeatCount="indefinite" />
+                <circle cx="55" cy="55" r="35" fill="#200911">
+                    <animate attributeName="r" values="35;35.7;35" dur="3s" repeatCount="indefinite" />
                 </circle>
-                <circle cx="120" cy="120" r="100" fill="url(#paint2_radial_377_447)" fillOpacity="0.9">
+                <circle cx="55" cy="55" r="35" fill="url(#paint2_radial_377_447)" fillOpacity="0.9">
                     <animate attributeName="fill-opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite" />
                 </circle>
             </g>
 
-            <mask id="mask0_377_447" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="20" y="20" width="200" height="200">
-                <path d="M220 120C220 175.228 175.228 220 120 220C64.7715 220 20 175.228 20 120C20 64.7715 64.7715 20 120 20C175.228 20 220 64.7715 220 120Z" fill="white" />
+            <mask id="mask0_377_447" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="20" y="20" width="70" height="70">
+                <path d="M90 55C90 74.33 74.33 90 55 90C35.67 90 20 74.33 20 55C20 35.67 35.67 20 55 20C74.33 20 90 35.67 90 55Z" fill="white" />
             </mask>
 
             <g mask="url(#mask0_377_447)">
                 <g style={{ mixBlendMode: 'plus-lighter' }}>
-                    <path d="M47.527 99.4499C38.3385 133.634 51.5112 175.998 89.5003 193.771C127.489 211.544 146.327 200.076 163.394 187.331C180.462 174.587 215.577 129.764 183.923 99.3456C152.268 68.9276 125.31 86.5264 91.1459 82.4057C77.9449 80.8135 56.7154 65.2659 47.527 99.4499Z" fill="url(#paint3_linear_377_447)" fillOpacity="0.8">
-                        <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="360 120 120" dur="20s" repeatCount="indefinite" />
+                    <path d="M29.6333 47.8074C26.4173 59.7718 31.0278 74.5992 44.3239 80.8198C57.6201 87.0403 64.2132 83.0265 70.1868 78.5659C76.1605 74.1053 88.4508 58.4172 77.3717 47.7709C66.2927 37.1246 56.8574 43.2842 44.8999 41.8419C40.2796 41.2846 32.8492 35.843 29.6333 47.8074Z" fill="url(#paint3_linear_377_447)" fillOpacity="0.8">
+                        <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="360 55 55" dur="20s" repeatCount="indefinite" />
                         <animate attributeName="fill-opacity" values="0.8;0.9;0.8" dur="3s" repeatCount="indefinite" />
                     </path>
                 </g>
 
-                <path d="M144.713 151.014C201.208 112.231 178.723 58.828 133.704 42.1014C112.708 34.3002 115.915 63.3919 89.8259 89.1434C63.7365 114.895 30.3235 155.902 65.1814 173.713C100.039 191.524 120.85 167.395 144.713 151.014Z" fill="url(#paint4_radial_377_447)">
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="-360 120 120" dur="25s" repeatCount="indefinite" />
+                <path d="M63.6482 65.8547C83.4217 52.2806 75.5518 33.5897 59.7953 27.7354C52.4466 25.005 53.5692 35.1871 44.4379 44.2001C35.3066 53.2131 23.6121 67.5657 35.8123 73.7996C48.0125 80.0334 55.2963 71.5882 63.6482 65.8547Z" fill="url(#paint4_radial_377_447)">
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="-360 55 55" dur="25s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M144.713 151.014C201.208 112.231 178.723 58.828 133.704 42.1014C112.708 34.3002 115.915 63.3919 89.8259 89.1434C63.7365 114.895 30.3235 155.902 65.1814 173.713C100.039 191.524 120.85 167.395 144.713 151.014Z" fill="url(#paint5_linear_377_447)">
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="-360 120 120" dur="25s" repeatCount="indefinite" />
+                <path d="M63.6482 65.8547C83.4217 52.2806 75.5518 33.5897 59.7953 27.7354C52.4466 25.005 53.5692 35.1871 44.4379 44.2001C35.3066 53.2131 23.6121 67.5657 35.8123 73.7996C48.0125 80.0334 55.2963 71.5882 63.6482 65.8547Z" fill="url(#paint5_linear_377_447)">
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="-360 55 55" dur="25s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M144.713 151.014C201.208 112.231 178.723 58.828 133.704 42.1014C112.708 34.3002 115.915 63.3919 89.8259 89.1434C63.7365 114.895 30.3235 155.902 65.1814 173.713C100.039 191.524 120.85 167.395 144.713 151.014Z" fill="url(#paint6_radial_377_447)" fillOpacity="0.2">
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="-360 120 120" dur="25s" repeatCount="indefinite" />
+                <path d="M63.6482 65.8547C83.4217 52.2806 75.5518 33.5897 59.7953 27.7354C52.4466 25.005 53.5692 35.1871 44.4379 44.2001C35.3066 53.2131 23.6121 67.5657 35.8123 73.7996C48.0125 80.0334 55.2963 71.5882 63.6482 65.8547Z" fill="url(#paint6_radial_377_447)" fillOpacity="0.2">
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="-360 55 55" dur="25s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M58.9355 112.891C68.0012 84 68.4885 42 101.561 42C127.671 42 149.001 53 162.484 75.0865C175.968 97.173 202.001 101.683 202.001 118C202.001 147.604 149.802 163.095 118.001 160C86.2006 156.905 49.8698 141.782 58.9355 112.891Z" fill="url(#paint7_linear_377_447)" fillOpacity="0.3" style={{ mixBlendMode: 'plus-lighter' }}>
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="360 120 120" dur="15s" repeatCount="indefinite" />
+                <path d="M33.627 52.5119C36.8 42.4 36.9706 27.7 48.546 27.7C57.6845 27.7 65.15 31.55 69.8692 39.2802C74.5883 47.0105 83.7 48.589 83.7 54.3C83.7 64.6613 65.4302 70.0832 54.3 69C43.1698 67.9167 30.454 62.6238 33.627 52.5119Z" fill="url(#paint7_linear_377_447)" fillOpacity="0.3" style={{ mixBlendMode: 'plus-lighter' }}>
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="360 55 55" dur="15s" repeatCount="indefinite" />
                     <animate attributeName="fill-opacity" values="0.3;0.5;0.3" dur="2.5s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M58.9355 112.891C68.0012 84 68.4885 42 101.561 42C127.671 42 149.001 53 162.484 75.0865C175.968 97.173 202.001 101.683 202.001 118C202.001 147.604 149.802 163.095 118.001 160C86.2006 156.905 49.8698 141.782 58.9355 112.891Z" fill="url(#paint8_radial_377_447)">
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="360 120 120" dur="15s" repeatCount="indefinite" />
+                <path d="M33.627 52.5119C36.8 42.4 36.9706 27.7 48.546 27.7C57.6845 27.7 65.15 31.55 69.8692 39.2802C74.5883 47.0105 83.7 48.589 83.7 54.3C83.7 64.6613 65.4302 70.0832 54.3 69C43.1698 67.9167 30.454 62.6238 33.627 52.5119Z" fill="url(#paint8_radial_377_447)">
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="360 55 55" dur="15s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M124.477 175.319C131.708 207 182.708 195 160.708 167C138.708 139 139.67 140.879 121.962 120C120.628 140.292 117.247 143.638 124.477 175.319Z" fill="url(#paint9_radial_377_447)">
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="-360 120 120" dur="18s" repeatCount="indefinite" />
+                <path d="M56.567 74.3616C59.0977 85.45 76.9477 81.25 69.2477 71.45C61.5477 61.65 61.8844 62.3076 55.6869 55C55.2199 62.1022 54.0363 63.2731 56.567 74.3616Z" fill="url(#paint9_radial_377_447)">
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="-360 55 55" dur="18s" repeatCount="indefinite" />
                 </path>
 
-                <path d="M124.477 175.319C131.708 207 182.708 195 160.708 167C138.708 139 139.67 140.879 121.962 120C120.628 140.292 117.247 143.638 124.477 175.319Z" fill="url(#paint10_linear_377_447)">
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="-360 120 120" dur="18s" repeatCount="indefinite" />
+                <path d="M56.567 74.3616C59.0977 85.45 76.9477 81.25 69.2477 71.45C61.5477 61.65 61.8844 62.3076 55.6869 55C55.2199 62.1022 54.0363 63.2731 56.567 74.3616Z" fill="url(#paint10_linear_377_447)">
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="-360 55 55" dur="18s" repeatCount="indefinite" />
                 </path>
 
                 <g clipPath="url(#paint11_angular_377_447_clip_path)">
-                    <g transform="matrix(0.0472746 -0.101433 0.10668 0.0497199 120.999 127)">
-                        <foreignObject x="-963.326" y="-963.326" width="1926.65" height="1926.65">
-                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ background: 'conic-gradient(from 90deg,rgba(168, 250, 180, 0.9687) 0deg,rgba(173, 255, 185, 1) 2.76959deg,rgba(5, 255, 80, 0) 92.9253deg,rgba(224, 255, 235, 0) 205.268deg,rgba(13, 122, 60, 0) 274.405deg,rgba(168, 250, 180, 0.9687) 360deg)', height: '100%', width: '100%', opacity: 1 }}></div>
+                    <g transform="matrix(0.0165461 -0.0355017 0.037338 0.017402 55.3503 57.4499)">
+                        <foreignObject x="-985.378" y="-985.378" width="1970.76" height="1970.76">
+                            <div xmlns="http://www.w3.org/1999/xhtml" style={{ background: 'conic-gradient(from 90deg, rgba(250, 168, 170, 0.9687) 0deg, rgba(255, 173, 173, 1) 2.76959deg, rgba(255, 50, 5, 0) 92.9253deg, rgba(255, 240, 224, 0) 205.268deg, rgba(122, 13, 78, 0) 274.405deg, rgba(250, 168, 170, 0.9687) 360deg)', height: '100%', width: '100%', opacity: 1 }}></div>
                         </foreignObject>
                     </g>
                 </g>
 
-                <path d="M47.9985 105C24.2215 51.9765 129.999 8 112.76 52.5845C95.522 97.169 139.279 169.544 170.273 114.567C196.76 67.5845 71.7755 158.024 47.9985 105Z" style={{ mixBlendMode: 'screen' }}>
-                    <animateTransform attributeName="transform" type="rotate" from="0 120 120" to="360 120 120" dur="12s" repeatCount="indefinite" />
+                <path d="M29.8003 49.75C21.4783 31.1917 58.5003 15.8 52.4669 31.4045C46.4335 47.0091 61.7483 72.3403 72.5964 53.0982C81.8669 36.6545 38.1222 68.3082 29.8003 49.75Z" style={{ mixBlendMode: 'screen' }}>
+                    <animateTransform attributeName="transform" type="rotate" from="0 55 55" to="360 55 55" dur="12s" repeatCount="indefinite" />
                 </path>
 
                 <g style={{ mixBlendMode: 'plus-lighter' }} filter="url(#filter3_f_377_447)">
-                    <path d="M158.993 120.391C179.762 136.16 129.671 133.734 122.341 156.782C115.01 179.829 57.5882 142.226 85.6883 120.391C113.789 98.5574 64.9187 110.687 122.341 84.0013C179.763 57.3151 138.223 104.622 158.993 120.391Z" fill="url(#paint12_radial_377_447)" fillOpacity="0.6">
+                    <path d="M68.6483 55.1371C75.9177 60.6563 58.3857 59.8072 55.82 67.8736C53.2543 75.9401 33.1566 62.779 42.9917 55.1371C52.8268 47.4952 35.7223 51.7407 55.82 42.4006C75.9177 33.0604 61.3789 49.6179 68.6483 55.1371Z" fill="url(#paint12_radial_377_447)" fillOpacity="0.6">
                         <animate attributeName="fill-opacity" values="0.6;0.9;0.6" dur="1.8s" repeatCount="indefinite" />
                         <animateTransform attributeName="transform" type="scale" values="1;1.05;1" dur="1.8s" repeatCount="indefinite" additive="sum" />
                     </path>
                 </g>
 
-                <path d="M118.58 150.775C94.0003 148 85.0002 143 88.5802 120.775C92.1602 98.5492 104.16 103.549 118.58 90.7745C133 77.9999 141.42 89.2253 154 113C166.58 136.774 143.16 153.549 118.58 150.775Z" fill="url(#paint13_radial_377_447)">
+                <path d="M54.5029 65.7711C45.8999 64.8 42.7499 63.05 44.0029 55.2711C45.2559 47.4922 49.4559 49.2422 54.5029 44.7711C59.5499 40.2999 62.4969 44.2288 66.8999 52.5499C71.3029 60.8711 63.1059 66.7422 54.5029 65.7711Z" fill="url(#paint13_radial_377_447)">
                     <animate attributeName="fill-opacity" values="1;0.8;1" dur="1.5s" repeatCount="indefinite" />
                     <animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.5s" repeatCount="indefinite" additive="sum" />
                 </path>

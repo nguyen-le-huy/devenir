@@ -5,6 +5,7 @@ import LoginForm from '../form/LoginForm';
 import ForgotPasswordForm from '../form/ForgotPasswordForm';
 import authService from '../../services/authService';
 import styles from './AuthModal.module.css';
+import Backdrop from '../Backdrop';
 
 /**
  * AuthModal - Modal version of auth page
@@ -104,7 +105,8 @@ export default function AuthModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className={styles.backdrop} onClick={handleBackdropClick}>
+    <>
+      <Backdrop isOpen={isOpen} onClick={onClose} />
       <div className={styles.modal}>
         {/* Close Button */}
         <button className={styles.closeButton} onClick={onClose}>
@@ -175,6 +177,6 @@ export default function AuthModal({ isOpen, onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

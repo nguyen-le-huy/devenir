@@ -16,6 +16,10 @@
     backface-visibility: hidden;
 }
 
+.visualSearchIcon {
+    cursor: pointer;
+}
+
 .searchContainer {
     background-color: var(--white);
     position: fixed;
@@ -141,5 +145,9 @@
     .inputWrapper>svg {
         width: 24px;
         height: 12px;
+    }
+
+    .visualSearchIcon {
+        display: none;
     }
 }
