@@ -47,13 +47,20 @@ const ChatMessage = ({ message, onActionClick }) => {
                             <Link
                                 to={`/product-detail?variant=${product.variantId || product._id}`}
                                 key={product._id}
-                                className={styles.productCard}
+                                className={`${styles.productCard} ${!product.inStock ? styles.outOfStock : ''}`}
                             >
                                 {product.mainImage && (
-                                    <img
-                                        src={product.mainImage}
-                                        alt={product.name}
-                                    />
+                                    <div className={styles.imageWrapper}>
+                                        <img
+                                            src={product.mainImage}
+                                            alt={product.name}
+                                        />
+                                        {!product.inStock && (
+                                            <div className={styles.outOfStockOverlay}>
+                                                <span>Hết hàng</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                                 <div className={styles.productInfo}>
                                     <span className={styles.productName}>{product.name}</span>

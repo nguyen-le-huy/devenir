@@ -89,12 +89,6 @@
     transform: translateY(-2px);
 }
 
-.productCard img {
-    width: 100%;
-    height: 80px;
-    object-fit: cover;
-}
-
 .productInfo {
     padding: 6px;
     display: flex;
@@ -117,6 +111,51 @@
     font-size: 10px;
     color: var(--dark-gray);
     font-weight: 600;
+}
+
+/* Image wrapper for overlay positioning */
+.imageWrapper {
+    position: relative;
+    width: 100%;
+    height: 80px;
+}
+
+.imageWrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Out of stock styles */
+.outOfStock {
+    opacity: 0.7;
+}
+
+.outOfStock:hover {
+    transform: none;
+}
+
+.outOfStockOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.outOfStockOverlay span {
+    color: var(--white);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 6px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
 }
 
 @keyframes slideIn {

@@ -357,13 +357,22 @@ export async function productAdvice(query, context = {}) {
 
         // Use requestedColor from earlier (already found in step 2)
 
-        const suggested_products = orderedProducts.slice(0, 3).map(p => {
+        const suggested_products = await Promise.all(orderedProducts.slice(0, 3).map(async (p) => {
+            // Get ALL variants for this product (including out-of-stock) for price/image fallback
+            const allVariantsForProduct = await ProductVariant.find({
+                product_id: p._id,
+                isActive: true
+            }).lean();
+
+            // Use in-stock variants if available, otherwise use all variants
+            const variantsToUse = p.variants?.length > 0 ? p.variants : allVariantsForProduct;
+
             // Find variant matching requested color, or fallback to first variant
-            let matchingVariant = p.variants?.[0];
+            let matchingVariant = variantsToUse?.[0];
             let matchingVariants = []; // All variants matching the color
 
-            if (requestedColor && p.variants?.length > 0) {
-                matchingVariants = p.variants.filter(v => {
+            if (requestedColor && variantsToUse?.length > 0) {
+                matchingVariants = variantsToUse.filter(v => {
                     const variantColor = (v.color || '').toLowerCase();
                     // Match by Vietnamese name, English name, or partial match
                     return variantColor.includes(requestedColor.vi) ||
@@ -379,26 +388,42 @@ export async function productAdvice(query, context = {}) {
             let minPrice, maxPrice;
             if (matchingVariants.length > 0) {
                 // Use price range of matching color variants only
-                const colorPrices = matchingVariants.map(v => v.price);
-                minPrice = Math.min(...colorPrices);
-                maxPrice = Math.max(...colorPrices);
-            } else {
-                // Fallback to all variants
-                minPrice = p.variants?.length > 0 ? Math.min(...p.variants.map(v => v.price)) : 0;
-                maxPrice = p.variants?.length > 0 ? Math.max(...p.variants.map(v => v.price)) : 0;
+                const colorPrices = matchingVariants.map(v => v.price).filter(p => p > 0);
+                minPrice = colorPrices.length > 0 ? Math.min(...colorPrices) : 0;
+                maxPrice = colorPrices.length > 0 ? Math.max(...colorPrices) : 0;
             }
+
+            // Fallback: use all variants if no color match or still $0
+            if (!minPrice || minPrice === 0) {
+                const allPrices = variantsToUse?.map(v => v.price).filter(p => p > 0) || [];
+                minPrice = allPrices.length > 0 ? Math.min(...allPrices) : 0;
+                maxPrice = allPrices.length > 0 ? Math.max(...allPrices) : 0;
+            }
+
+            // Calculate stock status
+            const inStockVariants = p.variants?.filter(v => v.quantity > 0) || [];
+            const totalStock = inStockVariants.reduce((sum, v) => sum + v.quantity, 0);
+            const isInStock = totalStock > 0;
+
+            // Ensure we always have an image
+            const mainImage = matchingVariant?.mainImage ||
+                variantsToUse?.[0]?.mainImage ||
+                allVariantsForProduct?.[0]?.mainImage ||
+                p.images?.[0] || '';
 
             return {
                 _id: p._id,
                 name: p.name,
                 urlSlug: p.urlSlug,
-                variantId: matchingVariant?._id || null,
+                variantId: matchingVariant?._id || variantsToUse?.[0]?._id || null,
                 averageRating: p.averageRating,
                 minPrice,
                 maxPrice,
-                mainImage: matchingVariant?.mainImage || p.images?.[0] || ''
+                mainImage,
+                inStock: isInStock,
+                totalStock
             };
-        });
+        }));
 
         return {
             answer,
