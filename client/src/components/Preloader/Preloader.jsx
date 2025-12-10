@@ -73,39 +73,39 @@ const Preloader = () => {
 
         const tl = gsap.timeline();
 
-        // Speed up by 50%: slideDuration 0.3 → 0.15, delays 0.4 → 0.2
-        const slideDuration = 0.15;
+        // Speed up by 25%: slideDuration 0.3 → 0.225, delays 0.4 → 0.3
+        const slideDuration = 0.225;
         const slideEase = "power2.inOut";
         const slideEaseOut = "power2.in";
 
         tl.set([firstNum, secondNum], { yPercent: 0 });
 
         // Change to 25
-        tl.to(firstNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '+=0.2')
-            .to(secondNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '-=0.1')
+        tl.to(firstNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '+=0.3')
+            .to(secondNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '-=0.15')
             .set(firstNum, { innerText: '2', yPercent: 100 })
             .set(secondNum, { innerText: '5', yPercent: 100 })
             .to(firstNum, { yPercent: 0, duration: slideDuration, ease: slideEase })
-            .to(secondNum, { yPercent: 0, duration: slideDuration, ease: slideEase }, '-=0.1');
+            .to(secondNum, { yPercent: 0, duration: slideDuration, ease: slideEase }, '-=0.15');
 
         // Change to 67
-        tl.to(firstNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.2')
-            .to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '-=0.1')
+        tl.to(firstNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.3')
+            .to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '-=0.15')
             .set(firstNum, { innerText: '6', y: '100%' })
             .set(secondNum, { innerText: '7', y: '100%' })
             .to(firstNum, { y: '0%', duration: slideDuration, ease: slideEase })
-            .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase }, '-=0.1');
+            .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase }, '-=0.15');
 
         // Change to 98
-        tl.to(firstNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.2')
-            .to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '-=0.1')
+        tl.to(firstNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.3')
+            .to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '-=0.15')
             .set(firstNum, { innerText: '9', y: '100%' })
             .set(secondNum, { innerText: '8', y: '100%' })
             .to(firstNum, { y: '0%', duration: slideDuration, ease: slideEase })
-            .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase }, '-=0.1');
+            .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase }, '-=0.15');
 
         // Change to 99
-        tl.to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.2')
+        tl.to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.3')
             .set(secondNum, { innerText: '9', y: '100%' })
             .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase });
 
@@ -114,7 +114,7 @@ const Preloader = () => {
             opacity: 0,
             duration: 0.3,
             ease: "power1.in",
-            delay: 0.25
+            delay: 0.375
         });
 
         // Logo animation
