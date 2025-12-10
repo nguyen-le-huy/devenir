@@ -166,7 +166,7 @@ productSchema.methods.calculateAverageRating = async function () {
  * @returns {Promise<Array>} - List of products
  */
 productSchema.statics.findByCategory = function (categoryId) {
-  return this.find({ category: categoryId, isActive: true })
+  return this.find({ category: categoryId, isActive: true, status: 'published' })
     .populate('category', 'name')
     .populate('brand', 'name logoUrl')
     .sort({ createdAt: -1 });
@@ -178,7 +178,7 @@ productSchema.statics.findByCategory = function (categoryId) {
  * @returns {Promise<Array>} - List of products
  */
 productSchema.statics.findByBrand = function (brandId) {
-  return this.find({ brand: brandId, isActive: true })
+  return this.find({ brand: brandId, isActive: true, status: 'published' })
     .populate('category', 'name')
     .populate('brand', 'name logoUrl')
     .sort({ createdAt: -1 });
@@ -190,7 +190,7 @@ productSchema.statics.findByBrand = function (brandId) {
  * @returns {Promise<Array>} - List of products
  */
 productSchema.statics.findByTags = function (tags) {
-  return this.find({ tags: { $in: tags }, isActive: true })
+  return this.find({ tags: { $in: tags }, isActive: true, status: 'published' })
     .populate('category', 'name')
     .populate('brand', 'name logoUrl')
     .sort({ createdAt: -1 });
@@ -202,7 +202,7 @@ productSchema.statics.findByTags = function (tags) {
  * @returns {Promise<Array>} - List of products
  */
 productSchema.statics.findTopRated = function (minRating = 4.0) {
-  return this.find({ averageRating: { $gte: minRating }, isActive: true })
+  return this.find({ averageRating: { $gte: minRating }, isActive: true, status: 'published' })
     .populate('category', 'name')
     .populate('brand', 'name logoUrl')
     .sort({ averageRating: -1 })
@@ -218,6 +218,7 @@ productSchema.statics.searchByName = function (searchTerm) {
   return this.find({
     name: { $regex: searchTerm, $options: 'i' }, // case-insensitive
     isActive: true,
+    status: 'published',
   })
     .populate('category', 'name')
     .populate('brand', 'name logoUrl')

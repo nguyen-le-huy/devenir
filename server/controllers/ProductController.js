@@ -21,14 +21,15 @@ const invalidateBrandCache = () => {
 export const getAllProducts = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, category, brand, status, search } = req.query;
 
-  // Build filter object
-  const filter = { isActive: true };
+  // Build filter object - default to only showing published products
+  const filter = { isActive: true, status: 'published' };
 
   if (category) {
     // Support both string and ObjectId for category (during migration period)
     filter.category = category;
   }
   if (brand) filter.brand = brand;
+  // Allow admin to override status filter via query param
   if (status) filter.status = status;
   if (search) {
     filter.$or = [
@@ -70,8 +71,13 @@ export const getAllProducts = asyncHandler(async (req, res) => {
  */
 export const getProductById = asyncHandler(async (req, res) => {
   // Optimize: Use lean() and run queries in parallel
+  // Only show published products to public users
   const [product, variants] = await Promise.all([
-    Product.findById(req.params.id)
+    Product.findOne({
+      _id: req.params.id,
+      isActive: true,
+      status: 'published'
+    })
       .populate('category', 'name description thumbnailUrl')
       .lean(),
     ProductVariant.find({ product_id: req.params.id })
@@ -661,7 +667,12 @@ export const getVariantById = asyncHandler(async (req, res) => {
   }
 
   // Get product info with nested populate for parent category
-  const product = await Product.findById(variant.product_id)
+  // Only show if product is published
+  const product = await Product.findOne({
+    _id: variant.product_id,
+    isActive: true,
+    status: 'published'
+  })
     .populate({
       path: 'category',
       populate: {
