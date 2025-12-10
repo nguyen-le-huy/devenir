@@ -5,6 +5,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import UserMenu from "../../UserMenu/UserMenu";
 import Search from "../../Search/Search";
 import Bag from "../../Bag/Bag";
+import Snowfall from "../../Snowfall/Snowfall";
 import { getMainCategories } from "../../../services/categoryService";
 import { useCart } from "../../../hooks/useCart.js";
 
@@ -100,13 +101,22 @@ const Header = () => {
     return (
         <>
             <div className={`${styles.topBar} container`}>
+                <Snowfall
+                    snowflakeCount={80}
+                    speed={0.8}
+                    minSize={1}
+                    maxSize={2.5}
+                    wind={true}
+                    windSpeed={0.3}
+                />
                 <div className={styles.left}></div>
-                <div className={styles.center}>Fast, Free Delivery With Prime | <span className={styles.campaignLink}>
-                    <span>Explore The Campaign</span>
+                <div className={styles.center}><img src="/images/giftIcon.png" alt="gift-icon" className={styles.xmasIcon} />Celebrate Christmas with Free Delivery | <span className={styles.campaignLink}>
+                    <span>Explore the Holiday Deals</span>
                     <svg className={styles.linkGraphicSlide} width="300%" height="100%" viewBox="0 0 1200 60" preserveAspectRatio="none">
                         <path d="M0,56.5c0,0,298.666,0,399.333,0C448.336,56.5,513.994,46,597,46c77.327,0,135,10.5,200.999,10.5c95.996,0,402.001,0,402.001,0"></path>
                     </svg>
                 </span>
+                    <img src="/images/snowmanIcon.png" alt="snowman-icon" className={styles.snowmanIcon} />
                 </div>
                 <div className={styles.right}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">

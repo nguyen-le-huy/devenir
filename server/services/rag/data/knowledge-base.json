@@ -1,0 +1,325 @@
+{
+    "version": "1.0.0",
+    "lastUpdated": "2025-12-09",
+    "store": {
+        "name": "DEVENIR",
+        "tagline": "Redefine Your Style",
+        "contact": {
+            "hotline": "0364075812",
+            "email": "support@devenir.vn",
+            "workingHours": "9:00 - 21:00 (T2-CN)"
+        }
+    },
+    "sizeGuide": {
+        "overview": "Bảng size chuẩn cho thời trang nam, áp dụng cho hầu hết các sản phẩm áo và quần.",
+        "sizeChart": [
+            {
+                "size": "XS",
+                "height": {
+                    "min": null,
+                    "max": 160
+                },
+                "weight": {
+                    "min": null,
+                    "max": 50
+                },
+                "chest": "84-88cm",
+                "description": "Dưới 1m60, dưới 50kg"
+            },
+            {
+                "size": "S",
+                "height": {
+                    "min": 160,
+                    "max": 165
+                },
+                "weight": {
+                    "min": 50,
+                    "max": 60
+                },
+                "chest": "88-92cm",
+                "description": "1m60 - 1m65, 50-60kg"
+            },
+            {
+                "size": "M",
+                "height": {
+                    "min": 165,
+                    "max": 170
+                },
+                "weight": {
+                    "min": 60,
+                    "max": 70
+                },
+                "chest": "92-96cm",
+                "description": "1m65 - 1m70, 60-70kg"
+            },
+            {
+                "size": "L",
+                "height": {
+                    "min": 170,
+                    "max": 175
+                },
+                "weight": {
+                    "min": 70,
+                    "max": 80
+                },
+                "chest": "96-100cm",
+                "description": "1m70 - 1m75, 70-80kg"
+            },
+            {
+                "size": "XL",
+                "height": {
+                    "min": 175,
+                    "max": 180
+                },
+                "weight": {
+                    "min": 80,
+                    "max": 90
+                },
+                "chest": "100-104cm",
+                "description": "1m75 - 1m80, 80-90kg"
+            },
+            {
+                "size": "XXL",
+                "height": {
+                    "min": 180,
+                    "max": 185
+                },
+                "weight": {
+                    "min": 90,
+                    "max": 100
+                },
+                "chest": "104-108cm",
+                "description": "1m80 - 1m85, 90-100kg"
+            }
+        ],
+        "tips": [
+            "Nếu số đo nằm giữa 2 size, nên chọn size lớn hơn để thoải mái",
+            "Form Slim Fit nên chọn size nhỉnh hơn 1 bậc",
+            "Form Regular/Relaxed có thể giữ size chuẩn hoặc giảm 1 bậc nếu thích ôm",
+            "Đo vòng ngực bằng thước dây ở điểm rộng nhất"
+        ],
+        "freeSize": {
+            "description": "Sản phẩm Free Size phù hợp với hầu hết các thể hình từ 50-75kg",
+            "applies_to": [
+                "Phụ kiện",
+                "Mũ",
+                "Túi xách",
+                "Một số áo oversize"
+            ]
+        }
+    },
+    "payment": {
+        "methods": [
+            {
+                "id": "payos",
+                "name": "PayOS",
+                "description": "Thanh toán qua ngân hàng nội địa Việt Nam",
+                "type": "bank_transfer",
+                "fee": "Miễn phí",
+                "supported_banks": [
+                    "Tất cả ngân hàng nội địa",
+                    "Ví điện tử (Momo, ZaloPay, VNPay)"
+                ],
+                "processing_time": "Ngay lập tức",
+                "note": "Quét mã QR hoặc chuyển khoản trực tiếp"
+            },
+            {
+                "id": "nowpayments",
+                "name": "NowPayments",
+                "description": "Thanh toán bằng tiền điện tử (Cryptocurrency)",
+                "type": "crypto",
+                "fee": "Miễn phí",
+                "supported_currencies": [
+                    "USDT (BSC)",
+                    "Bitcoin",
+                    "Ethereum",
+                    "USDC",
+                    "Nhiều coin khác"
+                ],
+                "processing_time": "1-30 phút (tùy blockchain)",
+                "note": "Thanh toán quốc tế, ẩn danh"
+            }
+        ],
+        "security": "Tất cả giao dịch được mã hóa và bảo mật theo tiêu chuẩn PCI-DSS"
+    },
+    "shipping": {
+        "options": [
+            {
+                "id": "standard",
+                "name": "Standard Delivery",
+                "name_vi": "Giao hàng tiêu chuẩn",
+                "price": 0,
+                "price_display": "Miễn phí",
+                "delivery_time": "2-3 ngày làm việc",
+                "description": "Giao hàng tiêu chuẩn miễn phí cho tất cả đơn hàng",
+                "tracking": true
+            },
+            {
+                "id": "next_day",
+                "name": "Next Day Delivery",
+                "name_vi": "Giao hàng ngày hôm sau",
+                "price": 5,
+                "price_display": "$5",
+                "delivery_time": "1 ngày làm việc",
+                "description": "Đặt trước 14:00 để nhận hàng ngày hôm sau",
+                "tracking": true,
+                "cutoff_time": "14:00"
+            },
+            {
+                "id": "nominated",
+                "name": "Nominated Day Delivery",
+                "name_vi": "Giao hàng theo ngày chọn",
+                "price": 10,
+                "price_display": "$10",
+                "delivery_time": "Chọn ngày cụ thể",
+                "description": "Chọn ngày giao hàng thuận tiện nhất cho bạn",
+                "tracking": true,
+                "advance_days": 7
+            }
+        ],
+        "coverage": {
+            "domestic": "Toàn quốc (63 tỉnh thành)",
+            "international": "Chưa hỗ trợ"
+        },
+        "partners": [
+            "GHN",
+            "GHTK",
+            "J&T Express"
+        ],
+        "packagingNote": "Tất cả sản phẩm được đóng gói cẩn thận trong hộp DEVENIR cao cấp"
+    },
+    "returnPolicy": {
+        "period": "30 ngày",
+        "exchange_period": "7 ngày",
+        "conditions": [
+            "Sản phẩm chưa qua sử dụng, chưa giặt",
+            "Còn nguyên tag và nhãn mác",
+            "Có hóa đơn mua hàng gốc",
+            "Không có dấu hiệu hư hỏng do người mua"
+        ],
+        "not_accepted": [
+            "Đồ lót, đồ bơi",
+            "Sản phẩm sale từ 50% trở lên",
+            "Sản phẩm đã được sửa/may lại"
+        ],
+        "process": [
+            "Liên hệ hotline hoặc email để yêu cầu đổi/trả",
+            "Nhận mã RMA và hướng dẫn gửi hàng",
+            "Gửi sản phẩm về kho (miễn phí ship đổi size)",
+            "Nhận sản phẩm mới hoặc hoàn tiền trong 3-5 ngày"
+        ],
+        "refund": {
+            "method": "Hoàn về phương thức thanh toán gốc",
+            "processing_time": "3-5 ngày làm việc"
+        },
+        "sizeExchange": {
+            "fee": "Miễn phí trong 7 ngày đầu",
+            "note": "Chỉ áp dụng đổi size, không đổi màu/mẫu"
+        }
+    },
+    "faq": [
+        {
+            "question": "Làm sao để biết size nào phù hợp với mình?",
+            "answer": "Bạn có thể tham khảo bảng size của chúng tôi. Cung cấp chiều cao và cân nặng, AI sẽ gợi ý size phù hợp nhất. Ví dụ: 1m70, 65kg thường mặc size M.",
+            "category": "size"
+        },
+        {
+            "question": "Đổi size có mất phí không?",
+            "answer": "Đổi size hoàn toàn miễn phí trong 7 ngày đầu tiên kể từ ngày nhận hàng. Sau 7 ngày, bạn chịu phí ship một chiều.",
+            "category": "return"
+        },
+        {
+            "question": "Thanh toán bằng crypto có an toàn không?",
+            "answer": "Hoàn toàn an toàn! Chúng tôi sử dụng NowPayments - nền tảng thanh toán crypto uy tín. Giao dịch được xử lý tự động và bạn nhận xác nhận ngay sau khi blockchain confirm.",
+            "category": "payment"
+        },
+        {
+            "question": "Đơn hàng giao bao lâu?",
+            "answer": "Standard Delivery miễn phí giao trong 2-3 ngày. Nếu cần gấp, chọn Next Day ($5) để nhận ngày hôm sau hoặc Nominated Day ($10) để chọn ngày cụ thể.",
+            "category": "shipping"
+        },
+        {
+            "question": "Có thể hủy đơn hàng không?",
+            "answer": "Bạn có thể hủy đơn miễn phí nếu đơn hàng chưa được gửi đi. Liên hệ hotline ngay khi cần hủy.",
+            "category": "order"
+        },
+        {
+            "question": "Sản phẩm có bảo hành không?",
+            "answer": "Tất cả sản phẩm DEVENIR được bảo hành 6 tháng cho lỗi từ nhà sản xuất (chỉ may, phai màu bất thường). Không bảo hành hư hỏng do sử dụng sai cách.",
+            "category": "warranty"
+        },
+        {
+            "question": "Form Slim Fit khác gì Regular Fit?",
+            "answer": "Slim Fit ôm sát body, tôn dáng, phù hợp người gầy/vừa. Regular Fit thoải mái hơn, phù hợp mọi thể hình. Nếu bạn thích rộng rãi, chọn Regular.",
+            "category": "size"
+        }
+    ],
+    "care_instructions": {
+        "general": [
+            "Giặt máy ở chế độ nhẹ, nước lạnh (dưới 30°C)",
+            "Không sử dụng chất tẩy mạnh",
+            "Phơi trong bóng râm, tránh ánh nắng trực tiếp",
+            "Ủi ở nhiệt độ thấp-trung bình"
+        ],
+        "cotton": [
+            "Giặt riêng lần đầu để tránh phai màu",
+            "Phơi ngược mặt để giữ màu"
+        ],
+        "polyester": [
+            "Không ủi nhiệt độ cao",
+            "Có thể sấy khô ở nhiệt độ thấp"
+        ]
+    },
+    "keywords": {
+        "payment": [
+            "payment",
+            "thanh toán",
+            "pay",
+            "mua",
+            "tiền",
+            "crypto",
+            "bitcoin",
+            "payos",
+            "nowpayments",
+            "chuyển khoản",
+            "qr",
+            "ví điện tử"
+        ],
+        "shipping": [
+            "shipping",
+            "giao hàng",
+            "ship",
+            "delivery",
+            "vận chuyển",
+            "phí ship",
+            "theo dõi",
+            "tracking",
+            "ghn",
+            "ghtk"
+        ],
+        "return": [
+            "return",
+            "đổi trả",
+            "hoàn",
+            "refund",
+            "bảo hành",
+            "đổi size",
+            "trả hàng",
+            "hoàn tiền",
+            "rma"
+        ],
+        "size": [
+            "size",
+            "chiều cao",
+            "cân nặng",
+            "form",
+            "vừa",
+            "rộng",
+            "chật",
+            "slim",
+            "regular",
+            "oversize",
+            "bảng size"
+        ]
+    }
+}

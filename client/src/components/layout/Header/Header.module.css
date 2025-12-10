@@ -1,7 +1,7 @@
 /*************====> TOP BAR <====*************/
 
 .topBar {
-    backGround-color: var(--brown);
+    background-color: var(--midnight);
     color: var(--white);
     font-size: 14px;
     display: flex;
@@ -10,7 +10,8 @@
     padding-top: 5px;
     padding-bottom: 5px;
     z-index: 200;
-    position: sticky;
+    position: relative;
+    overflow: hidden;
 }
 
 .center {
@@ -65,6 +66,53 @@
 .menu>svg {
     height: 30px;
     width: 170px;
+}
+
+.xmasIcon {
+    height: 40px;
+    width: 40px;
+}
+
+.snowmanIcon {
+    height: 40px;
+    width: 40px;
+    animation: wobble 2s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
+    transform-origin: bottom center;
+    will-change: transform;
+}
+
+@keyframes wobble {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    15% {
+        transform: rotate(-6deg);
+    }
+
+    30% {
+        transform: rotate(5deg);
+    }
+
+    45% {
+        transform: rotate(-4deg);
+    }
+
+    60% {
+        transform: rotate(3deg);
+    }
+
+    75% {
+        transform: rotate(-2deg);
+    }
+
+    90% {
+        transform: rotate(1deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
 }
 
 .links {

@@ -40,7 +40,7 @@ const ProductByCategory = () => {
 
     // Fetch data using React Query hooks
     const { data: categoryData, isLoading: categoryLoading } = useCategoryById(categoryId);
-    
+
     // Fetch variants from category (with or without children based on selection)
     const { data: variantsData = [], isLoading: variantsLoading, error } = useQuery({
         queryKey: ['variants-by-category', categoryId, selectedSubcategory, allCategories.length],
@@ -51,7 +51,7 @@ const ProductByCategory = () => {
             if (selectedSubcategory) {
                 return await getVariantsByCategory(selectedSubcategory);
             }
-            
+
             // Nếu chọn "All", lấy variants từ parent category + tất cả subcategories
             return await getVariantsByCategoryWithChildren(categoryId, allCategories);
         },
@@ -82,6 +82,36 @@ const ProductByCategory = () => {
     const handleCloseFilter = () => {
         setIsFilterOpen(false);
     };
+
+    // Create a map of productId -> all variants with different colors
+    // This is used to show color swatches on each card
+    const productVariantsMap = useMemo(() => {
+        const map = new Map();
+
+        variants.forEach(variant => {
+            const productId = variant.productInfo?._id || variant.product;
+            if (!productId) return;
+
+            if (!map.has(productId)) {
+                map.set(productId, []);
+            }
+
+            // Add variant with color info
+            map.get(productId).push({
+                _id: variant._id,
+                id: variant._id,
+                color: variant.color,
+                colorHex: colorMap[variant.color] || '#ccc',
+                mainImage: variant.mainImage,
+                hoverImage: variant.hoverImage || variant.mainImage,
+                price: variant.price,
+                name: variant.productInfo?.name,
+                productId: productId
+            });
+        });
+
+        return map;
+    }, [variants, colorMap]);
 
     // Memoize filtered data calculations
     const { availableColors, colorCounts, filteredVariants } = useMemo(() => {
@@ -157,16 +187,26 @@ const ProductByCategory = () => {
     const remainingVariants = hasThumbnail ? filteredVariants.slice(4) : filteredVariants;
 
     // Transform variant data để phù hợp với ScarfCard component
-    const transformVariantToProduct = (variant) => ({
-        id: variant._id,
-        name: variant.productInfo?.name || 'Unknown Product',
-        price: variant.price,
-        image: variant.mainImage || '/images/placeholder.png',
-        imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
-        color: variant.color,
-        size: variant.size,
-        sku: variant.sku,
-    });
+    const transformVariantToProduct = (variant) => {
+        const productId = variant.productInfo?._id || variant.product;
+        return {
+            id: variant._id,
+            name: variant.productInfo?.name || 'Unknown Product',
+            price: variant.price,
+            image: variant.mainImage || '/images/placeholder.png',
+            imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
+            color: variant.color,
+            size: variant.size,
+            sku: variant.sku,
+            productId: productId,
+        };
+    };
+
+    // Get color variants for a product
+    const getColorVariants = (variant) => {
+        const productId = variant.productInfo?._id || variant.product;
+        return productVariantsMap.get(productId) || [];
+    };
 
     // Extract subcategories from category data (must be before early returns)
     const subcategories = useMemo(() => {
@@ -265,6 +305,7 @@ const ProductByCategory = () => {
                                 <ScarfCard
                                     key={variant._id}
                                     scarf={transformVariantToProduct(variant)}
+                                    colorVariants={getColorVariants(variant)}
                                 />
                             ))}
                         </div>
@@ -301,6 +342,7 @@ const ProductByCategory = () => {
                         <ScarfCard
                             key={variant._id}
                             scarf={transformVariantToProduct(variant)}
+                            colorVariants={getColorVariants(variant)}
                         />
                     ))}
                 </div>

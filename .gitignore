@@ -188,3 +188,4 @@ docs/dist/
 
 # Giữ lại các file hướng dẫn
 !.github/
+server/google-credentials.json
