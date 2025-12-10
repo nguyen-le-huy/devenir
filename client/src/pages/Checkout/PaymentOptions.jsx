@@ -20,7 +20,10 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod }) => {
                             checked={paymentMethod === "payos"}
                             onChange={() => setPaymentMethod("payos")}
                         />
-                        <p>PayOS</p>
+                        <div className={styles.paymentInfo}>
+                            <p>PayOS</p>
+                            <span className={styles.paymentSubtitle}>Local bank & e-wallet payment (Vietnam)</span>
+                        </div>
                     </div>
                     <img src="/images/payos.png" alt="payos" />
                 </div>
@@ -36,7 +39,10 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod }) => {
                             checked={paymentMethod === "nowpayments"}
                             onChange={() => setPaymentMethod("nowpayments")}
                         />
-                        <p>NowPayments</p>
+                        <div className={styles.paymentInfo}>
+                            <p>NowPayments</p>
+                            <span className={styles.paymentSubtitle}>Pay with USDT (BSC / BEP20)</span>
+                        </div>
                     </div>
                     <img src="/images/nowpayments.png" alt="nowpayments" />
                 </div>

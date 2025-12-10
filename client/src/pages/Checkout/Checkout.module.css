@@ -654,7 +654,7 @@ form {
     border: 1px solid var(--blue);
 }
 
-.payOS>.shippingMethodItem>p {
+.payOS>.shippingMethodItem>.paymentInfo>p {
     color: var(--green);
 }
 
@@ -662,12 +662,16 @@ form {
     accent-color: var(--green);
 }
 
-.coinBase>.shippingMethodItem>p {
+.coinBase>.shippingMethodItem>.paymentInfo>p {
     color: var(--blue);
 }
 
 .coinBase>.shippingMethodItem>input {
     accent-color: var(--blue);
+}
+
+.shippingMethodItem>.paymentInfo>p {
+    font-weight: 500;
 }
 
 .paymentList {
@@ -679,6 +683,23 @@ form {
 .paymentMethodItem {
     padding: 0;
     border: none !important;
+}
+
+.paymentMethodItem>input {
+    flex-shrink: 0;
+}
+
+.paymentInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.paymentSubtitle {
+    font-size: 14px;
+    font-weight: 400;
+    color: inherit;
+    opacity: 0.8;
 }
 
 .payOS>img {
