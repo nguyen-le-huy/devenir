@@ -1,12 +1,13 @@
 import styles from './ProductDetail.module.css';
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
 import ProductCarousel from '../../components/ProductCarousel/ProductCarousel.jsx';
 import { scarves } from '../../data/scarvesData.js';
-import { getVariantById } from '../../services/productService.js';
+import { getVariantById, getVariantsByCategoryWithChildren } from '../../services/productService.js';
 import { getAllColors, createColorMap } from '../../services/colorService.js';
-import { useVariantsByCategory } from '../../hooks/useProducts.js';
+import { useCategories } from '../../hooks/useCategories.js';
 import { useAddToCart } from '../../hooks/useCart.js';
 import Loading from '../../components/Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -162,32 +163,73 @@ export default function ProductDetail() {
         );
     };
 
-    // Fetch variants from the same category
-    // product.category is populated, so we need to use _id
-    const categoryId = product?.category?._id || product?.category;
-    const { data: variantsData } = useVariantsByCategory(categoryId);
+    // Fetch all categories to find children of parent category
+    const { data: allCategoriesData } = useCategories();
+    const allCategories = useMemo(() => {
+        if (allCategoriesData?.data) return allCategoriesData.data;
+        if (Array.isArray(allCategoriesData)) return allCategoriesData;
+        return [];
+    }, [allCategoriesData]);
 
-    // Transform and filter variants to unique colors for related products
+    // Get parent category ID (main category)
+    // If product.category has a parentCategory, use it; otherwise use the category itself
+    const parentCategoryId = product?.category?.parentCategory?._id ||
+        product?.category?.parentCategory ||
+        product?.category?._id ||
+        product?.category;
+
+    // Fetch variants from parent category + all its children using useQuery
+    const { data: variantsData } = useQuery({
+        queryKey: ['variants', 'categoryWithChildren', parentCategoryId],
+        queryFn: () => getVariantsByCategoryWithChildren(parentCategoryId, allCategories),
+        enabled: !!parentCategoryId && allCategories.length > 0,
+        staleTime: 3 * 60 * 1000, // 3 minutes
+    });
+
+    // Transform and filter variants to show all products in the same main category
     const relatedProducts = useMemo(() => {
         const variants = variantsData || [];
 
         if (!variants || variants.length === 0) return [];
 
-        // Remove duplicates by color (keep only one variant per color)
-        const colorMap = new Map();
-        const uniqueVariants = variants.filter(variantItem => {
-            // Exclude the current variant
-            if (variantItem._id === variantId) return false;
+        // Get current product ID to exclude variants from the same product
+        const currentProductId = String(product?._id || '');
 
-            if (variantItem.color && !colorMap.has(variantItem.color)) {
-                colorMap.set(variantItem.color, true);
+        console.log('🔍 Related Products Debug:', {
+            totalVariants: variants.length,
+            currentProductId,
+            parentCategoryId,
+            categoryName: product?.category?.name,
+            parentCategoryName: product?.category?.parentCategory?.name,
+            allCategoriesCount: allCategories.length
+        });
+
+        // Group variants by product (keep only one variant per product)
+        const productMap = new Map();
+        const uniqueVariants = variants.filter(variantItem => {
+            // Get product ID from variant (could be in productInfo or product_id)
+            const variantProductId = String(
+                variantItem.productInfo?._id ||
+                variantItem.product_id ||
+                variantItem.product ||
+                ''
+            );
+
+            // Exclude variants from the same product
+            if (variantProductId === currentProductId) return false;
+
+            // Keep only one variant per product
+            if (variantProductId && !productMap.has(variantProductId)) {
+                productMap.set(variantProductId, true);
                 return true;
             }
             return false;
         });
 
-        // Transform to product format and limit to 8 items for carousel
-        return uniqueVariants.slice(0, 8).map(variantItem => ({
+        console.log('🔍 Unique variants after filter:', uniqueVariants.length);
+
+        // Transform to product format (no limit)
+        return uniqueVariants.map(variantItem => ({
             id: variantItem._id,
             name: variantItem.productInfo?.name || 'Product',
             price: variantItem.price,
@@ -197,7 +239,7 @@ export default function ProductDetail() {
             size: variantItem.size,
             sku: variantItem.sku,
         }));
-    }, [variantsData, variantId]);
+    }, [variantsData, product?._id, parentCategoryId, allCategories.length]);
 
     if (loading) {
         return (
