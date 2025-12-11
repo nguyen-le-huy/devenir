@@ -73,7 +73,7 @@
 .colorVariants {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     padding: 0 25px 10px 25px;
 }
 
@@ -89,7 +89,7 @@
     background-color: #ccc;
     position: relative;
     cursor: pointer;
-    border: 1px solid var(--black);
+    border: 0.1px solid var(--black);
 }
 
 .active::before,
