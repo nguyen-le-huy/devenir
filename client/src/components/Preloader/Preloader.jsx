@@ -1,5 +1,5 @@
 import styles from './Preloader.module.css';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
@@ -9,6 +9,7 @@ gsap.registerPlugin(useGSAP, DrawSVGPlugin);
 
 const Preloader = () => {
     const [shouldShowPreloader, setShouldShowPreloader] = useState(false);
+    const [isResourcesLoaded, setIsResourcesLoaded] = useState(false);
 
     const containerRef = useRef(null);
     const firstNumberRef = useRef(null);
@@ -16,6 +17,7 @@ const Preloader = () => {
     const logoRef = useRef(null);
     const pathsRef = useRef([]);
     const circleLoaderRef = useRef(null);
+    const timelineRef = useRef(null);
 
     // ✅ Chỉ show preloader khi truy cập trực tiếp qua URL (không phải client-side navigation)
     useEffect(() => {
@@ -37,6 +39,43 @@ const Preloader = () => {
         }
     }, []);
 
+    // ✅ Detect khi tất cả resources đã load xong
+    useEffect(() => {
+        if (!shouldShowPreloader) return;
+
+        const checkResourcesLoaded = () => {
+            // Đã load xong tất cả
+            setIsResourcesLoaded(true);
+        };
+
+        // Nếu document đã ready
+        if (document.readyState === 'complete') {
+            // Đợi thêm fonts nếu có
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(() => {
+                    // Thêm delay nhỏ để đảm bảo mượt
+                    setTimeout(checkResourcesLoaded, 100);
+                });
+            } else {
+                setTimeout(checkResourcesLoaded, 100);
+            }
+        } else {
+            // Đợi window load
+            const handleLoad = () => {
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(() => {
+                        setTimeout(checkResourcesLoaded, 100);
+                    });
+                } else {
+                    setTimeout(checkResourcesLoaded, 100);
+                }
+            };
+
+            window.addEventListener('load', handleLoad);
+            return () => window.removeEventListener('load', handleLoad);
+        }
+    }, [shouldShowPreloader]);
+
     // Lock scroll khi preloader hiển thị
     useEffect(() => {
         if (!shouldShowPreloader) return;
@@ -57,8 +96,9 @@ const Preloader = () => {
         };
     }, [shouldShowPreloader]);
 
+    // ✅ Animation chỉ chạy khi resources đã load
     useGSAP(() => {
-        if (!shouldShowPreloader) return;
+        if (!shouldShowPreloader || !isResourcesLoaded) return;
 
         if (lenisInstance) {
             lenisInstance.stop();
@@ -71,77 +111,84 @@ const Preloader = () => {
         const paths = pathsRef.current;
         const circleLoader = circleLoaderRef.current;
 
+        // Kill previous timeline if exists
+        if (timelineRef.current) {
+            timelineRef.current.kill();
+        }
+
         const tl = gsap.timeline();
+        timelineRef.current = tl;
 
-        // Speed up by 25%: slideDuration 0.3 → 0.225, delays 0.4 → 0.3
-        const slideDuration = 0.225;
+        // Optimized timing values
+        const slideDuration = 0.2;
         const slideEase = "power2.inOut";
-        const slideEaseOut = "power2.in";
+        const slideEaseOut = "power2.out";
 
-        tl.set([firstNum, secondNum], { yPercent: 0 });
+        // Ensure initial state
+        tl.set([firstNum, secondNum], { yPercent: 0, opacity: 1 });
 
         // Change to 25
-        tl.to(firstNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '+=0.3')
-            .to(secondNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '-=0.15')
+        tl.to(firstNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '+=0.15')
+            .to(secondNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '-=0.12')
             .set(firstNum, { innerText: '2', yPercent: 100 })
             .set(secondNum, { innerText: '5', yPercent: 100 })
             .to(firstNum, { yPercent: 0, duration: slideDuration, ease: slideEase })
-            .to(secondNum, { yPercent: 0, duration: slideDuration, ease: slideEase }, '-=0.15');
+            .to(secondNum, { yPercent: 0, duration: slideDuration, ease: slideEase }, '-=0.12');
 
         // Change to 67
-        tl.to(firstNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.3')
-            .to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '-=0.15')
-            .set(firstNum, { innerText: '6', y: '100%' })
-            .set(secondNum, { innerText: '7', y: '100%' })
-            .to(firstNum, { y: '0%', duration: slideDuration, ease: slideEase })
-            .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase }, '-=0.15');
+        tl.to(firstNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '+=0.15')
+            .to(secondNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '-=0.12')
+            .set(firstNum, { innerText: '6', yPercent: 100 })
+            .set(secondNum, { innerText: '7', yPercent: 100 })
+            .to(firstNum, { yPercent: 0, duration: slideDuration, ease: slideEase })
+            .to(secondNum, { yPercent: 0, duration: slideDuration, ease: slideEase }, '-=0.12');
 
         // Change to 98
-        tl.to(firstNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.3')
-            .to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '-=0.15')
-            .set(firstNum, { innerText: '9', y: '100%' })
-            .set(secondNum, { innerText: '8', y: '100%' })
-            .to(firstNum, { y: '0%', duration: slideDuration, ease: slideEase })
-            .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase }, '-=0.15');
+        tl.to(firstNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '+=0.15')
+            .to(secondNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '-=0.12')
+            .set(firstNum, { innerText: '9', yPercent: 100 })
+            .set(secondNum, { innerText: '8', yPercent: 100 })
+            .to(firstNum, { yPercent: 0, duration: slideDuration, ease: slideEase })
+            .to(secondNum, { yPercent: 0, duration: slideDuration, ease: slideEase }, '-=0.12');
 
         // Change to 99
-        tl.to(secondNum, { y: '-100%', duration: slideDuration, ease: slideEaseOut }, '+=0.3')
-            .set(secondNum, { innerText: '9', y: '100%' })
-            .to(secondNum, { y: '0%', duration: slideDuration, ease: slideEase });
+        tl.to(secondNum, { yPercent: -100, duration: slideDuration, ease: slideEaseOut }, '+=0.15')
+            .set(secondNum, { innerText: '9', yPercent: 100 })
+            .to(secondNum, { yPercent: 0, duration: slideDuration, ease: slideEase });
 
         // Fade out numbers
         tl.to([firstNum, secondNum, circleLoader], {
             opacity: 0,
-            duration: 0.3,
+            duration: 0.25,
             ease: "power1.in",
-            delay: 0.375
+            delay: 0.2
         });
 
         // Logo animation
         tl.to(logo, {
             opacity: 1,
-            duration: 0.5,
+            duration: 0.4,
         }, '<');
 
         tl.from(paths, {
             drawSVG: "0%",
-            duration: 1.5,
+            duration: 1.2,
             ease: 'power2.inOut',
-            stagger: 0.1
+            stagger: 0.08
         });
 
         tl.to(paths, {
             fill: 'white',
-            duration: 0.5,
+            duration: 0.4,
             ease: 'power1.inOut'
-        }, '-=0.5');
+        }, '-=0.4');
 
         // Slide up
         tl.to(container, {
             yPercent: -100,
-            duration: 1.2,
+            duration: 1,
             ease: 'power3.inOut',
-            delay: 0.5
+            delay: 0.3
         });
 
         // Unlock scroll & dispatch event
@@ -160,12 +207,12 @@ const Preloader = () => {
             }
 
             window.dispatchEvent(new CustomEvent('preloaderComplete'));
-        }, null, '-=0.5');
+        }, null, '-=0.4');
 
         tl.set(container, {
             display: 'none',
         });
-    }, { scope: containerRef, dependencies: [shouldShowPreloader] });
+    }, { scope: containerRef, dependencies: [shouldShowPreloader, isResourcesLoaded] });
 
     if (!shouldShowPreloader) return null;
 
