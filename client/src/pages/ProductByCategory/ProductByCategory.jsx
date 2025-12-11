@@ -118,11 +118,21 @@ const ProductByCategory = () => {
         // Extract unique colors from variants
         const availableColors = [...new Set(variants.map(v => v.color))].filter(Boolean);
 
-        // Count variants per color
+        // ✅ Count unique product + color combinations (not counting multiple sizes)
+        // Nếu 1 product có 3 size cùng màu Black, chỉ đếm là 1
         const colorCounts = {};
+        const countedProductColors = new Set(); // Track đã đếm productId + color chưa
+
         variants.forEach(variant => {
             if (variant.color) {
-                colorCounts[variant.color] = (colorCounts[variant.color] || 0) + 1;
+                const productId = variant.productInfo?._id || variant.product;
+                const key = `${productId}_${variant.color}`;
+
+                // Chỉ đếm nếu chưa đếm product + color này
+                if (!countedProductColors.has(key)) {
+                    countedProductColors.add(key);
+                    colorCounts[variant.color] = (colorCounts[variant.color] || 0) + 1;
+                }
             }
         });
 
