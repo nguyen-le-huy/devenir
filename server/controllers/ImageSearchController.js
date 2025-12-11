@@ -59,7 +59,7 @@ async function ensureInitialized() {
  * @access  Public
  */
 export const findSimilarProductsSelfHost = asyncHandler(async (req, res) => {
-    const { image, topK = 12, scoreThreshold = 0.3 } = req.body;
+    const { image, topK = 12, scoreThreshold = 0.15 } = req.body;  // Lower threshold for background images
 
     if (!image) {
         return res.status(400).json({
@@ -112,7 +112,7 @@ export const findSimilarProductsSelfHost = asyncHandler(async (req, res) => {
         const { embedding, processingTime } = await encodeImage(image);
         timing.clipEncode = Date.now() - clipStart;
 
-        if (!embedding || embedding.length !== 512) {
+        if (!embedding || embedding.length !== 768) {  // ViT-L-14 outputs 768 dims
             throw new Error('Failed to generate valid embedding');
         }
 

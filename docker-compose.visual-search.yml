@@ -45,6 +45,8 @@ services:
     restart: always
     ports:
       - "8899:8899"
+    volumes:
+      - clip_cache:/root/.cache  # Persist CLIP model (~338MB)
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8899/health"]
       interval: 60s
@@ -58,6 +60,7 @@ services:
 volumes:
   qdrant_data:
   redis_data:
+  clip_cache:  # CLIP model cache (~338MB)
 
 networks:
   default:

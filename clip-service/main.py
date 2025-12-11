@@ -34,10 +34,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Model configuration
-MODEL_NAME = "ViT-B-32"
+# Model configuration - ViT-L-14 for better accuracy with complex backgrounds
+MODEL_NAME = "ViT-L-14"
 PRETRAINED = "openai"
-EMBEDDING_DIMS = 512
+EMBEDDING_DIMS = 768  # ViT-L-14 outputs 768 dimensions
 
 # Global model and preprocess
 model = None
