@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import styles from './VisuallySimilar.module.css';
 import ScarfCard from '../../components/ProductCard/ScarfCard';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
@@ -37,6 +37,11 @@ const VisuallySimilar = () => {
             urlSlug: result.urlSlug
         }));
     }, [results]);
+
+    // Scroll to top when new results are loaded
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [uploadedImage, results]);
 
     // Handle back/search again
     const handleSearchAgain = () => {
