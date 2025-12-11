@@ -1,5 +1,5 @@
 ---
-description: Workflow tìm kiếm sản phẩm bằng hình ảnh (Visual Search) với Self-hosted CLIP + Qdrant + Redis
+description: Workflow tìm kiếm sản phẩm bằng hình ảnh (Visual Search) với Self-hosted FashionCLIP + Qdrant + Redis
 ---
 
 # Visual Search Self-Hosted Workflow
@@ -8,8 +8,8 @@ description: Workflow tìm kiếm sản phẩm bằng hình ảnh (Visual Search
 
 ```
 ┌────────────┐    ┌───────────┐    ┌──────────────┐    ┌─────────┐
-│   Browser  │───►│  Node.js  │───►│ CLIP Service │    │  Redis  │
-│   (React)  │    │  Backend  │    │ (ViT-L-14)   │    │ (Cache) │
+│   Browser  │───►│  Node.js  │───►│ FashionCLIP  │    │  Redis  │
+│   (React)  │    │  Backend  │    │  (Zalando)   │    │ (Cache) │
 └────────────┘    └─────┬─────┘    └──────────────┘    └────▲────┘
                         │                                    │
                         │          ┌──────────────┐          │
@@ -24,11 +24,25 @@ description: Workflow tìm kiếm sản phẩm bằng hình ảnh (Visual Search
 
 | Thông số | Giá trị |
 |----------|---------|
-| **Model** | ViT-L-14 (OpenAI CLIP) |
-| **Model Size** | ~850MB |
-| **Embedding Dims** | 768 |
-| **Score Threshold** | 0.15 (giảm để detect ảnh có background) |
-| **Inference Time** | ~300-400ms per image |
+| **Model** | FashionCLIP (Zalando) |
+| **Model ID** | `patrickjohncyh/fashion-clip` |
+| **Model Size** | ~400MB |
+| **Embedding Dims** | 512 |
+| **Training Data** | 800K+ fashion images |
+| **License** | MIT (Free for commercial use) |
+| **Score Threshold** | 0.15 |
+| **Inference Time** | ~200ms per image |
+
+### Tại sao FashionCLIP?
+
+| So sánh | OpenAI CLIP (ViT-L-14) | FashionCLIP |
+|---------|------------------------|-------------|
+| Training data | General images | **800K+ fashion** |
+| Color accuracy | ⭐⭐ | ⭐⭐⭐⭐ |
+| Fashion attributes | ⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Size | ~850MB | **~400MB** |
+| Inference time | ~400ms | **~200ms** |
+| Correct color ranking | ❌ Position #5-6 | ✅ **Position #1** |
 
 ---
 
@@ -39,17 +53,17 @@ description: Workflow tìm kiếm sản phẩm bằng hình ảnh (Visual Search
 | File | Mục đích |
 |------|----------|
 | `docker-compose.visual-search.yml` | Docker Compose cho 3 services: Qdrant (6333), Redis (6379), CLIP (8899) |
-| `clip-service/main.py` | FastAPI CLIP server với ViT-L-14 model (768 dims) |
-| `clip-service/requirements.txt` | Python dependencies cho CLIP service |
+| `clip-service/main.py` | FastAPI FashionCLIP server (512 dims) |
+| `clip-service/requirements.txt` | Python dependencies (transformers, torch) |
 | `clip-service/Dockerfile` | Docker build file cho CLIP service |
 
 ### 📁 Server - Services (`server/services/imageSearch/`)
 
 | File | Mục đích |
 |------|----------|
-| `clipServiceClient.js` | HTTP client gọi CLIP FastAPI để encode images → 768-dim embeddings |
-| `qdrantVectorStore.js` | Qdrant client: init collection (768 dims), upsert vectors, search similar |
-| `redisCache.js` | Redis client: cache search results (TTL 1 hour), giảm latency từ 400ms → 1ms |
+| `clipServiceClient.js` | HTTP client gọi FashionCLIP FastAPI để encode images → 512-dim embeddings |
+| `qdrantVectorStore.js` | Qdrant client: init collection (512 dims), upsert vectors, search similar |
+| `redisCache.js` | Redis client: cache search results (TTL 1 hour), giảm latency từ 200ms → 1ms |
 
 ### 📁 Server - Controller & Routes
 
@@ -70,9 +84,7 @@ description: Workflow tìm kiếm sản phẩm bằng hình ảnh (Visual Search
 |------|----------|
 | `client/src/services/imageSearchService.js` | API service gọi `/api/image-search/find-similar` |
 | `client/src/components/VisualSearch/VisualSearch.jsx` | Modal upload ảnh, drag & drop, gọi API search |
-| `client/src/components/VisualSearch/VisualSearch.module.css` | Styles cho VisualSearch modal |
 | `client/src/pages/VisuallySimilar/VisuallySimilar.jsx` | Trang hiển thị kết quả tìm kiếm với grid sản phẩm |
-| `client/src/pages/VisuallySimilar/VisuallySimilar.module.css` | Styles cho trang kết quả |
 
 ---
 
@@ -82,7 +94,7 @@ description: Workflow tìm kiếm sản phẩm bằng hình ảnh (Visual Search
 |--------|----------|------|
 | `devenir_qdrant_data` | Vector database storage | ~50MB |
 | `devenir_redis_data` | Cache data | ~10MB |
-| `devenir_clip_cache` | CLIP model cache (persist after rebuild) | ~850MB |
+| `devenir_clip_cache` | FashionCLIP model cache (persist after rebuild) | ~400MB |
 
 ---
 
@@ -113,8 +125,8 @@ POST /api/image-search/find-similar
   "data": [
     {
       "variantId": "...",
-      "score": 0.55,
-      "similarity": 55,
+      "score": 0.61,
+      "similarity": 61,
       "productName": "EKD Wool Cashmere Sweater",
       "color": "Wine red",
       "price": 450,
@@ -126,10 +138,10 @@ POST /api/image-search/find-similar
   "count": 6,
   "cached": false,
   "timing": {
-    "cacheCheck": 2,
-    "clipEncode": 350,
-    "qdrantSearch": 35,
-    "total": 390
+    "cacheCheck": 1,
+    "clipEncode": 200,
+    "qdrantSearch": 6,
+    "total": 210
   }
 }
 ```
@@ -152,14 +164,14 @@ User upload ảnh (base64)
 │     ├─ HIT  → Return cached results (~1ms) ──────────►  │
 │     └─ MISS → Continue                                  │
 │                                                         │
-│  2. Call CLIP Service (ViT-L-14)                        │
+│  2. Call FashionCLIP Service                            │
 │     POST → localhost:8899/encode { image: base64 }      │
-│     ⏱️ ~300-400ms                                       │
-│     └─► embedding [768d]                                │
+│     ⏱️ ~200ms (fashion-specialized)                     │
+│     └─► embedding [512d]                                │
 │                                                         │
 │  3. Query Qdrant                                        │
 │     POST → localhost:6333/search { vector, limit: 12 }  │
-│     ⏱️ ~35ms                                            │
+│     ⏱️ ~6ms                                             │
 │     └─► 12 results with scores + payloads              │
 │                                                         │
 │  4. Format Results (NO MongoDB needed)                  │
@@ -170,16 +182,7 @@ User upload ảnh (base64)
 └─────────────────────────────────────────────────────────┘
     │
     ▼
-Response: {
-  success: true,
-  data: [{ variantId, productName, color, price, mainImage, similarity, ... }],
-  count: 12,
-  cached: false,
-  timing: { cacheCheck: 2, clipEncode: 350, qdrantSearch: 35, total: 390 }
-}
-    │
-    ▼
-Client navigate → /visually-similar (hiển thị grid sản phẩm)
+Response → Client navigate → /visually-similar
 ```
 
 ---
@@ -188,24 +191,24 @@ Client navigate → /visually-similar (hiển thị grid sản phẩm)
 
 | Loại ảnh | First Request | Cached Request |
 |----------|---------------|----------------|
-| **Product-only** (no background) | ~400ms, ~80% similarity | ~1ms |
-| **With background** (người, nhà hàng, etc.) | ~400ms, ~50-60% similarity | ~1ms |
+| **Product-only** (no background) | ~200ms, ~80% similarity | ~1ms |
+| **With background** (người, nhà hàng, etc.) | ~200ms, ~60% similarity | ~1ms |
 
 ### Timing Breakdown (First Request)
 
 | Step | Time |
 |------|------|
-| Cache Check | ~2ms |
-| CLIP Encode (ViT-L-14) | ~300-400ms |
-| Qdrant Search | ~35ms |
-| **Total** | **~400ms** |
+| Cache Check | ~1ms |
+| FashionCLIP Encode | ~200ms |
+| Qdrant Search | ~6ms |
+| **Total** | **~210ms** |
 
 ---
 
 ## Commands
 
 ```bash
-# Start Docker services (Qdrant, Redis, CLIP)
+# Start Docker services (Qdrant, Redis, FashionCLIP)
 docker compose -f docker-compose.visual-search.yml up -d
 
 # Stop Docker services
@@ -220,10 +223,13 @@ docker compose -f docker-compose.visual-search.yml up -d --build clip-service
 # Index products to Qdrant (first time or after product changes)
 cd server && node scripts/ingestion/ingest-to-qdrant.js --force
 
-# Start Node.js server
-cd server && npm run dev
+# Clear Redis cache (after model upgrade)
+docker exec devenir-redis redis-cli FLUSHDB
 
-# Check CLIP health
+# Restart PM2 server
+pm2 restart devenir-server
+
+# Check FashionCLIP health
 curl http://localhost:8899/health
 
 # Check API health
@@ -247,15 +253,18 @@ REDIS_URL=redis://localhost:6379
 
 ## Troubleshooting
 
-### Ảnh có background không tìm được
-- ✅ Đã fix: Dùng ViT-L-14 thay vì ViT-B-32
-- ✅ Giảm scoreThreshold từ 0.3 → 0.15
+### Màu sắc sản phẩm không đúng ranking
+- ✅ Đã fix: Dùng FashionCLIP thay vì OpenAI CLIP
+- FashionCLIP được train trên 800K+ fashion images → hiểu màu sắc tốt hơn
 
-### CLIP service chậm
-- ViT-L-14 encode ~300-400ms (on CPU)
-- Cached requests chỉ ~1ms
-- Có thể dùng GPU để tăng tốc (modify Dockerfile)
+### Cache trả về kết quả cũ sau khi đổi model
+- Clear Redis cache: `docker exec devenir-redis redis-cli FLUSHDB`
 
 ### Re-indexing sau khi đổi model
 - Phải chạy `--force` để xóa và tạo lại collection với dimension mới
-- `node scripts/ingestion/ingest-to-qdrant.js --force`
+- `cd server && node scripts/ingestion/ingest-to-qdrant.js --force`
+
+### CLIP service chậm
+- FashionCLIP encode ~200ms (on CPU)
+- Cached requests chỉ ~1ms
+- Có thể dùng GPU để tăng tốc (modify Dockerfile)

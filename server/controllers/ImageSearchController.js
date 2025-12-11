@@ -112,7 +112,7 @@ export const findSimilarProductsSelfHost = asyncHandler(async (req, res) => {
         const { embedding, processingTime } = await encodeImage(image);
         timing.clipEncode = Date.now() - clipStart;
 
-        if (!embedding || embedding.length !== 768) {  // ViT-L-14 outputs 768 dims
+        if (!embedding || embedding.length !== 512) {  // FashionCLIP outputs 512 dims
             throw new Error('Failed to generate valid embedding');
         }
 

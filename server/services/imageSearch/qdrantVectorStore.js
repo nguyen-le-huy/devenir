@@ -8,7 +8,7 @@ import crypto from 'crypto';
 
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const COLLECTION_NAME = 'visual-search';
-const VECTOR_SIZE = 768;  // ViT-L-14 outputs 768 dimensions
+const VECTOR_SIZE = 512;  // FashionCLIP outputs 512 dimensions
 
 let qdrantClient = null;
 

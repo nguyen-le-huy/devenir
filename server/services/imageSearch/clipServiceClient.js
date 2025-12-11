@@ -124,4 +124,4 @@ export async function encodeText(text) {
     }
 }
 
-export const CLIP_DIMENSIONS = 768;  // ViT-L-14
+export const CLIP_DIMENSIONS = 512;  // FashionCLIP
