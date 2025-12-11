@@ -104,24 +104,23 @@ const ChatWindow = ({ onClose }) => {
         };
     }, []);
 
-    // Text animation
+    // Text animation - optimized to prevent flash
     useEffect(() => {
         if (!contentRef.current || !promptsRef.current) return;
 
         let splits = [];
+        let tl = null;
+
+        const contentTexts = contentRef.current.querySelectorAll('.splitChat');
+        const promptsItem = promptsRef.current.querySelectorAll('.promptItem');
+
+        // ✅ Immediately hide content to prevent flash (before fonts load)
+        gsap.set(contentTexts, { visibility: 'hidden', opacity: 0 });
+        gsap.set(promptsItem, { visibility: 'hidden', opacity: 0, y: 20 });
 
         document.fonts.ready.then(() => {
-            const contentTexts = contentRef.current.querySelectorAll('.splitChat');
-            const promptsItem = promptsRef.current.querySelectorAll('.promptItem');
-
-            // Set initial states
-            gsap.set(contentTexts, { opacity: 1 });
-            gsap.set(promptsItem, { opacity: 0, y: 20 });
-
-            const tl = gsap.timeline();
-
-            // Animate content texts first
-            contentTexts.forEach((text, index) => {
+            // Process SplitText first
+            contentTexts.forEach((text) => {
                 const split = new SplitText(text, {
                     type: "words,lines",
                     linesClass: "line"
@@ -137,17 +136,30 @@ const ChatWindow = ({ onClose }) => {
                     wrapper.appendChild(line);
                 });
 
-                tl.from(split.lines, {
+                // Set initial state for lines (hidden below)
+                gsap.set(split.lines, { yPercent: 100, opacity: 0 });
+            });
+
+            // ✅ Now make containers visible (lines are still hidden)
+            gsap.set(contentTexts, { visibility: 'visible', opacity: 1 });
+            gsap.set(promptsItem, { visibility: 'visible' });
+
+            // Create animation timeline
+            tl = gsap.timeline();
+
+            // Animate content texts
+            splits.forEach((split, index) => {
+                tl.to(split.lines, {
                     duration: 0.8,
-                    yPercent: 100,
-                    opacity: 0,
+                    yPercent: 0,
+                    opacity: 1,
                     stagger: 0.08,
                     ease: "power2.out",
                 }, index * 0.15);
             });
 
             // Animate prompts after text
-            promptsItem.forEach((item, index) => {
+            promptsItem.forEach((item) => {
                 tl.to(item, {
                     duration: 0.6,
                     y: 0,
@@ -159,7 +171,14 @@ const ChatWindow = ({ onClose }) => {
 
         // Cleanup
         return () => {
-            splits.forEach(split => split.revert());
+            if (tl) tl.kill();
+            splits.forEach(split => {
+                try {
+                    split.revert();
+                } catch (e) {
+                    // Ignore revert errors
+                }
+            });
         };
     }, []);
 
