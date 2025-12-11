@@ -252,16 +252,16 @@
 }
 
 .typingIndicator span:nth-child(1) {
-    background-color: #4285F4;
+    background-color: var(--black);
 }
 
 .typingIndicator span:nth-child(2) {
-    background-color: #FBBC04;
+    background-color: var(--black);
     animation-delay: 0.2s;
 }
 
 .typingIndicator span:nth-child(3) {
-    background-color: #34A853;
+    background-color: var(--black);
     animation-delay: 0.4s;
 }
 
