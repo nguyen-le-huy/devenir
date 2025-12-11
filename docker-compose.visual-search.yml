@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: devenir-qdrant
+    restart: always
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__HTTP_PORT=6333
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: devenir-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # CLIP Service (Self-hosted with PyTorch + open_clip)
+  clip-service:
+    build:
+      context: ./clip-service
+      dockerfile: Dockerfile
+    container_name: devenir-clip
+    restart: always
+    ports:
+      - "8899:8899"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8899/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+volumes:
+  qdrant_data:
+  redis_data:
+
+networks:
+  default:
+    name: devenir-network

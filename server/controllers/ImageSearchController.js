@@ -1,22 +1,65 @@
-import asyncHandler from 'express-async-handler';
-import { getImageEmbeddingFromBase64 } from '../services/imageSearch/clipEmbedding.js';
-import {
-    initImageVectorStore,
-    searchSimilarImages,
-    getImageIndexStats
-} from '../services/imageSearch/imageVectorStore.js';
-import ProductVariant from '../models/ProductVariantModel.js';
+/**
+ * Self-hosted Image Search Controller
+ * Sử dụng: CLIP Service (self-hosted) + Qdrant + Redis
+ * 
+ * Flow:
+ * 1. Check Redis cache (5ms)
+ * 2. Encode image via CLIP service (200-300ms)
+ * 3. Search Qdrant (30-50ms)
+ * 4. Cache results async
+ * 5. Return results (NO MongoDB needed - payload from Qdrant)
+ */
 
-// Initialize on first request
-let initialized = false;
+import asyncHandler from 'express-async-handler';
+import { encodeImage, checkClipHealth } from '../services/imageSearch/clipServiceClient.js';
+import {
+    initQdrant,
+    searchSimilar,
+    getCollectionStats
+} from '../services/imageSearch/qdrantVectorStore.js';
+import {
+    initRedisCache,
+    getCachedResults,
+    cacheResults,
+    generateImageHash,
+    getCacheStats,
+    isRedisAvailable
+} from '../services/imageSearch/redisCache.js';
+
+// Track initialization
+let servicesInitialized = false;
 
 /**
- * @desc    Find similar products by image
- * @route   POST /api/image-search/find-similar
+ * Initialize all services
+ */
+async function ensureInitialized() {
+    if (servicesInitialized) return;
+
+    console.log('🔧 Initializing self-hosted image search services...');
+
+    try {
+        // Init Qdrant
+        await initQdrant();
+
+        // Init Redis (optional - fallback without cache)
+        await initRedisCache();
+
+        servicesInitialized = true;
+        console.log('✅ All services initialized');
+    } catch (error) {
+        console.error('⚠️ Service init error:', error.message);
+        // Continue even if Redis fails
+        servicesInitialized = true;
+    }
+}
+
+/**
+ * @desc    Find similar products by image (Self-hosted version)
+ * @route   POST /api/image-search/find-similar-selfhost
  * @access  Public
  */
-export const findSimilarProducts = asyncHandler(async (req, res) => {
-    const { image, topK = 8 } = req.body;
+export const findSimilarProductsSelfHost = asyncHandler(async (req, res) => {
+    const { image, topK = 12, scoreThreshold = 0.3 } = req.body;
 
     if (!image) {
         return res.status(400).json({
@@ -33,74 +76,95 @@ export const findSimilarProducts = asyncHandler(async (req, res) => {
         });
     }
 
-    // Initialize vector store if needed
-    if (!initialized) {
-        await initImageVectorStore();
-        initialized = true;
-    }
+    // Initialize services
+    await ensureInitialized();
+
+    const timing = {
+        cacheCheck: 0,
+        clipEncode: 0,
+        qdrantSearch: 0,
+        total: 0
+    };
+
+    const totalStart = Date.now();
 
     try {
-        console.log('🔍 Generating CLIP embedding for uploaded image...');
-        const startTime = Date.now();
+        // Step 1: Check Redis cache
+        const cacheStart = Date.now();
+        const imageHash = generateImageHash(image);
+        const cachedResults = await getCachedResults(imageHash);
+        timing.cacheCheck = Date.now() - cacheStart;
 
-        // Get CLIP embedding for uploaded image
-        const queryEmbedding = await getImageEmbeddingFromBase64(image);
+        if (cachedResults) {
+            timing.total = Date.now() - totalStart;
+            return res.status(200).json({
+                success: true,
+                data: cachedResults,
+                count: cachedResults.length,
+                cached: true,
+                timing
+            });
+        }
 
-        if (!queryEmbedding || queryEmbedding.length !== 512) {
+        // Step 2: Encode image via CLIP service
+        console.log('🔍 Encoding image via CLIP service...');
+        const clipStart = Date.now();
+        const { embedding, processingTime } = await encodeImage(image);
+        timing.clipEncode = Date.now() - clipStart;
+
+        if (!embedding || embedding.length !== 512) {
             throw new Error('Failed to generate valid embedding');
         }
 
-        console.log(`✅ Embedding generated in ${Date.now() - startTime}ms`);
+        console.log(`✅ CLIP embedding generated in ${processingTime}ms`);
 
-        // Search similar images in Pinecone
-        console.log('🔍 Searching similar images in Pinecone...');
-        const matches = await searchSimilarImages(queryEmbedding, parseInt(topK));
+        // Step 3: Search Qdrant
+        console.log('🔍 Searching similar images in Qdrant...');
+        const qdrantStart = Date.now();
+        const matches = await searchSimilar(embedding, parseInt(topK), parseFloat(scoreThreshold));
+        timing.qdrantSearch = Date.now() - qdrantStart;
 
         if (matches.length === 0) {
             return res.status(200).json({
                 success: true,
                 data: [],
                 count: 0,
-                message: 'No similar products found'
+                message: 'No similar products found',
+                timing
             });
         }
 
-        // Get variant IDs from matches
-        const variantIds = matches.map(m => m.id);
+        // Step 4: Format results (NO MongoDB needed - data from Qdrant payload)
+        const results = matches.map(match => ({
+            variantId: match.variantId || match.id,
+            score: match.score,
+            similarity: match.similarity,
+            productName: match.productName,
+            color: match.color,
+            price: match.price,
+            mainImage: match.mainImage,
+            hoverImage: match.hoverImage || match.mainImage,
+            size: match.size,
+            sku: match.sku,
+            inStock: match.inStock !== false,
+            urlSlug: match.urlSlug
+        }));
 
-        // Fetch full variant data from MongoDB
-        const variants = await ProductVariant.find({ _id: { $in: variantIds } })
-            .populate('product_id', 'name category description urlSlug')
-            .lean();
+        // Step 5: Cache results async (don't await)
+        cacheResults(imageHash, results).catch(err =>
+            console.error('Cache write error:', err.message)
+        );
 
-        // Map results with similarity scores
-        const results = matches.map(match => {
-            const variant = variants.find(v => v._id.toString() === match.id);
+        timing.total = Date.now() - totalStart;
 
-            return {
-                variantId: match.id,
-                score: match.score,
-                similarity: Math.round(match.score * 100),
-                // Metadata from Pinecone
-                productName: match.metadata?.productName || variant?.product_id?.name || 'Unknown',
-                color: match.metadata?.color || variant?.color,
-                price: match.metadata?.price || variant?.price,
-                mainImage: match.metadata?.mainImage || variant?.mainImage,
-                hoverImage: variant?.hoverImage || variant?.mainImage, // Add hoverImage
-                // Additional variant data if available
-                size: variant?.size,
-                sku: variant?.sku,
-                inStock: variant?.quantity > 0,
-                urlSlug: variant?.product_id?.urlSlug
-            };
-        });
-
-        console.log(`✅ Found ${results.length} similar products`);
+        console.log(`✅ Found ${results.length} similar products in ${timing.total}ms`);
 
         res.status(200).json({
             success: true,
             data: results,
-            count: results.length
+            count: results.length,
+            cached: false,
+            timing
         });
 
     } catch (error) {
@@ -113,42 +177,63 @@ export const findSimilarProducts = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get image search stats
- * @route   GET /api/image-search/stats
+ * @desc    Get self-hosted service stats
+ * @route   GET /api/image-search/stats-selfhost
  * @access  Private/Admin
  */
-export const getImageSearchStats = asyncHandler(async (req, res) => {
-    if (!initialized) {
-        await initImageVectorStore();
-        initialized = true;
-    }
+export const getSelfHostStats = asyncHandler(async (req, res) => {
+    await ensureInitialized();
 
-    const stats = await getImageIndexStats();
+    const [qdrantStats, cacheStats, clipHealth] = await Promise.all([
+        getCollectionStats(),
+        getCacheStats(),
+        checkClipHealth()
+    ]);
 
     res.status(200).json({
         success: true,
-        data: stats
+        data: {
+            qdrant: qdrantStats,
+            redis: cacheStats,
+            clip: clipHealth || { available: false }
+        }
     });
 });
 
 /**
- * @desc    Health check for image search service
- * @route   GET /api/image-search/health
+ * @desc    Health check for self-hosted image search
+ * @route   GET /api/image-search/health-selfhost
  * @access  Public
  */
-export const imageSearchHealth = asyncHandler(async (req, res) => {
+export const selfHostHealth = asyncHandler(async (req, res) => {
     const checks = {
-        openai: !!process.env.OPENAI_API_KEY,
-        pinecone: !!process.env.PINECONE_API_KEY,
-        indexName: process.env.PINECONE_IMAGE_INDEX_NAME || 'visual-search',
-        initialized
+        qdrant: false,
+        redis: false,
+        clip: false,
+        initialized: servicesInitialized
     };
 
-    const allOk = checks.openai && checks.pinecone;
+    try {
+        // Check CLIP
+        const clipHealth = await checkClipHealth();
+        checks.clip = clipHealth !== null;
+
+        // Check Qdrant
+        const qdrantStats = await getCollectionStats();
+        checks.qdrant = !qdrantStats.error;
+
+        // Check Redis
+        checks.redis = isRedisAvailable();
+    } catch (error) {
+        console.error('Health check error:', error.message);
+    }
+
+    const allOk = checks.clip && checks.qdrant;
 
     res.status(allOk ? 200 : 503).json({
         success: allOk,
         status: allOk ? 'healthy' : 'degraded',
-        checks
+        checks,
+        note: checks.redis ? 'Cache enabled' : 'Running without cache'
     });
 });

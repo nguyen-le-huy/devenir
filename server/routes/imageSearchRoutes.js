@@ -1,34 +1,42 @@
 import express from 'express';
 import {
-    findSimilarProducts,
-    getImageSearchStats,
-    imageSearchHealth
+    findSimilarProductsSelfHost,
+    getSelfHostStats,
+    selfHostHealth
 } from '../controllers/ImageSearchController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// ============ PUBLIC ROUTES ============
+// ============================================
+// PUBLIC ROUTES - Self-hosted (CLIP + Qdrant + Redis)
+// ============================================
 
 /**
  * POST /api/image-search/find-similar
- * Find visually similar products by uploading an image
- * Body: { image: "<base64>", topK: 8 }
+ * Find visually similar products using self-hosted stack
+ * Body: { image: "<base64>", topK: 12, scoreThreshold: 0.3 }
+ * 
+ * Latency:
+ * - First request: ~350ms (CLIP encode + Qdrant search)
+ * - Cached request: ~10ms (Redis hit)
  */
-router.post('/find-similar', findSimilarProducts);
+router.post('/find-similar', findSimilarProductsSelfHost);
 
 /**
  * GET /api/image-search/health
- * Health check for image search service
+ * Health check for self-hosted services
  */
-router.get('/health', imageSearchHealth);
+router.get('/health', selfHostHealth);
 
-// ============ ADMIN ROUTES ============
+// ============================================
+// ADMIN ROUTES
+// ============================================
 
 /**
  * GET /api/image-search/stats
- * Get Pinecone index statistics
+ * Get self-hosted service statistics (Qdrant, Redis, CLIP)
  */
-router.get('/stats', authenticate, isAdmin, getImageSearchStats);
+router.get('/stats', authenticate, isAdmin, getSelfHostStats);
 
 export default router;
