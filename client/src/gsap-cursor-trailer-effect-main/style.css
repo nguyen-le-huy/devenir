@@ -1,0 +1,21 @@
+.image-trailer {
+    position: fixed;
+    pointer-events: none; /* prevents blocking clicks on the page */
+    z-index: 9999;
+}
+
+.image-item {
+    width: 200px;
+    height: 300px;
+    object-fit: cover;
+    position: absolute;
+    pointer-events: none; /* makes sure these images don't block interaction */
+    border-radius: 3px;
+    transform-origin: center; /* scaling/rotations will happen from the center */
+}
+
+/* The original gallery is hidden from view,
+but we still keep the images in the DOM to clone them */
+.image-gallery {
+    display: none;
+}
