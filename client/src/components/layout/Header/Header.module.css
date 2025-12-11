@@ -3,7 +3,7 @@
 .topBar {
     background-color: var(--midnight);
     color: var(--white);
-    font-size: 14px;
+    font-size: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -44,8 +44,8 @@
 /*************====> HEADER <====*************/
 
 .header {
-    padding-top: 25px;
-    padding-bottom: 25px;
+    padding-top: 20px;
+    padding-bottom: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -69,13 +69,13 @@
 }
 
 .xmasIcon {
-    height: 40px;
-    width: 40px;
+    height: 35px;
+    width: 35px;
 }
 
 .snowmanIcon {
-    height: 40px;
-    width: 40px;
+    height: 35px;
+    width: 35px;
     animation: wobble 2s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite;
     transform-origin: bottom center;
     will-change: transform;
@@ -152,6 +152,7 @@
 
 .logo {
     cursor: pointer;
+    width: 140px !important;
 }
 
 .actions {
@@ -286,6 +287,14 @@
 
 @media (max-width: 768px) {
 
+    .xmasIcon {
+        display: none;
+    }
+
+    .snowmanIcon {
+        display: none;
+    }
+
     /*************====> TOP BAR <====*************/
 
     .left,
@@ -314,7 +323,7 @@
     }
 
     .logo {
-        width: 128px !important;
+        width: 120px !important;
     }
 
     .userIcon,

@@ -8,8 +8,7 @@
 .paymentSuccessful,
 .paymentFailed {
     border: 1px solid var(--light-green);
-    padding: 100px 160px;
-    width: 50%;
+    padding: 20px;
     border-radius: 20px;
     overflow: hidden;
     position: relative;
@@ -25,6 +24,7 @@
     flex-direction: column;
     gap: 20px;
     z-index: 100;
+    width: 80%;
 }
 
 .content>svg {
@@ -78,7 +78,7 @@
     align-items: center;
     justify-content: center;
     gap: 20px;
-    width: 100%;
+    width: 80%;
 }
 
 .button>p {
@@ -160,5 +160,13 @@
 
     .buttonContainer>p {
         font-size: 14px;
+    }
+
+    .content {
+        width: 100%;
+    }
+
+    .buttonContainer {
+        width: 100%;
     }
 }

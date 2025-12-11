@@ -283,6 +283,20 @@
         grid-row: auto;
     }
 
+    /* Ẩn video trên mobile */
+    .videoBackground {
+        display: none;
+    }
+
+    /* Hiển thị background image thay thế video */
+    .box1 {
+        background-image: url('/images/category1.png');
+    }
+
+    .box3 {
+        background-image: url('/images/category3.png');
+    }
+
     .box4Content>.title {
         font-size: 32px;
     }
@@ -310,6 +324,10 @@
     .arrows>svg {
         width: 25px;
         height: 25px;
+    }
+
+    .arrows>svg path {
+        fill: var(--black);
     }
 
     .title {

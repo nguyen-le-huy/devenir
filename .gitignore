@@ -127,6 +127,10 @@ jest-coverage/
 *.p12
 *.pfx
 
+# Google Cloud credentials
+server/google-credentials.json
+google-credentials.json
+
 # Database
 *.sqlite
 *.sqlite3
@@ -188,4 +192,3 @@ docs/dist/
 
 # Giữ lại các file hướng dẫn
 !.github/
-server/google-credentials.json

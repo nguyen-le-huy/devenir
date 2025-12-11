@@ -27,6 +27,7 @@ import NowPaymentsResult from './pages/NowPayments/NowPaymentsResult.jsx';
 import PaymentSuccessful from './pages/PaymentStatus/PaymentSuccessful.jsx';
 import PaymentFailed from './pages/PaymentStatus/PaymentFailed.jsx';
 import VisuallySimilar from './pages/VisuallySimilar/VisuallySimilar.jsx';
+import PaymentSuccessfulPreview from './pages/PaymentStatus/PaymentSuccessfulPreview.jsx'
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -120,6 +121,12 @@ function App() {
                 path="/payment-failed"
                 element={
                   <PaymentFailed />
+                }
+              />
+              <Route
+                path="/payment-successful-preview"
+                element={
+                  <PaymentSuccessfulPreview />
                 }
               />
               <Route
