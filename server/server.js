@@ -22,6 +22,7 @@ import customerRoutes from './routes/customerRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import imageSearchRoutes from './routes/imageSearchRoutes.js';
+import socialRoutes from './routes/socialRoutes.js';
 import { handlePayOSWebhook } from './controllers/PaymentController.js';
 
 
@@ -168,6 +169,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes); // RAG Chat API
 app.use('/api/image-search', imageSearchRoutes); // Visual Search API
+app.use('/api/social', socialRoutes); // Social Media Posting Proxy
 
 app.get('/', (req, res) => {
   res.send('API is running...');

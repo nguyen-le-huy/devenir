@@ -29,6 +29,7 @@ import {
   IconHistory,
   IconDatabase,
   IconSettingsCog,
+  IconShare,
 } from "@tabler/icons-react"
 import { ChevronRight } from "lucide-react"
 
@@ -269,6 +270,12 @@ const data = {
           title: "Blog/News",
           url: "/admin/blog",
           icon: IconFileDownload,
+          badge: null,
+        },
+        {
+          title: "Social Posts",
+          url: "/admin/social-posts",
+          icon: IconShare,
           badge: null,
         },
       ],

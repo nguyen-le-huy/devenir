@@ -21,6 +21,7 @@ import SettingsPage from './pages/settings/SettingsPage'
 import ChatbotPage from './pages/chatbot/ChatbotPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
 import ColorsPage from './pages/colors/ColorsPage'
+import SocialPostsPage from './pages/content/SocialPostsPage'
 
 function App() {
   useRealtimeSync()
@@ -88,6 +89,9 @@ function App() {
 
           {/* AI Chatbot */}
           <Route path="/admin/chatbot" element={<ProtectedRoute><ChatbotPage /></ProtectedRoute>} />
+
+          {/* Content Management */}
+          <Route path="/admin/social-posts" element={<ProtectedRoute><SocialPostsPage /></ProtectedRoute>} />
 
           {/* Fallback */}
           <Route path="/" element={<Navigate to="/admin" replace />} />
