@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import { emitRealtimeEvent } from '../utils/realtimeEmitter.js';
 import { clearCache } from '../middleware/cacheMiddleware.js';
+import { triggerProductIngestion, triggerProductDeletion, ingestVariantsToQdrant, deleteVariantsFromQdrant } from '../services/ingestion/productIngestion.service.js';
 
 const BRAND_CACHE_KEY = '__express__/api/brands';
 const invalidateBrandCache = () => {
@@ -146,6 +147,7 @@ export const createProduct = asyncHandler(async (req, res) => {
   const product = await Product.create(productData);
 
   // Create variants if provided
+  let createdVariantIds = [];
   if (variants && Array.isArray(variants) && variants.length > 0) {
     try {
       const variantDocs = variants.map((v) => ({
@@ -159,7 +161,8 @@ export const createProduct = asyncHandler(async (req, res) => {
         images: v.images || [],
         product_id: product._id,
       }));
-      await ProductVariant.insertMany(variantDocs);
+      const createdVariants = await ProductVariant.insertMany(variantDocs);
+      createdVariantIds = createdVariants.map(v => v._id.toString());
     } catch (variantError) {
       console.error('Error creating variants:', variantError.message);
       // Delete product if variant creation fails
@@ -174,6 +177,9 @@ export const createProduct = asyncHandler(async (req, res) => {
     category: product.category?.toString?.() || product.category,
   });
   invalidateBrandCache();
+
+  // Trigger auto-ingestion to Pinecone (RAG) and Qdrant (Visual Search)
+  triggerProductIngestion(product._id.toString(), createdVariantIds);
 
   res.status(201).json({
     success: true,
@@ -255,6 +261,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
       console.log(`Deleted ${deleteDuplicates.deletedCount} existing variants with duplicate SKUs`);
 
       // Create new variants
+      let createdVariantIds = [];
       if (variants.length > 0) {
         const variantDocs = variants.map((v) => ({
           sku: v.sku,
@@ -270,8 +277,12 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
         console.log('Creating variants with data:', JSON.stringify(variantDocs, null, 2));
         const createdVariants = await ProductVariant.insertMany(variantDocs);
+        createdVariantIds = createdVariants.map(v => v._id.toString());
         console.log(`Created ${createdVariants.length} new variants`);
       }
+
+      // Trigger auto-ingestion for updated variants
+      triggerProductIngestion(product._id.toString(), createdVariantIds);
     } catch (variantError) {
       console.error('ERROR updating variants:', variantError);
       console.error('Variant error stack:', variantError.stack);
@@ -284,6 +295,9 @@ export const updateProduct = asyncHandler(async (req, res) => {
         details: variantError.stack,
       });
     }
+  } else {
+    // No variants provided, but product info changed - re-ingest to Pinecone only
+    triggerProductIngestion(product._id.toString(), []);
   }
 
   console.log('Product update completed successfully');
@@ -306,6 +320,10 @@ export const updateProduct = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const deleteProduct = asyncHandler(async (req, res) => {
+  // Get variant IDs before deletion for Qdrant cleanup
+  const variants = await ProductVariant.find({ product_id: req.params.id }).select('_id').lean();
+  const variantIds = variants.map(v => v._id.toString());
+
   const product = await Product.findByIdAndDelete(req.params.id);
 
   if (!product) {
@@ -314,6 +332,9 @@ export const deleteProduct = asyncHandler(async (req, res) => {
 
   // Delete associated variants
   await ProductVariant.deleteMany({ product_id: req.params.id });
+
+  // Trigger deletion from Pinecone and Qdrant
+  triggerProductDeletion(req.params.id, variantIds);
 
   emitRealtimeEvent(req, 'product:deleted', {
     productId: product._id,
@@ -401,6 +422,9 @@ export const createVariant = asyncHandler(async (req, res) => {
       variantId: variant._id,
       sku: variant.sku,
     });
+
+    // Trigger ingestion for new variant (both Qdrant for image + Pinecone for product update)
+    triggerProductIngestion(product._id.toString(), [variant._id.toString()]);
 
     res.status(201).json({
       success: true,
@@ -498,6 +522,9 @@ export const updateVariant = asyncHandler(async (req, res) => {
       sku: variant.sku,
     });
 
+    // Trigger ingestion for updated variant (Qdrant for image, Pinecone for product update)
+    triggerProductIngestion(variant.product_id.toString(), [variant._id.toString()]);
+
     res.status(200).json({
       success: true,
       message: 'Variant updated successfully',
@@ -541,6 +568,13 @@ export const deleteVariant = asyncHandler(async (req, res) => {
     variantId: variant._id,
     sku: variant.sku,
     productId: variant.product_id,
+  });
+
+  // Trigger deletion from Qdrant and re-ingest Pinecone
+  setImmediate(async () => {
+    await deleteVariantsFromQdrant([variant._id.toString()]);
+    // Also update Pinecone to reflect variant changes
+    triggerProductIngestion(variant.product_id.toString(), []);
   });
 
   res.status(200).json({

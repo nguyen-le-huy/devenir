@@ -271,7 +271,7 @@ export async function productAdvice(query, context = {}) {
                 contextText += `- **Thương hiệu:** ${typeof product.brand === 'object' ? product.brand?.name : product.brand || 'N/A'}\n`;
 
                 if (product.description) {
-                    contextText += `- **Mô tả:** ${product.description.substring(0, 250)}...\n`;
+                    contextText += `- **Mô tả:** ${product.description.substring(0, 500)}${product.description.length > 500 ? '...' : ''}\n`;
                 }
 
                 if (product.variants && product.variants.length > 0) {
@@ -292,8 +292,11 @@ export async function productAdvice(query, context = {}) {
                 contextText += `\n`;
             }
         });
-
         // 7. Generate natural language response
+        console.log('\\n=== CONTEXT BEING SENT TO LLM ===');
+        console.log(contextText.substring(0, 2000));
+        console.log('=== END CONTEXT ===\\n');
+
         const answer = await generateResponse(query, contextText, context.recent_messages);
 
         // 8. Prepare sources and suggested products

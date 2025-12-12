@@ -37,7 +37,7 @@ export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
-  
+
   // Initialize page from URL search params (preserves state on navigation)
   const initialPage = parseInt(searchParams.get('page') || '1', 10)
   const [page, setPage] = useState(initialPage)
@@ -64,9 +64,9 @@ export default function ProductsPage() {
   const allVariants = variantsData?.data || []
   const brandsById = useMemo(() => {
     const map = new Map<string, Brand>()
-    ;(brandsResponse?.data || []).forEach((brand: Brand) => {
-      map.set(brand._id, brand)
-    })
+      ; (brandsResponse?.data || []).forEach((brand: Brand) => {
+        map.set(brand._id, brand)
+      })
     return map
   }, [brandsResponse])
   const loading = productsLoading
@@ -194,14 +194,72 @@ export default function ProductsPage() {
         urlSlug: data.urlSlug,
       }
 
+      let productId: string | null = null
+
       if (editingProduct) {
         await updateProductMutation.mutateAsync({ id: editingProduct._id, data: productData as any })
+        productId = editingProduct._id
         toast.success('Product updated successfully')
       } else {
-        await createProductMutation.mutateAsync(productData as any)
+        const result = await createProductMutation.mutateAsync(productData as any)
+        productId = result?.data?._id || result?._id
         toast.success('Product created successfully')
       }
-      
+
+      // Post to Facebook if requested
+      if (data.postToFacebook && productId) {
+        const SETTINGS_KEY = "devenir_social_settings"
+        const savedSettings = localStorage.getItem(SETTINGS_KEY)
+
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings)
+
+          if (settings.webhookUrl && settings.pageId) {
+            toast.loading('Posting to Facebook...', { id: 'fb-post' })
+
+            try {
+              const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3111/api'
+              const response = await fetch(`${API_URL}/social/webhook-proxy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  webhookUrl: settings.webhookUrl,
+                  productId: productId,
+                  postType: "multi_image",
+                  pageId: settings.pageId
+                })
+              })
+
+              const result = await response.json()
+
+              if (response.ok && result.success !== false) {
+                // Save to posted products localStorage
+                const POSTED_PRODUCTS_KEY = "devenir_posted_products"
+                const savedPosted = localStorage.getItem(POSTED_PRODUCTS_KEY)
+                const postedProducts = savedPosted ? JSON.parse(savedPosted) : []
+                postedProducts.push({
+                  productId,
+                  postedAt: new Date().toISOString(),
+                  postId: result.post_id
+                })
+                localStorage.setItem(POSTED_PRODUCTS_KEY, JSON.stringify(postedProducts))
+
+                toast.success('Posted to Facebook successfully!', { id: 'fb-post' })
+              } else {
+                toast.error(result.error || result.message || 'Failed to post to Facebook', { id: 'fb-post' })
+              }
+            } catch (fbError: any) {
+              console.error('Facebook post error:', fbError)
+              toast.error('Failed to post to Facebook: ' + fbError.message, { id: 'fb-post' })
+            }
+          } else {
+            toast.warning('Facebook settings not configured. Go to Social Posts to configure.')
+          }
+        } else {
+          toast.warning('Facebook settings not found. Go to Social Posts to configure.')
+        }
+      }
+
       handleCloseForm()
     } catch (error: any) {
       console.error('Error saving product:', error)
@@ -516,7 +574,7 @@ export default function ProductsPage() {
                           } else {
                             pageNum = page - 2 + idx
                           }
-                          
+
                           return (
                             <Button
                               key={pageNum}

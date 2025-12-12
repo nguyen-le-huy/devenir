@@ -92,8 +92,31 @@ export function quickIntentDetection(message) {
     }
 
     // Product advice (default for product-related)
-    const productKeywords = ['tìm', 'muốn', 'cần', 'gợi ý', 'tư vấn', 'sản phẩm', 'áo', 'quần', 'váy'];
+    const productKeywords = [
+        // Search/want keywords
+        'tìm', 'muốn', 'cần', 'gợi ý', 'tư vấn', 'sản phẩm',
+        // Product types
+        'áo', 'quần', 'váy', 'đầm', 'jacket', 'coat', 'scarf', 'khăn', 'túi', 'bag', 'giày', 'boots',
+        // Product questions - origin, material, details
+        'sản xuất', 'xuất xứ', 'made in', 'origin', 'chất liệu', 'nguyên liệu', 'material', 'fabric',
+        'mô tả', 'chi tiết', 'thông tin', 'về sản phẩm', 'detail',
+        // Stock/availability
+        'còn hàng', 'hết hàng', 'in stock', 'available',
+        // Price
+        'giá', 'bao nhiêu', 'price', 'cost'
+    ];
     if (productKeywords.some(k => lowerMessage.includes(k))) {
+        return { intent: 'product_advice', confidence: 0.6 };
+    }
+
+    // If message contains specific product name (detected by context), route to product_advice
+    // This catches questions like "Happy Scarf được sản xuất tại đâu"
+    const hasProductName = /[A-Z][a-z]+\s+[A-Z][a-z]+/.test(lowerMessage) ||
+        lowerMessage.includes('scarf') ||
+        lowerMessage.includes('polo') ||
+        lowerMessage.includes('jacket') ||
+        lowerMessage.includes('coat');
+    if (hasProductName) {
         return { intent: 'product_advice', confidence: 0.6 };
     }
 

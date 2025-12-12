@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { IconPlus, IconTrash, IconEdit, IconUpload, IconEye } from "@tabler/icons-react"
+import { IconPlus, IconTrash, IconEdit, IconUpload, IconEye, IconBrandFacebook } from "@tabler/icons-react"
+import { Switch } from "@/components/ui/switch"
 import { categoryService, type Category } from "@/services/categoryService"
 import { colorService, type Color } from "@/services/colorService"
 import { uploadImage } from "@/services/uploadService"
@@ -41,6 +42,7 @@ export interface ProductFormData {
   brand: string
   tags: string[]
   status: "draft" | "published" | "archived"
+  postToFacebook?: boolean
 
   // Variants - Mỗi variant có đầy đủ info (color, size, price, quantity, ảnh)
   variants: Array<{
@@ -81,17 +83,17 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   const [formData, setFormData] = useState<ProductFormData>(() => {
     if (initialData) {
       // Handle category field - could be ObjectId string or populated object
-      const categoryId = initialData.category 
-        ? (typeof initialData.category === 'object' && initialData.category !== null && '_id' in initialData.category 
-            ? (initialData.category as { _id: string })._id 
-            : (initialData.category as string))
+      const categoryId = initialData.category
+        ? (typeof initialData.category === 'object' && initialData.category !== null && '_id' in initialData.category
+          ? (initialData.category as { _id: string })._id
+          : (initialData.category as string))
         : ""
-      
+
       // Handle brand field - could be ObjectId string or populated object
       const brandId = initialData.brand
         ? (typeof initialData.brand === 'object' && initialData.brand !== null && '_id' in initialData.brand
-            ? (initialData.brand as { _id: string })._id
-            : (initialData.brand as string))
+          ? (initialData.brand as { _id: string })._id
+          : (initialData.brand as string))
         : ""
 
       return {
@@ -139,6 +141,9 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
   const { data: brandsResponse, isLoading: brandsLoading } = useBrandsQuery(brandQueryParams)
   const [fallbackBrand, setFallbackBrand] = useState<Brand | null>(null)
   useBrandsRealtimeSync()
+
+  // Facebook posting state
+  const [postToFacebook, setPostToFacebook] = useState(false)
 
   // Fetch categories
   useEffect(() => {
@@ -395,7 +400,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
       } else {
         // Case 2: Added new sizes - update original + create new variants for new sizes
         const newSizesToAdd = selectedSizes.filter(size => size !== originalSize)
-        
+
         if (newSizesToAdd.length > 0) {
           // Update the original variant
           const updatedOriginalVariant = {
@@ -407,7 +412,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
             images: variantImages.map((img) => img.url),
             colorId: newVariant.colorId,
           }
-          
+
           // Create new variants for the new sizes
           const newVariants = newSizesToAdd.map((size) => ({
             sku: generateSKU(newVariant.color, size),
@@ -420,15 +425,15 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
             hoverImage: selectedHoverImage,
             images: variantImages.map((img) => img.url),
           }))
-          
+
           const updatedVariants = [...formData.variants]
           updatedVariants[editingVariantIndex] = updatedOriginalVariant
-          
+
           setFormData((prev) => ({
             ...prev,
             variants: [...updatedVariants, ...newVariants],
           }))
-          
+
           setEditingVariantIndex(null)
           toast.success(`Variant updated! Created ${newVariants.length} additional variant(s) for new size(s)`)
         } else {
@@ -502,7 +507,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
     }))
   }
 
-  
+
 
   return (
     <div className="w-full">
@@ -516,7 +521,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
           <Button variant="outline" onClick={() => onDraft?.(formData)}>
             Save as Draft
           </Button>
-          <Button onClick={() => onSave?.(formData)}>Publish Product</Button>
+          <Button onClick={() => onSave?.({ ...formData, postToFacebook })}>Publish Product</Button>
         </div>
       </div>
 
@@ -708,12 +713,16 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) =>
+                  onValueChange={(value) => {
                     setFormData((prev) => ({
                       ...prev,
                       status: value as "draft" | "published" | "archived",
                     }))
-                  }
+                    // Reset postToFacebook when status changes from published
+                    if (value !== "published") {
+                      setPostToFacebook(false)
+                    }
+                  }}
                 >
                   <SelectTrigger id="status">
                     <SelectValue placeholder="Select status" />
@@ -725,6 +734,35 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Post to Facebook - Only show when status is published */}
+              {formData.status === "published" && (
+                <div className="space-y-2 p-4 border rounded-lg bg-blue-50/50 dark:bg-blue-950/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <IconBrandFacebook className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <Label htmlFor="post-to-facebook" className="text-sm font-medium">
+                          Post to Facebook
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Automatically post this product to your Facebook Page
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="post-to-facebook"
+                      checked={postToFacebook}
+                      onCheckedChange={setPostToFacebook}
+                    />
+                  </div>
+                  {postToFacebook && (
+                    <p className="text-xs text-blue-600 mt-2">
+                      ✓ Product will be posted to Facebook after publishing
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -896,11 +934,10 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                               }
                             }}
                           />
-                          <Label 
-                            htmlFor={`size-${size}`} 
-                            className={`font-normal cursor-pointer ${
-                              size === "Free Size" ? "font-semibold text-blue-600" : ""
-                            }`}
+                          <Label
+                            htmlFor={`size-${size}`}
+                            className={`font-normal cursor-pointer ${size === "Free Size" ? "font-semibold text-blue-600" : ""
+                              }`}
                           >
                             {size}
                           </Label>
@@ -1121,26 +1158,26 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="all">All Colors</SelectItem>
-                                  {variantColors.map((color) => {
-                                    const colorObj = colors.find(c => c._id === color || c.name === color)
-                                    const hexColor = colorObj?.hex || "#CCCCCC"
-                                    return (
-                                      <SelectItem key={color} value={color}>
-                                        <div className="flex items-center gap-2">
-                                          <div
-                                            className="w-3 h-3 rounded border border-gray-400"
-                                            style={{
-                                              backgroundColor: hexColor,
-                                            }}
-                                          />
-                                          <span>{colorObj?.name || color}</span>
-                                        </div>
-                                      </SelectItem>
-                                    )
-                                  })}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                                {variantColors.map((color) => {
+                                  const colorObj = colors.find(c => c._id === color || c.name === color)
+                                  const hexColor = colorObj?.hex || "#CCCCCC"
+                                  return (
+                                    <SelectItem key={color} value={color}>
+                                      <div className="flex items-center gap-2">
+                                        <div
+                                          className="w-3 h-3 rounded border border-gray-400"
+                                          style={{
+                                            backgroundColor: hexColor,
+                                          }}
+                                        />
+                                        <span>{colorObj?.name || color}</span>
+                                      </div>
+                                    </SelectItem>
+                                  )
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
                           {/* Results Counter */}
                           <div className="px-3 py-2 border rounded bg-background text-sm font-medium whitespace-nowrap">
@@ -1292,9 +1329,8 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                                     return (
                                       <tr
                                         key={`${variant.sku}-${index}`}
-                                        className={`border-b hover:bg-muted/50 transition ${
-                                          isSelected ? "bg-muted/70" : ""
-                                        }`}
+                                        className={`border-b hover:bg-muted/50 transition ${isSelected ? "bg-muted/70" : ""
+                                          }`}
                                       >
                                         <td className="py-3 px-3">
                                           <Checkbox
@@ -1585,7 +1621,7 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
                       .map(([color, stock]) => {
                         const percentage = ((stock / totalStock) * 100).toFixed(1)
                         const isNone = color === "None"
-                        
+
                         // Find color from the colors list
                         const colorObj = colors.find(c => c.name === color)
                         const colorHex = isNone ? "#999999" : (colorObj?.hex || "#999999")
