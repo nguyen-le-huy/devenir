@@ -1,7 +1,6 @@
 # Devenir - Premium Fashion E-commerce Platform
 
 <div align="center">
-  <img src="https://res.cloudinary.com/dghoiqbqy/image/upload/v1764563611/devenir/logo.png" alt="Devenir Logo" width="200"/>
   
   **A next-generation fashion e-commerce platform powered by AI**
   
