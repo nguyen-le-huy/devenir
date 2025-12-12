@@ -13,7 +13,7 @@
 
 ---
 
-## 🌟 Overview
+## Overview
 
 **Devenir** is a premium e-commerce solution designed for the fashion industry. Built on the MERN stack, it integrates cutting-edge AI features including:
 
@@ -24,24 +24,24 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Key Features](#-key-features)
-- [Tech Stack](#-tech-stack)
-- [System Architecture](#-system-architecture)
-- [Prerequisites](#-prerequisites)
-- [Installation & Setup](#-installation--setup)
-- [Configuration](#-configuration)
-- [AI Features](#-ai-features)
-- [Payment Integration](#-payment-integration)
-- [Deployment](#-deployment)
-- [API Reference](#-api-reference)
-- [Workflows](#-workflows)
-- [License](#-license)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [System Architecture](#system-architecture)
+- [Prerequisites](#prerequisites)
+- [Installation & Setup](#installation--setup)
+- [Configuration](#configuration)
+- [AI Features](#ai-features)
+- [Payment Integration](#payment-integration)
+- [Deployment](#deployment)
+- [API Reference](#api-reference)
+- [Workflows](#workflows)
+- [License](#license)
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 ### Customer Experience
 
@@ -78,7 +78,7 @@
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Frontend - Client (React)
 
@@ -127,7 +127,7 @@
 
 ---
 
-## 🏗 System Architecture
+## System Architecture
 
 ```
 devenir/
@@ -192,7 +192,7 @@ devenir/
 
 ---
 
-## 📦 Prerequisites
+## Prerequisites
 
 - **Node.js** v18.x or higher
 - **npm** or **yarn**
@@ -214,7 +214,7 @@ devenir/
 
 ---
 
-## ⚙️ Installation & Setup
+## Installation & Setup
 
 ### 1. Clone Repository
 
@@ -261,7 +261,7 @@ docker run -d -p 8000:8000 --name clip-service fashion-clip
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Server Environment Variables
 
@@ -315,7 +315,7 @@ VITE_SOCKET_URL=http://localhost:3111
 
 ---
 
-## 🤖 AI Features
+## AI Features
 
 ### RAG Chatbot Architecture
 
@@ -367,7 +367,7 @@ triggerProductIngestion(productId, variantIds)
 
 ---
 
-## 💳 Payment Integration
+## Payment Integration
 
 ### PayOS (Vietnam Bank Transfer)
 
@@ -384,7 +384,7 @@ triggerProductIngestion(productId, variantIds)
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
 ### Frontend (Vercel)
 
@@ -426,7 +426,7 @@ server {
 
 ---
 
-## 📚 API Reference
+## API Reference
 
 ### Authentication
 
@@ -478,7 +478,7 @@ server {
 
 ---
 
-## 📖 Workflows
+## Workflows
 
 Development workflows are documented in `.agent/workflows/`:
 
@@ -490,7 +490,7 @@ Development workflows are documented in `.agent/workflows/`:
 
 ---
 
-## 🔒 Security
+## Security
 
 - **JWT Authentication** with httpOnly cookies
 - **Rate Limiting** on API endpoints
@@ -501,14 +501,14 @@ Development workflows are documented in `.agent/workflows/`:
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
 <div align="center">
-  <strong>Built with ❤️ by Devenir Team</strong>
+  <strong>Built by Devenir Team</strong>
   
   [Website](https://devenir.shop) · [Documentation](https://docs.devenir.shop) · [Support](mailto:support@devenir.shop)
 </div>
