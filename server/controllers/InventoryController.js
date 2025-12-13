@@ -621,3 +621,332 @@ export const getInventoryVariantDetail = asyncHandler(async (req, res) => {
     },
   });
 });
+
+/**
+ * Export Inventory Report
+ * Generates CSV or Excel file with inventory data
+ */
+export const exportInventoryReport = asyncHandler(async (req, res) => {
+  const {
+    fileType = 'csv',
+    columns = ['sku', 'productName', 'attributes', 'inventory', 'available', 'unitPrice', 'totalValue', 'status'],
+    filters = {},
+    sorting = { field: 'updatedAt', order: 'desc' },
+    reportType = 'all',
+  } = req.body;
+
+  // Validate file type
+  if (!['csv', 'excel'].includes(fileType)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_FILTERS', message: 'Invalid file type. Must be csv or excel' },
+    });
+  }
+
+  // Build base pipeline
+  const { statusFilters = {}, attributeFilters = {}, valueFilters = {}, quantityFilters = {}, dateFilters = {} } = filters;
+
+  const basePipeline = [
+    { $match: { isActive: true } },
+    {
+      $lookup: {
+        from: 'products',
+        localField: 'product_id',
+        foreignField: '_id',
+        as: 'product',
+      },
+    },
+    { $unwind: '$product' },
+    addHealthProjectionStage(),
+  ];
+
+  // Apply status filters
+  if (statusFilters.stockStatus?.length) {
+    const statusMap = {
+      in_stock: HEALTH_STATES.HEALTHY,
+      low_stock: HEALTH_STATES.LOW,
+      out_of_stock: HEALTH_STATES.OUT,
+    };
+    const mappedStatuses = statusFilters.stockStatus.map((s) => statusMap[s] || s);
+    basePipeline.push({ $match: { healthStatus: { $in: mappedStatuses } } });
+  }
+
+  if (statusFilters.businessStatus?.length) {
+    basePipeline.push({ $match: { 'product.status': { $in: statusFilters.businessStatus } } });
+  }
+
+  if (statusFilters.hasWarning) {
+    basePipeline.push({
+      $match: {
+        $expr: { $lte: ['$quantity', '$lowThresholdSafe'] },
+      },
+    });
+  }
+
+  // Apply attribute filters
+  if (attributeFilters.sizes?.length) {
+    basePipeline.push({ $match: { size: { $in: attributeFilters.sizes } } });
+  }
+
+  if (attributeFilters.colors?.length) {
+    basePipeline.push({ $match: { color: { $in: attributeFilters.colors } } });
+  }
+
+  // Apply value filters
+  if (valueFilters.unitPriceRange) {
+    const priceMatch = {};
+    if (valueFilters.unitPriceRange.min !== undefined) {
+      priceMatch.$gte = valueFilters.unitPriceRange.min;
+    }
+    if (valueFilters.unitPriceRange.max !== undefined) {
+      priceMatch.$lte = valueFilters.unitPriceRange.max;
+    }
+    if (Object.keys(priceMatch).length) {
+      basePipeline.push({ $match: { price: priceMatch } });
+    }
+  }
+
+  if (valueFilters.totalValueRange) {
+    const valueMatch = {};
+    if (valueFilters.totalValueRange.min !== undefined) {
+      valueMatch.$gte = valueFilters.totalValueRange.min;
+    }
+    if (valueFilters.totalValueRange.max !== undefined) {
+      valueMatch.$lte = valueFilters.totalValueRange.max;
+    }
+    if (Object.keys(valueMatch).length) {
+      basePipeline.push({ $match: { inventoryValue: valueMatch } });
+    }
+  }
+
+  // Apply quantity filters
+  if (quantityFilters.inventoryRange) {
+    const qtyMatch = {};
+    if (quantityFilters.inventoryRange.min !== undefined) {
+      qtyMatch.$gte = quantityFilters.inventoryRange.min;
+    }
+    if (quantityFilters.inventoryRange.max !== undefined) {
+      qtyMatch.$lte = quantityFilters.inventoryRange.max;
+    }
+    if (Object.keys(qtyMatch).length) {
+      basePipeline.push({ $match: { quantity: qtyMatch } });
+    }
+  }
+
+  if (quantityFilters.hasOnHold) {
+    basePipeline.push({ $match: { reserved: { $gt: 0 } } });
+  }
+
+  if (quantityFilters.hasIncoming) {
+    basePipeline.push({ $match: { incoming: { $gt: 0 } } });
+  }
+
+  if (quantityFilters.availableOnly) {
+    basePipeline.push({ $match: { available: { $gt: 0 } } });
+  }
+
+  // Apply date filters
+  if (dateFilters.lastUpdated) {
+    const dateMatch = {};
+    if (dateFilters.lastUpdated.from) {
+      dateMatch.$gte = new Date(dateFilters.lastUpdated.from);
+    }
+    if (dateFilters.lastUpdated.to) {
+      dateMatch.$lte = new Date(dateFilters.lastUpdated.to);
+    }
+    if (Object.keys(dateMatch).length) {
+      basePipeline.push({ $match: { updatedAt: dateMatch } });
+    }
+  }
+
+  if (dateFilters.newItemsDays) {
+    const daysAgo = new Date(Date.now() - dateFilters.newItemsDays * 24 * 60 * 60 * 1000);
+    basePipeline.push({ $match: { createdAt: { $gte: daysAgo } } });
+  }
+
+  // Apply special report filters
+  if (reportType === 'needs_restock') {
+    basePipeline.push({
+      $match: {
+        $expr: { $lt: ['$quantity', '$lowThresholdSafe'] },
+      },
+    });
+    basePipeline.push({
+      $addFields: {
+        restockDeficit: { $subtract: ['$lowThresholdSafe', '$quantity'] },
+      },
+    });
+    basePipeline.push({ $sort: { restockDeficit: -1 } });
+  } else if (reportType === 'top_value') {
+    basePipeline.push({ $sort: { inventoryValue: -1 } });
+    basePipeline.push({ $limit: 100 });
+  } else if (reportType === 'slow_moving') {
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    basePipeline.push({ $match: { updatedAt: { $lt: ninetyDaysAgo } } });
+  } else {
+    // Apply manual sorting for 'all' and 'custom'
+    const sortFieldMap = {
+      inventory: 'quantity',
+      available: 'available',
+      totalValue: 'inventoryValue',
+      unitPrice: 'price',
+      lastUpdated: 'updatedAt',
+    };
+    const sortField = sortFieldMap[sorting.field] || 'updatedAt';
+    const direction = sorting.order === 'asc' ? 1 : -1;
+    basePipeline.push({ $sort: { [sortField]: direction } });
+  }
+
+  // Limit to 10,000 rows max
+  basePipeline.push({ $limit: 10000 });
+
+  // Project final fields
+  basePipeline.push({
+    $project: {
+      _id: 1,
+      sku: 1,
+      productName: '$product.name',
+      color: 1,
+      size: 1,
+      quantity: 1,
+      reserved: { $ifNull: ['$reserved', 0] },
+      incoming: { $ifNull: ['$incoming', 0] },
+      available: 1,
+      price: 1,
+      inventoryValue: 1,
+      lowStockThreshold: '$lowThresholdSafe',
+      healthStatus: 1,
+      updatedAt: 1,
+    },
+  });
+
+  const items = await ProductVariant.aggregate(basePipeline);
+
+  if (!items.length) {
+    return res.status(200).json({
+      success: false,
+      error: { code: 'NO_DATA', message: 'No data matches the specified filters' },
+    });
+  }
+
+  // Format data for export
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${mins}`;
+  };
+
+  const formatStatus = (status) => {
+    const statusMap = {
+      'healthy': 'Đủ Hàng',
+      'low-stock': 'Cảnh Báo',
+      'out-of-stock': 'Hết Hàng',
+      'overstock': 'Tồn Kho Cao',
+    };
+    return statusMap[status] || status;
+  };
+
+  const columnMapping = {
+    sku: { header: 'SKU', getValue: (item) => item.sku },
+    productName: { header: 'Tên Sản Phẩm', getValue: (item) => item.productName },
+    attributes: { header: 'Thuộc Tính', getValue: (item) => `${item.color || ''} - ${item.size || ''}`.trim() },
+    inventory: { header: 'Tồn Kho', getValue: (item) => item.quantity || 0 },
+    available: { header: 'Khả Dụng', getValue: (item) => item.available || 0 },
+    onHold: { header: 'Đang Giữ', getValue: (item) => item.reserved || 0 },
+    incoming: { header: 'Đang Nhập', getValue: (item) => item.incoming || 0 },
+    unitPrice: { header: 'Giá Đơn Vị (US$)', getValue: (item) => (item.price || 0).toFixed(2) },
+    totalValue: { header: 'Tổng Giá Trị (US$)', getValue: (item) => (item.inventoryValue || 0).toFixed(2) },
+    status: { header: 'Trạng Thái', getValue: (item) => formatStatus(item.healthStatus) },
+    warningLevel: { header: 'Mức Cảnh Báo', getValue: (item) => item.lowStockThreshold || 0 },
+    lastUpdated: { header: 'Cập Nhật Cuối', getValue: (item) => formatDate(item.updatedAt) },
+  };
+
+  const selectedColumns = columns.filter((col) => columnMapping[col]);
+  const headers = selectedColumns.map((col) => columnMapping[col].header);
+
+  const rows = items.map((item) =>
+    selectedColumns.map((col) => {
+      const value = columnMapping[col].getValue(item);
+      // Escape quotes and wrap in quotes if contains comma
+      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    })
+  );
+
+  // Calculate summary
+  const totalValue = items.reduce((sum, item) => sum + (item.inventoryValue || 0), 0);
+  const totalItems = items.length;
+
+  // Report type mapping for title and filename
+  const reportTypeInfo = {
+    all: {
+      title: 'BÁO CÁO TỒN KHO - TẤT CẢ SẢN PHẨM',
+      titleEn: 'INVENTORY REPORT - ALL PRODUCTS',
+      filePrefix: 'tat_ca_san_pham',
+    },
+    top_value: {
+      title: 'BÁO CÁO TỒN KHO - TOP SẢN PHẨM GIÁ TRỊ CAO',
+      titleEn: 'INVENTORY REPORT - TOP VALUE PRODUCTS',
+      filePrefix: 'top_gia_tri_cao',
+    },
+    needs_restock: {
+      title: 'BÁO CÁO TỒN KHO - SẢN PHẨM CẦN NHẬP THÊM',
+      titleEn: 'INVENTORY REPORT - PRODUCTS NEED RESTOCK',
+      filePrefix: 'can_nhap_them',
+    },
+    slow_moving: {
+      title: 'BÁO CÁO TỒN KHO - HÀNG TỒN LÂU (>90 NGÀY)',
+      titleEn: 'INVENTORY REPORT - SLOW MOVING PRODUCTS (>90 DAYS)',
+      filePrefix: 'hang_ton_lau',
+    },
+    custom: {
+      title: 'BÁO CÁO TỒN KHO - LỌC TÙY CHỈNH',
+      titleEn: 'INVENTORY REPORT - CUSTOM FILTER',
+      filePrefix: 'loc_tuy_chinh',
+    },
+  };
+
+  const reportInfo = reportTypeInfo[reportType] || reportTypeInfo.all;
+
+  // Generate formatted datetime for header
+  const now = new Date();
+  const exportDateTime = formatDate(now);
+  const dateForFile = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timeForFile = now.toTimeString().slice(0, 5).replace(':', '');
+
+  // Generate descriptive filename
+  const filename = `baocao_kho_${reportInfo.filePrefix}_${dateForFile}_${timeForFile}.csv`;
+
+  // Build CSV content with title header
+  let csvContent = '';
+
+  // Add title rows
+  csvContent += `"${reportInfo.title}"\n`;
+  csvContent += `"Ngày xuất: ${exportDateTime}"\n`;
+  csvContent += `"Tổng số SKU: ${totalItems} | Tổng giá trị: $${totalValue.toFixed(2)}"\n`;
+  csvContent += '\n'; // Empty row before data
+
+  // Add data headers and rows
+  csvContent += headers.join(',') + '\n';
+  csvContent += rows.map((row) => row.join(',')).join('\n');
+
+  // Add summary row for Excel-style reports
+  if (fileType === 'excel') {
+    csvContent += '\n\n';
+    csvContent += `"TỔNG CỘNG","${totalItems} SKU","","","","","","$${totalValue.toFixed(2)}"`;
+  }
+
+  // Set response headers for file download
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+  res.status(200).send('\uFEFF' + csvContent); // Add BOM for Excel UTF-8 compatibility
+});
+

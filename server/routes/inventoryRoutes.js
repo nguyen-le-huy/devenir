@@ -6,6 +6,7 @@ import {
   createInventoryAdjustment,
   getInventoryAdjustments,
   getInventoryVariantDetail,
+  exportInventoryReport,
 } from '../controllers/InventoryController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 
@@ -17,7 +18,9 @@ router.get('/overview', getInventoryOverview);
 router.get('/alerts', getInventoryAlerts);
 router.get('/adjustments', getInventoryAdjustments);
 router.post('/adjustments', createInventoryAdjustment);
+router.post('/export', exportInventoryReport);
 router.get('/variant/:variantId', getInventoryVariantDetail);
 router.get('/', getInventoryList);
 
 export default router;
+

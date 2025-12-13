@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { IconPlus, IconRefresh } from "@tabler/icons-react"
+import { IconPlus, IconRefresh, IconDownload } from "@tabler/icons-react"
 import { useInventoryList, useInventoryOverview } from "@/hooks/useInventory"
 import type { InventoryListItem, InventoryListFilters } from "@/hooks/useInventory"
 import InventorySummaryCards from "@/components/inventory/InventorySummaryCards"
@@ -10,6 +10,7 @@ import InventoryFiltersBar from "@/components/inventory/InventoryFiltersBar"
 import InventoryTable from "@/components/inventory/InventoryTable"
 import InventoryVariantDrawer from "@/components/inventory/InventoryVariantDrawer"
 import InventoryAdjustmentDrawer from "@/components/inventory/InventoryAdjustmentDrawer"
+import InventoryExportDialog from "@/components/inventory/InventoryExportDialog"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { useLocale } from "@/contexts/LocaleContext"
@@ -48,6 +49,7 @@ export default function InventoryPage() {
   const [adjustDrawerOpen, setAdjustDrawerOpen] = useState(false)
   const [adjustVariant, setAdjustVariant] = useState<InventoryListItem | null>(null)
   const [selectedVariant, setSelectedVariant] = useState<InventoryListItem | null>(null)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
 
   const normalizedFilters = useMemo<InventoryListFilters>(() => (
     {
@@ -145,6 +147,9 @@ export default function InventoryPage() {
             <h1 className="text-3xl font-bold tracking-tight">{t("inventory.page.title")}</h1>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
+              <IconDownload className="mr-2 h-4 w-4" /> {t("inventory.page.export")}
+            </Button>
             <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
               <IconRefresh className="mr-2 h-4 w-4" /> {t("inventory.page.refresh")}
             </Button>
@@ -208,6 +213,11 @@ export default function InventoryPage() {
         onClose={closeAdjustDrawer}
         onSuccess={handleRefresh}
       />
+      <InventoryExportDialog
+        open={exportDialogOpen}
+        onClose={() => setExportDialogOpen(false)}
+      />
     </AdminLayout>
   )
 }
+
