@@ -8,10 +8,12 @@ import api from './api';
  */
 export const findSimilarProducts = async (base64Image, topK = 12) => {
     try {
-        // api interceptor already unwraps response.data
+        // Use longer timeout for image search (60s) - large images need more time
         const data = await api.post('/image-search/find-similar', {
             image: base64Image,
             topK
+        }, {
+            timeout: 60000 // 60 seconds for large image uploads
         });
         return data;
     } catch (error) {
