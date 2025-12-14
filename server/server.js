@@ -24,6 +24,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import imageSearchRoutes from './routes/imageSearchRoutes.js';
 import socialRoutes from './routes/socialRoutes.js';
 import { handlePayOSWebhook } from './controllers/PaymentController.js';
+import { initImageSearchServices } from './controllers/ImageSearchController.js';
 
 
 dotenv.config();
@@ -215,6 +216,13 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3111;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server running with realtime support on port ${PORT}`);
+
+  // Auto-initialize image search services in background
+  initImageSearchServices().then(success => {
+    if (success) {
+      console.log('✅ Image Search services ready');
+    }
+  });
 });

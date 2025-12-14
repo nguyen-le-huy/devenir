@@ -237,3 +237,17 @@ export const selfHostHealth = asyncHandler(async (req, res) => {
         note: checks.redis ? 'Cache enabled' : 'Running without cache'
     });
 });
+
+/**
+ * Initialize image search services (call on server startup)
+ * Exported for use in server.js
+ */
+export const initImageSearchServices = async () => {
+    try {
+        await ensureInitialized();
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to init image search services:', error.message);
+        return false;
+    }
+};
