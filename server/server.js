@@ -91,6 +91,10 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 }));
 
+// Trust proxy - Required for Tailscale Funnel / reverse proxy
+// This allows express-rate-limit to correctly identify clients via X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Rate limiting - More generous for development
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
@@ -98,6 +102,7 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false }, // Disable X-Forwarded-For validation (handled by trust proxy)
   handler: (req, res) => {
     logger.warn('Rate limit exceeded', { ip: req.ip, path: req.path });
     res.status(429).json({
