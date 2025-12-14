@@ -37,14 +37,62 @@ export const getImageSearchHealth = async () => {
 };
 
 /**
- * Convert File to base64
+ * Convert File to base64 with optional compression
+ * Large images are resized to max 1024px for faster upload
  * @param {File} file - Image file
+ * @param {number} maxSize - Max dimension in pixels (default: 1024)
+ * @param {number} quality - JPEG quality 0-1 (default: 0.85)
  * @returns {Promise<string>} - Base64 data URL
  */
-export const fileToBase64 = (file) => {
+export const fileToBase64 = (file, maxSize = 1024, quality = 0.85) => {
     return new Promise((resolve, reject) => {
+        // For small files (< 500KB), just convert directly
+        if (file.size < 500 * 1024) {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        // For larger files, resize using canvas
+        const img = new Image();
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
+
+        reader.onload = (e) => {
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+
+                // Calculate new dimensions maintaining aspect ratio
+                if (width > height) {
+                    if (width > maxSize) {
+                        height = Math.round((height * maxSize) / width);
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width = Math.round((width * maxSize) / height);
+                        height = maxSize;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert to JPEG for better compression
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                console.log(`📸 Image compressed: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedBase64.length * 0.75 / 1024)}KB`);
+                resolve(compressedBase64);
+            };
+
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = e.target.result;
+        };
+
         reader.onerror = (error) => reject(error);
         reader.readAsDataURL(file);
     });
