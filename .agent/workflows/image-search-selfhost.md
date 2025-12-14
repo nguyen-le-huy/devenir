@@ -191,17 +191,28 @@ Response → Client navigate → /visually-similar
 
 | Loại ảnh | First Request | Cached Request |
 |----------|---------------|----------------|
-| **Product-only** (no background) | ~200ms, ~80% similarity | ~1ms |
-| **With background** (người, nhà hàng, etc.) | ~200ms, ~60% similarity | ~1ms |
+| **Product-only** (no background) | ~150ms, ~80% similarity | ~1ms |
+| **With background** (người, nhà hàng, etc.) | ~150ms, ~60% similarity | ~1ms |
 
 ### Timing Breakdown (First Request)
 
 | Step | Time |
 |------|------|
 | Cache Check | ~1ms |
-| FashionCLIP Encode | ~200ms |
-| Qdrant Search | ~6ms |
-| **Total** | **~210ms** |
+| FashionCLIP Encode | ~100-140ms |
+| Qdrant Search | ~5-10ms |
+| **Total** | **~150ms** |
+
+### Optimizations Applied
+
+| Tối ưu | Mô tả |
+|--------|-------|
+| **Client Image Compression** | Ảnh >500KB tự động resize xuống 1024px, nén JPEG 85%. Ảnh 6MB → ~100KB |
+| **Auto-init on Startup** | Services (Qdrant, Redis) tự động init khi server start, không chờ request đầu tiên |
+| **Redis Cache** | Cache kết quả 1 giờ, request cached chỉ ~1ms |
+| **No MongoDB Query** | Data lấy trực tiếp từ Qdrant payload, không cần query MongoDB |
+| **Trust Proxy** | Hỗ trợ Tailscale/reverse proxy với X-Forwarded-For header |
+| **60s Timeout** | Tăng timeout cho ảnh lớn upload qua slow connection |
 
 ---
 
