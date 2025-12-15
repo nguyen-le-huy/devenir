@@ -1,4 +1,4 @@
-# Devenir - Premium Fashion E-commerce Platform
+# Devenir - Premium Fashion E-commerce Platform.
 
 <div align="center">
   
@@ -19,6 +19,7 @@
 - **RAG-powered AI Chatbot** for intelligent product recommendations
 - **Visual Search** using FashionCLIP for image-based product discovery
 - **Auto Social Media Posting** via n8n automation
+- **Telegram Order Notifications** for real-time order alerts
 - **Multi-gateway Payments** supporting VND (PayOS) and Crypto (USDT BSC)
 
 ---
@@ -48,6 +49,7 @@
 |---------|-------------|
 | **AI Shopping Assistant** | RAG-powered chatbot with product advice, size recommendations, and order tracking |
 | **Visual Search** | Upload an image to find similar products using FashionCLIP + Qdrant |
+| **Store Location Map** | Embedded Google Maps in chat when asking for store address |
 | **Smart Filtering** | Filter by size, color, price range, category, and brand |
 | **Multi-payment** | VND bank transfer (PayOS) + Cryptocurrency (USDT BSC) |
 | **Real-time Updates** | Socket.io for live order status and chat notifications |
@@ -61,7 +63,8 @@
 | **Product Management** | CRUD with variants, auto-ingestion to Pinecone & Qdrant |
 | **Order Management** | Status tracking, returns, and shipping integration |
 | **Social Media Posting** | One-click Facebook posting via n8n automation |
-| **Inventory Alerts** | Low stock warnings and reorder notifications |
+| **Telegram Notifications** | Real-time order alerts sent to Telegram group |
+| **Inventory Alerts** | Low stock warnings and reorder notifications (Telegram + Excel) |
 | **Brand & Category Management** | Full control over taxonomy and branding |
 
 ### AI-Powered Features
@@ -72,7 +75,8 @@
 | **Size Advisor** | Personalized sizing from height/weight |
 | **Style Matcher** | Outfit coordination suggestions |
 | **Order Lookup** | Real-time order tracking via chat |
-| **Policy FAQ** | Automated shipping/return policy answers |
+| **Policy FAQ** | Automated shipping/return/payment policy answers |
+| **Store Locator** | Display store address with embedded map |
 | **Visual Search** | Find products by image similarity |
 
 ---
@@ -152,6 +156,8 @@ devenir/
 │   │   ├── imageSearch/           # Visual Search System
 │   │   │   ├── clipServiceClient.js
 │   │   │   └── qdrantVectorStore.js
+│   │   ├── telegram/              # Telegram Notifications
+│   │   │   └── telegramNotification.js
 │   │   ├── ingestion/             # Auto-ingestion service
 │   │   ├── payos/                 # PayOS integration
 │   │   └── nowpayments/           # NowPayments integration
@@ -185,6 +191,8 @@ devenir/
 │
 └── .agent/workflows/              # Development workflows
     ├── UploadingPost.md           # Facebook posting guide
+    ├── TelegramOrderNotification.md # Telegram order alerts
+    ├── inventoryAlert.md          # Inventory monitoring
     ├── image-search-selfhost.md   # Visual search setup
     └── nowpayments-integration.md # Crypto payment guide
 ```
@@ -298,6 +306,10 @@ PAYOS_CHECKSUM_KEY=...
 NOWPAYMENTS_API_KEY=...
 NOWPAYMENTS_IPN_SECRET=...
 NOWPAYMENTS_SANDBOX=false
+
+# Telegram Notifications (via n8n)
+N8N_ORDER_NOTIFICATION_WEBHOOK=https://your-n8n.com/webhook/order-notification
+TELEGRAM_ORDER_CHAT_ID=-1001234567890
 
 # URLs
 SERVER_URL=https://api.devenir.shop
@@ -484,8 +496,11 @@ Development workflows are documented in `.agent/workflows/`:
 | Workflow | Description |
 |----------|-------------|
 | `/UploadingPost` | Auto Facebook posting via n8n |
+| `/TelegramOrderNotification` | Order alerts to Telegram via n8n |
+| `/inventoryAlert` | Low stock warnings & Excel reports |
 | `/image-search-selfhost` | Visual search with FashionCLIP + Qdrant |
 | `/nowpayments-integration` | USDT BSC payment integration |
+| `/exportFile` | Inventory export to CSV/Excel |
 
 ---
 
