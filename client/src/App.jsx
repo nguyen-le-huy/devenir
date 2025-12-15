@@ -28,6 +28,7 @@ import PaymentSuccessful from './pages/PaymentStatus/PaymentSuccessful.jsx';
 import PaymentFailed from './pages/PaymentStatus/PaymentFailed.jsx';
 import VisuallySimilar from './pages/VisuallySimilar/VisuallySimilar.jsx';
 import PaymentSuccessfulPreview from './pages/PaymentStatus/PaymentSuccessfulPreview.jsx'
+import AllCategories from './pages/AllCategories/AllCategories.jsx';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -87,6 +88,7 @@ function App() {
             {/* ✅ Routes KHÔNG cần Layout */}
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/categories" element={<AllCategories />} />
 
             {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
             <Route element={<Layout />}>

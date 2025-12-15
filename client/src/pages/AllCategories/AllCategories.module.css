@@ -1,0 +1,191 @@
+.allCategories {
+    min-height: 100vh;
+}
+
+/* Loading State */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 20px;
+    padding-top: 120px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f0f0f0;
+    border-top-color: var(--black);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Category Grid - 2 box mỗi hàng */
+.categoryGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+}
+
+/* Box style giống CategoryBox */
+.box {
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 40px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    cursor: pointer;
+    position: relative;
+    overflow: visible;
+    /* Cho phép sticky hoạt động */
+}
+
+.box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 50%);
+    z-index: 0;
+    transition: all 0.3s ease;
+}
+
+.box:hover::before {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.1) 60%);
+}
+
+/* Content Box - giống CategoryBox với sticky */
+.contentBox {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+    position: sticky;
+    bottom: 20px;
+    z-index: 10;
+}
+
+.title {
+    font-size: 40px;
+    font-weight: 500;
+    color: var(--white);
+    margin: 0;
+}
+
+.description {
+    font-size: 20px;
+    color: var(--white);
+    font-weight: 400;
+    width: 80%;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.link {
+    font-size: 20px;
+    color: var(--white);
+    font-weight: 400;
+    text-decoration: none;
+    position: relative;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: aktiv-grotesk-extended, sans-serif;
+    display: inline-block;
+}
+
+/* Link hover effect giống CategoryBox */
+.link::before,
+.link::after {
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    top: 100%;
+    left: 0;
+    pointer-events: none;
+}
+
+.link::before {
+    content: '';
+    height: 100%;
+    top: 0;
+    opacity: 0;
+}
+
+.box:hover .link::before {
+    opacity: 1;
+    animation: coverUp 0.3s ease forwards;
+}
+
+.link::after {
+    content: '';
+    transition: opacity 0.3s;
+}
+
+.box:hover .link::after {
+    opacity: 0;
+}
+
+@keyframes coverUp {
+    0% {
+        transform-origin: 50% 100%;
+        transform: scale3d(1, 0.045, 1);
+    }
+
+    50% {
+        transform-origin: 50% 100%;
+        transform: scale3d(1, 1, 1);
+    }
+
+    51% {
+        transform-origin: 50% 0%;
+        transform: scale3d(1, 1, 1);
+    }
+
+    100% {
+        transform-origin: 50% 0%;
+        transform: scale3d(1, 0.045, 1);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .categoryGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .box {
+        height: 70vh;
+    }
+
+    .title {
+        font-size: 28px;
+    }
+
+    .description {
+        font-size: 16px;
+        width: 100%;
+    }
+
+    .link {
+        font-size: 16px;
+    }
+
+    .contentBox {
+        gap: 10px;
+    }
+}

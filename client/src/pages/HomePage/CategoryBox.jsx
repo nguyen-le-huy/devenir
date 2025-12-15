@@ -25,7 +25,7 @@ const CategoryBox = () => {
 
     return (
         <div className={`${styles.categoryBox}`}>
-            <div className={`${styles.box1} ${styles.box}`}>
+            <div className={`${styles.box1} ${styles.box} ${styles.stickyBox}`}>
                 <video
                     className={styles.videoBackground}
                     autoPlay
@@ -35,22 +35,22 @@ const CategoryBox = () => {
                 >
                     <source src="/videos/TheGiftGuide.webm" type="video/webm" />
                 </video>
-                <div className={styles.contentBox}>
+                <div className={`${styles.contentBox} ${styles.stickyContent}`}>
                     <h2 className={styles.title}>New In Jackets</h2>
                     <p className={styles.description}>Discover timeless craftsmanship and modern silhouettes for the season ahead.</p>
                     <a className={styles.link} href="#">Shop Now</a>
                 </div>
             </div>
-            <div className={`${styles.box2} ${styles.box}`} style={{
+            <div className={`${styles.box2} ${styles.box} ${styles.stickyBox}`} style={{
                 backgroundImage: `url('/images/category2.png')`
             }}>
-                <div className={styles.contentBox}>
+                <div className={`${styles.contentBox} ${styles.stickyContent}`}>
                     <h2 className={styles.title}>New In Jackets</h2>
                     <p className={styles.description}>Discover timeless craftsmanship and modern silhouettes for the season ahead.</p>
                     <a className={styles.link} href="#">Shop Now</a>
                 </div>
             </div>
-            <div className={`${styles.box3} ${styles.box}`}>
+            <div className={`${styles.box3} ${styles.box} ${styles.stickyBox}`}>
                 <video
                     className={styles.videoBackground}
                     autoPlay
@@ -60,7 +60,7 @@ const CategoryBox = () => {
                 >
                     <source src="/videos/customShop.webm" type="video/webm" />
                 </video>
-                <div className={styles.contentBox}>
+                <div className={`${styles.contentBox} ${styles.stickyContent}`}>
                     <h2 className={styles.title}>New In Sweaters</h2>
                     <p className={styles.description}>Discover timeless craftsmanship and modern silhouettes for the season ahead.</p>
                     <a className={styles.link} href="#">Shop Now</a>
@@ -135,10 +135,10 @@ const CategoryBox = () => {
                     <a className={styles.link} href="#">Shop Now</a>
                 </div>
             </div>
-            <div className={`${styles.box5} ${styles.box}`} style={{
+            <div className={`${styles.box5} ${styles.box} ${styles.stickyBox}`} style={{
                 backgroundImage: `url('/images/category5.png')`
             }}>
-                <div className={styles.contentBox}>
+                <div className={`${styles.contentBox} ${styles.stickyContent}`}>
                     <h2 className={styles.title}>The Gift Guide</h2>
                     <p className={styles.description}>A curated selection of timeless gifts from the World of Ralph Lauren to celebrate the season</p>
                     <a className={styles.link} href="#">Find a Gift</a>
