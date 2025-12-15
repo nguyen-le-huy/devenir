@@ -6,6 +6,7 @@ import logger from '../config/logger.js';
 import { sendOrderConfirmationEmail } from '../utils/emailService.js';
 import nowpaymentsClient from '../services/nowpayments/nowpaymentsClient.js';
 import crypto from 'crypto';
+import { sendOrderNotificationToTelegram } from '../services/telegram/telegramNotification.js';
 
 const DELIVERY_OPTIONS = ['standard', 'next', 'nominated'];
 const SHIPPING_METHODS = ['home'];
@@ -360,6 +361,14 @@ export const handlePayOSWebhook = asyncHandler(async (req, res) => {
 
     await order.save();
 
+    // Send Telegram notification (non-blocking)
+    sendOrderNotificationToTelegram(order).catch(err => {
+      logger.error('Telegram notification failed for PayOS order', {
+        orderCode: order.paymentIntent?.gatewayOrderCode,
+        error: err.message
+      });
+    });
+
     return res.status(200).json({ success: true });
   } catch (error) {
     logger.error('PayOS webhook verification failed', {
@@ -634,6 +643,14 @@ export const handleNowPaymentsWebhook = asyncHandler(async (req, res) => {
           });
         }
       }
+
+      // Send Telegram notification (non-blocking)
+      sendOrderNotificationToTelegram(order).catch(err => {
+        logger.error('Telegram notification failed for NowPayments order', {
+          orderId: order._id,
+          error: err.message
+        });
+      });
     } else if (payment_status === 'failed' || payment_status === 'expired') {
       order.paymentIntent.status = 'FAILED';
       order.paymentResult = {
