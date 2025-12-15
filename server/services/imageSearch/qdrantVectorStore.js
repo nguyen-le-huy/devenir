@@ -1,6 +1,10 @@
 /**
  * Qdrant Vector Store Service
  * Thay thế Pinecone bằng Self-hosted Qdrant
+ * 
+ * Environment Variables:
+ * - QDRANT_URL: URL to Qdrant server (default: http://localhost:6333)
+ * - DISABLE_QDRANT: Set to 'true' to disable Qdrant (for development without Docker)
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
@@ -9,8 +13,17 @@ import crypto from 'crypto';
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const COLLECTION_NAME = 'visual-search';
 const VECTOR_SIZE = 512;  // FashionCLIP outputs 512 dimensions
+const DISABLE_QDRANT = process.env.DISABLE_QDRANT === 'true';
 
 let qdrantClient = null;
+let isConnected = false;
+
+/**
+ * Check if Qdrant is available
+ */
+export function isQdrantAvailable() {
+    return isConnected && qdrantClient !== null && !DISABLE_QDRANT;
+}
 
 /**
  * Convert MongoDB ObjectId to UUID format for Qdrant
@@ -26,12 +39,21 @@ export function mongoIdToUuid(mongoId) {
  * Initialize Qdrant client
  */
 export async function initQdrant() {
-    if (qdrantClient) return qdrantClient;
+    // Skip if disabled
+    if (DISABLE_QDRANT) {
+        console.log('⚠️ Qdrant disabled via DISABLE_QDRANT env. Visual search will not work.');
+        return null;
+    }
 
-    qdrantClient = new QdrantClient({ url: QDRANT_URL });
+    if (qdrantClient && isConnected) return qdrantClient;
 
-    // Check if collection exists, create if not
     try {
+        qdrantClient = new QdrantClient({ 
+            url: QDRANT_URL,
+            timeout: 5000  // 5 second timeout
+        });
+
+        // Check if collection exists, create if not
         const collections = await qdrantClient.getCollections();
         const exists = collections.collections.some(c => c.name === COLLECTION_NAME);
 
@@ -51,12 +73,18 @@ export async function initQdrant() {
         } else {
             console.log(`✅ Qdrant collection exists: ${COLLECTION_NAME}`);
         }
-    } catch (error) {
-        // Collection might already exist
-        console.error('Qdrant init error:', error.message);
-    }
 
-    return qdrantClient;
+        isConnected = true;
+        return qdrantClient;
+    } catch (error) {
+        console.error('⚠️ Qdrant init failed:', error.message);
+        console.log('⚠️ Continuing without Qdrant - Visual search will not work');
+        console.log('💡 Tip: Start Qdrant with: docker run -d -p 6333:6333 qdrant/qdrant');
+        console.log('💡 Or disable with: DISABLE_QDRANT=true npm run dev');
+        isConnected = false;
+        qdrantClient = null;
+        return null;
+    }
 }
 
 /**

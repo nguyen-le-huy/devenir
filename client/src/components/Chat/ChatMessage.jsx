@@ -76,6 +76,33 @@ const ChatMessage = ({ message, onActionClick }) => {
                     </div>
                 )}
 
+                {/* Store Location Map */}
+                {!isUser && message.storeLocation && (
+                    <div className={styles.mapContainer}>
+                        <iframe
+                            src={message.storeLocation.googleMapsEmbedUrl}
+                            width="100%"
+                            height="200"
+                            style={{ border: 0, borderRadius: '8px' }}
+                            allowFullScreen=""
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title="Store Location"
+                        />
+                        <a
+                            href={message.storeLocation.directionsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.directionsButton}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 11l19-9-9 19-2-8-8-2z" />
+                            </svg>
+                            Chỉ đường
+                        </a>
+                    </div>
+                )}
+
                 {/* Action Buttons - Yes/No for Add to Cart */}
                 {!isUser && message.suggestedAction && !message.actionHandled && (
                     <div className={styles.actionButtons}>

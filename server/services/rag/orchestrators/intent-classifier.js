@@ -79,8 +79,12 @@ export function quickIntentDetection(message) {
         return { intent: 'style_matching', confidence: 0.7 };
     }
 
-    // Policy/FAQ keywords (payment, shipping, returns)
-    const policyKeywords = ['payment', 'thanh toán', 'pay', 'shipping', 'giao hàng', 'ship', 'delivery', 'vận chuyển', 'phí ship', 'crypto', 'payos', 'nowpayments'];
+    // Policy/FAQ keywords (payment, shipping, returns, location)
+    const policyKeywords = [
+        'payment', 'thanh toán', 'pay', 'shipping', 'giao hàng', 'ship', 'delivery', 'vận chuyển', 'phí ship', 'crypto', 'payos', 'nowpayments',
+        // Location keywords
+        'địa chỉ', 'ở đâu', 'cửa hàng', 'store', 'location', 'address', 'chỗ nào', 'showroom', 'chi nhánh', 'đường đi'
+    ];
     if (policyKeywords.some(k => lowerMessage.includes(k))) {
         return { intent: 'policy_faq', confidence: 0.8 };
     }

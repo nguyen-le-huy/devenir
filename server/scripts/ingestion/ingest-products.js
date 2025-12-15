@@ -29,21 +29,125 @@ if (!process.env.OPENAI_API_KEY || !process.env.PINECONE_API_KEY) {
 import mongoose from 'mongoose';
 import Product from '../../models/ProductModel.js';
 import ProductVariant from '../../models/ProductVariantModel.js';
-import Category from '../../models/CategoryModel.js';
-import Brand from '../../models/BrandModel.js';
+import Category from '../../models/CategoryModel.js'; // Required for populate
 import { initializePinecone, getPineconeIndex } from '../../config/pinecone.js';
-import { createProductPropositions, createSimpleChunks } from '../../services/rag/embeddings/proposition.service.js';
 import { getEmbedding } from '../../services/rag/embeddings/embedding.service.js';
 
 // IMPORTANT: Must match your Pinecone index dimension
 const EMBEDDING_DIMENSIONS = 1536;
 
 /**
- * Ingest all products to Pinecone
+ * Delete all vectors from Pinecone index
+ */
+async function deleteAllVectors() {
+    console.log('🗑️  Deleting all existing vectors from Pinecone...');
+    const index = getPineconeIndex();
+
+    try {
+        // Delete all vectors by using deleteAll
+        await index.deleteAll();
+        console.log('✅ All vectors deleted successfully\n');
+    } catch (error) {
+        // If deleteAll doesn't work, try namespace deletion
+        console.log('⚠️  deleteAll not supported, trying alternative method...');
+        try {
+            // Describe index to get stats
+            const stats = await index.describeIndexStats();
+            console.log(`📊 Index stats: ${JSON.stringify(stats)}`);
+
+            // Delete by filter if possible, or recreate
+            await index.deleteMany({
+                deleteAll: true
+            });
+            console.log('✅ All vectors deleted via deleteMany\n');
+        } catch (err2) {
+            console.error('❌ Could not delete vectors:', err2.message);
+            console.log('📝 Continuing with upsert (will overwrite existing vectors)\n');
+        }
+    }
+}
+
+/**
+ * Create optimized propositions for a product
+ * Each color variant gets its own proposition for better search accuracy
+ */
+function createOptimizedPropositions(product, variants = []) {
+    const propositions = [];
+    const productName = product.name;
+    const categoryName = product.category?.name || '';
+    const brandName = typeof product.brand === 'object' ? product.brand?.name : product.brand || '';
+
+    // Get unique values
+    const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
+    const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+    const prices = variants.map(v => v.price).filter(p => p > 0);
+    const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+    const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+
+    // 1. Main product proposition (most important)
+    const mainProp = [
+        productName,
+        categoryName ? `là ${categoryName}` : '',
+        brandName ? `của ${brandName}` : '',
+        colors.length > 0 ? `có màu ${colors.join(', ')}` : '',
+        sizes.length > 0 ? `có sizes ${sizes.join(', ')}` : '',
+        minPrice > 0 ? `giá $${minPrice}${maxPrice !== minPrice ? ` - $${maxPrice}` : ''}` : ''
+    ].filter(Boolean).join('. ');
+    propositions.push(mainProp);
+
+    // 2. One proposition per COLOR (critical for color search)
+    for (const color of colors) {
+        const colorVariants = variants.filter(v => v.color === color);
+        const colorPrices = colorVariants.map(v => v.price).filter(p => p > 0);
+        const colorSizes = [...new Set(colorVariants.map(v => v.size))];
+        const colorMinPrice = colorPrices.length > 0 ? Math.min(...colorPrices) : minPrice;
+        const colorStock = colorVariants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+
+        const colorProp = `${productName} màu ${color}. ${categoryName}. Sizes: ${colorSizes.join(', ')}. Giá: $${colorMinPrice}. ${colorStock > 0 ? 'Còn hàng' : 'Hết hàng'}.`;
+        propositions.push(colorProp);
+    }
+
+    // 3. Description proposition (if exists)
+    if (product.description && product.description.length > 20) {
+        // Clean and truncate description
+        const cleanDesc = product.description
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/\s+/g, ' ')
+            .trim()
+            .substring(0, 500);
+        propositions.push(`${productName}. ${cleanDesc}`);
+    }
+
+    // 4. Search-friendly proposition with keywords
+    const keywords = [];
+    if (product.tags && product.tags.length > 0) {
+        keywords.push(...product.tags);
+    }
+    // Extract material keywords from description
+    const materialKeywords = ['cashmere', 'wool', 'cotton', 'silk', 'linen', 'leather', 'denim', 'velvet', 'alpaca', 'polyester'];
+    const descLower = (product.description || '').toLowerCase();
+    for (const material of materialKeywords) {
+        if (descLower.includes(material)) {
+            keywords.push(material);
+        }
+    }
+    if (keywords.length > 0) {
+        propositions.push(`${productName}. Từ khóa: ${keywords.join(', ')}. ${categoryName}.`);
+    }
+
+    // 5. Vietnamese search friendly proposition  
+    const viProp = `Sản phẩm ${productName}${categoryName ? ` thuộc danh mục ${categoryName}` : ''}${colors.length > 0 ? `, có màu ${colors.join(', ')}` : ''}${sizes.length > 0 ? `, sizes ${sizes.join(', ')}` : ''}${minPrice > 0 ? `, giá $${minPrice}` : ''}.`;
+    propositions.push(viProp);
+
+    return propositions;
+}
+
+/**
+ * Ingest all products to Pinecone with optimized data
  */
 async function ingestAllProducts() {
     try {
-        console.log('🚀 Starting product ingestion to Pinecone...\n');
+        console.log('🚀 Starting OPTIMIZED product ingestion to Pinecone...\n');
 
         // Connect to MongoDB
         await mongoose.connect(process.env.MONGO_URI);
@@ -55,7 +159,10 @@ async function ingestAllProducts() {
 
         const index = getPineconeIndex();
 
-        // Get all active products - only populate category (brand might be string)
+        // Delete all existing vectors first
+        await deleteAllVectors();
+
+        // Get all active products
         const products = await Product.find({
             isActive: true,
             status: 'published'
@@ -78,25 +185,22 @@ async function ingestAllProducts() {
             try {
                 console.log(`Processing: ${product.name}`);
 
-                // Get variants
+                // Get ALL variants (including out of stock for complete data)
                 const variants = await ProductVariant.find({
                     product_id: product._id,
                     isActive: true
                 }).lean();
 
-                // Try LLM propositions first, fallback to simple chunks
-                let propositions;
-                try {
-                    propositions = await createProductPropositions(product, variants);
-                } catch (propError) {
-                    console.log(`  ⚠️ LLM proposition failed, using simple chunks`);
-                    propositions = createSimpleChunks(product, variants);
-                }
-
+                // Create optimized propositions
+                const propositions = createOptimizedPropositions(product, variants);
                 console.log(`  └─ Generated ${propositions.length} propositions`);
 
-                // Prepare vectors
+                // Prepare vectors with rich metadata
                 const vectors = [];
+                const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
+                const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+                const prices = variants.map(v => v.price).filter(p => p > 0);
+                const inStockVariants = variants.filter(v => v.quantity > 0);
 
                 for (let i = 0; i < propositions.length; i++) {
                     const propText = propositions[i];
@@ -109,53 +213,42 @@ async function ingestAllProducts() {
                             type: 'product_info',
                             product_id: product._id.toString(),
                             product_name: product.name,
-                            category: product.category?.name || 'N/A',
-                            brand: product.brand?.name || 'N/A',
+                            product_name_lower: product.name.toLowerCase(),
+                            category: product.category?.name || '',
+                            brand: typeof product.brand === 'object' ? product.brand?.name : product.brand || '',
+                            colors: colors,
+                            colors_lower: colors.map(c => c.toLowerCase()),
+                            sizes: sizes,
+                            min_price: prices.length > 0 ? Math.min(...prices) : 0,
+                            max_price: prices.length > 0 ? Math.max(...prices) : 0,
                             tags: product.tags || [],
                             average_rating: product.averageRating || 0,
                             proposition_text: propText,
+                            proposition_index: i,
                             url_slug: product.urlSlug || '',
-                            in_stock: variants.some(v => v.quantity > 0)
+                            in_stock: inStockVariants.length > 0,
+                            total_stock: inStockVariants.reduce((sum, v) => sum + v.quantity, 0)
                         }
                     });
+
+                    // Small delay between embeddings to avoid rate limit
+                    await new Promise(resolve => setTimeout(resolve, 50));
                 }
 
-                // Add variant info vector
-                if (variants.length > 0) {
-                    const sizes = [...new Set(variants.map(v => v.size))];
-                    const colors = [...new Set(variants.map(v => v.color))];
-                    const prices = variants.map(v => v.price);
-
-                    const sizeColorInfo = `${product.name} có sizes ${sizes.join(', ')} và màu ${colors.join(', ')}. Giá từ ${Math.min(...prices).toLocaleString()} đến ${Math.max(...prices).toLocaleString()} VNĐ`;
-                    const sizeColorEmbedding = await getEmbedding(sizeColorInfo, EMBEDDING_DIMENSIONS);
-
-                    vectors.push({
-                        id: `prod_${product._id}_variants_info`,
-                        values: sizeColorEmbedding,
-                        metadata: {
-                            type: 'variant_info',
-                            product_id: product._id.toString(),
-                            product_name: product.name,
-                            category: product.category?.name || 'N/A',
-                            available_sizes: sizes,
-                            available_colors: colors,
-                            in_stock: variants.some(v => v.quantity > 0),
-                            min_price: Math.min(...prices),
-                            max_price: Math.max(...prices),
-                            proposition_text: sizeColorInfo
-                        }
-                    });
+                // Upsert to Pinecone in batches
+                const BATCH_SIZE = 100;
+                for (let i = 0; i < vectors.length; i += BATCH_SIZE) {
+                    const batch = vectors.slice(i, i + BATCH_SIZE);
+                    await index.upsert(batch);
                 }
 
-                // Upsert to Pinecone
-                await index.upsert(vectors);
                 console.log(`  ✅ Upserted ${vectors.length} vectors\n`);
 
                 totalVectors += vectors.length;
                 successCount++;
 
                 // Delay to avoid rate limit
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise(resolve => setTimeout(resolve, 200));
 
             } catch (productError) {
                 console.error(`  ❌ Error processing ${product.name}:`, productError.message);
@@ -169,6 +262,15 @@ async function ingestAllProducts() {
         console.log(`✅ Successful: ${successCount} products`);
         console.log(`❌ Errors: ${errorCount} products`);
         console.log(`${'='.repeat(50)}`);
+
+        // Verify by getting index stats
+        try {
+            const stats = await index.describeIndexStats();
+            console.log(`\n📊 Pinecone Index Stats:`);
+            console.log(`   Total vectors: ${stats.totalRecordCount || 'N/A'}`);
+        } catch (e) {
+            // Stats might not be available immediately
+        }
 
     } catch (error) {
         console.error('❌ Ingestion Error:', error);

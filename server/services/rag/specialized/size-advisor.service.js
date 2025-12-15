@@ -14,15 +14,130 @@ export async function sizeRecommendation(query, extractedInfo = {}, context = {}
     try {
         // Get product from extracted info or context
         let productId = extractedInfo.product_id || context.recent_product_id;
+        let productName = null;
 
-        // If no ID but query mentions a product, try to find it
+        // If no ID, try to find product from conversation context
         if (!productId) {
-            // Simple check: if query is long enough, try vector search
-            if (query.length > 10) {
+            const recentMsgs = context.recent_messages || [];
+
+            // Look for product name in recent bot messages (bold **ProductName**)
+            for (let i = recentMsgs.length - 1; i >= 0; i--) {
+                const msg = recentMsgs[i];
+                if (msg.role === 'assistant' || msg.sender === 'bot') {
+                    const content = msg.content || msg.text || '';
+                    // Extract bold product names
+                    const boldMatches = content.match(/\*\*([^*]+)\*\*/g);
+                    if (boldMatches && boldMatches.length > 0) {
+                        // Get the first significant bold text (likely product name)
+                        for (const match of boldMatches) {
+                            const text = match.replace(/\*\*/g, '').trim();
+                            // Skip short texts like prices or sizes
+                            if (text.length > 10 && !text.startsWith('$') && !text.match(/^\d/)) {
+                                productName = text;
+                                console.log(`🔍 Found product name from context: "${productName}"`);
+                                break;
+                            }
+                        }
+                        if (productName) break;
+                    }
+
+                    // Also check suggested_products from previous messages
+                    if (!productName && msg.suggestedProducts && msg.suggestedProducts.length > 0) {
+                        productId = msg.suggestedProducts[0]._id || msg.suggestedProducts[0].id;
+                        console.log(`🔍 Found productId from suggestedProducts: ${productId}`);
+                        break;
+                    }
+                }
+            }
+
+            // If we found a product name, search for it in database by name
+            if (productName && !productId) {
+                console.log(`🔍 Searching for product: "${productName}"`);
+
+                // Try exact match first (case insensitive)
+                let product = await Product.findOne({
+                    name: new RegExp(`^${productName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+                    isActive: true
+                }).lean();
+
+                if (product) {
+                    productId = product._id;
+                    console.log(`✅ Exact match found: "${product.name}"`);
+                } else {
+                    // Find all products that contain the search term
+                    const nameRegex = new RegExp(productName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                    const matchingProducts = await Product.find({
+                        name: nameRegex,
+                        isActive: true
+                    }).lean();
+
+                    if (matchingProducts.length > 0) {
+                        console.log(`📦 Found ${matchingProducts.length} matching products: ${matchingProducts.map(p => p.name).join(', ')}`);
+
+                        // Score each product by how closely it matches the search term
+                        const scoredProducts = matchingProducts.map(p => {
+                            const pNameLower = p.name.toLowerCase();
+                            const searchLower = productName.toLowerCase();
+
+                            let score = 0;
+
+                            // Exact match gets highest score
+                            if (pNameLower === searchLower) {
+                                score = 1000;
+                            }
+                            // Product name that starts with search term
+                            else if (pNameLower.startsWith(searchLower)) {
+                                score = 500;
+                            }
+                            // Search term matches the end of product name (e.g., "Bomber Jacket" in "Cashmere Bomber Jacket")
+                            else if (pNameLower.endsWith(searchLower)) {
+                                score = 400;
+                            }
+                            // Shorter names are preferred (more specific match)
+                            else {
+                                score = 100 - p.name.length;
+                            }
+
+                            return { product: p, score };
+                        });
+
+                        // Sort by score descending
+                        scoredProducts.sort((a, b) => b.score - a.score);
+
+                        product = scoredProducts[0].product;
+                        productId = product._id;
+                        console.log(`✅ Best match: "${product.name}" (score: ${scoredProducts[0].score})`);
+                    }
+                }
+
+                // If still not found, try matching key words
+                if (!product) {
+                    const keywords = productName.split(/\s+/).filter(w => w.length > 3);
+                    if (keywords.length >= 2) {
+                        const keywordRegex = new RegExp(keywords.join('.*'), 'i');
+                        product = await Product.findOne({
+                            name: keywordRegex,
+                            isActive: true
+                        }).lean();
+
+                        if (product) {
+                            productId = product._id;
+                            console.log(`✅ Keyword match found: "${product.name}"`);
+                        }
+                    }
+                }
+
+                if (!productId) {
+                    console.log(`⚠️ Could not find product by name: "${productName}"`);
+                }
+            }
+
+            // Fallback: vector search if query is descriptive enough
+            if (!productId && query.length > 15) {
                 const searchResults = await searchProducts(query, { topK: 1 });
-                if (searchResults && searchResults.length > 0 && searchResults[0].score > 0.7) {
+                if (searchResults && searchResults.length > 0 && searchResults[0].score > 0.75) {
                     productId = searchResults[0].metadata.product_id;
-                    console.log(`🔍 Found product via search: ${searchResults[0].metadata.product_name} (${productId})`);
+                    console.log(`🔍 Found product via vector search: ${searchResults[0].metadata.product_name} (${productId})`);
                 }
             }
         }

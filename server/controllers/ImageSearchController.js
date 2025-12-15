@@ -15,7 +15,8 @@ import { encodeImage, checkClipHealth } from '../services/imageSearch/clipServic
 import {
     initQdrant,
     searchSimilar,
-    getCollectionStats
+    getCollectionStats,
+    isQdrantAvailable
 } from '../services/imageSearch/qdrantVectorStore.js';
 import {
     initRedisCache,
@@ -78,6 +79,15 @@ export const findSimilarProductsSelfHost = asyncHandler(async (req, res) => {
 
     // Initialize services
     await ensureInitialized();
+
+    // Check if Qdrant is available
+    if (!isQdrantAvailable()) {
+        return res.status(503).json({
+            success: false,
+            message: 'Visual search service unavailable. Qdrant server is not running.',
+            hint: 'Start Qdrant with: docker run -d -p 6333:6333 qdrant/qdrant'
+        });
+    }
 
     const timing = {
         cacheCheck: 0,

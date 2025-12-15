@@ -256,3 +256,42 @@
 .successIcon {
     font-size: 14px;
 }
+
+/* Store Location Map */
+.mapContainer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gray);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.mapContainer iframe {
+    width: 100%;
+    min-height: 180px;
+    border-radius: 8px;
+}
+
+.directionsButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: var(--black);
+    color: var(--white);
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Google Sans Flex', sans-serif;
+    transition: all 0.2s ease;
+}
+
+.directionsButton:hover {
+    background-color: #333;
+    transform: translateY(-1px);
+}
+
+.directionsButton svg {
+    flex-shrink: 0;
+}

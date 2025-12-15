@@ -70,10 +70,17 @@ async function getColorsFromDB() {
 async function findColorInQuery(query) {
     const queryLower = query.toLowerCase();
 
+    // Helper function to check if color exists as a whole word
+    const matchesAsWord = (text, color) => {
+        // Create regex with word boundaries
+        const regex = new RegExp(`\\b${color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        return regex.test(text);
+    };
+
     // 1. First check colors from database (highest priority - exact match)
     const dbColors = await getColorsFromDB();
     for (const color of dbColors) {
-        if (queryLower.includes(color)) {
+        if (matchesAsWord(queryLower, color)) {
             console.log(`🎨 Found DB color: "${color}"`);
             return { vi: color, en: color };
         }
@@ -81,15 +88,15 @@ async function findColorInQuery(query) {
 
     // 2. Check compound English colors (e.g., "wine red", "navy blue")
     for (const color of COMPOUND_COLORS) {
-        if (queryLower.includes(color)) {
+        if (matchesAsWord(queryLower, color)) {
             console.log(`🎨 Found compound color: "${color}"`);
             return { vi: color, en: color };
         }
     }
 
-    // 3. Check Vietnamese colors mapping
+    // 3. Check Vietnamese colors mapping (with word boundary)
     for (const [vi, en] of Object.entries(VI_TO_EN_COLORS)) {
-        if (queryLower.includes(vi)) {
+        if (matchesAsWord(queryLower, vi)) {
             console.log(`🎨 Found VI color: "${vi}" → "${en}"`);
             return { vi, en };
         }
@@ -318,7 +325,7 @@ export async function productAdvice(query, context = {}) {
         const seenProductIds = new Set();
         const orderedProducts = [];
 
-        // First, add color-matched products (highest priority)
+        // First, add color-matched products (ONLY if user actually requested a color)
         if (requestedColor && colorMatchedProductIds.length > 0) {
             for (const colorProdId of colorMatchedProductIds) {
                 if (!seenProductIds.has(colorProdId)) {
@@ -329,10 +336,11 @@ export async function productAdvice(query, context = {}) {
                         console.log(`✅ Added color-matched product: ${product.name}`);
                     }
                 }
+                if (orderedProducts.length >= 5) break; // Limit color-matched to 5
             }
         }
 
-        // Then add products from vector search
+        // Then add products from vector search (higher limit to ensure we get products mentioned in answer)
         for (const r of reranked) {
             const match = searchResults[r.index];
             const productId = match?.metadata?.product_id;
@@ -342,21 +350,138 @@ export async function productAdvice(query, context = {}) {
                 if (product) {
                     seenProductIds.add(productId);
                     orderedProducts.push(product);
+                    console.log(`📦 Added vector search product: ${product.name}`);
                 }
             }
 
-            if (orderedProducts.length >= 5) break;
+            if (orderedProducts.length >= 10) break; // Higher limit for better matching
         }
 
-        // Re-order: prioritize products mentioned in the answer
+        // Re-order: prioritize products mentioned in the answer (extracted from **ProductName**)
         const answerLower = answer.toLowerCase();
-        orderedProducts.sort((a, b) => {
-            const aInAnswer = answerLower.includes(a.name.toLowerCase());
-            const bInAnswer = answerLower.includes(b.name.toLowerCase());
-            if (aInAnswer && !bInAnswer) return -1;
-            if (!aInAnswer && bInAnswer) return 1;
-            return 0;
+
+        // Extract product names mentioned in bold (**ProductName**)
+        const boldProductMatches = answer.match(/\*\*([^*]+)\*\*/g) || [];
+        const boldProductNames = boldProductMatches
+            .map(m => m.replace(/\*\*/g, '').toLowerCase().trim())
+            .filter(name => name.length > 3); // Filter out short matches like "$" 
+
+        console.log(`🔍 Extracted bold product names from answer: ${boldProductNames.join(', ')}`);
+
+        // Key product type words for matching
+        const productTypeKeywords = ['jacket', 'coat', 'scarf', 'sweater', 'polo', 'shirt', 'dress', 'pants', 'trousers', 'skirt', 'bag', 'backpack', 'hat', 'cap', 'belt', 'cardigan', 'bomber', 'blazer', 'hoodie', 'knit'];
+
+        // Create a scored list of products
+        const scoredProducts = orderedProducts.map(p => {
+            const productNameLower = p.name.toLowerCase();
+            const productNameWords = productNameLower.split(/\s+/);
+            let score = 0;
+            let matchedBoldName = '';
+
+            // High score if product name appears in bold in the answer
+            for (const boldName of boldProductNames) {
+                const boldWords = boldName.split(/\s+/);
+
+                // Exact match gets highest score
+                if (productNameLower === boldName) {
+                    score = 200;
+                    matchedBoldName = boldName;
+                    console.log(`🎯 EXACT match: "${p.name}" === "${boldName}"`);
+                    break;
+                }
+
+                // Check if bold text is a substring of product name or vice versa
+                const boldInProduct = productNameLower.includes(boldName);
+                const productInBold = boldName.includes(productNameLower);
+
+                if (boldInProduct || productInBold) {
+                    // Calculate how close the match is (penalize if lengths differ a lot)
+                    const lengthDiff = Math.abs(productNameLower.length - boldName.length);
+                    const matchScore = 150 - lengthDiff * 2; // More penalty for bigger length diff
+
+                    if (matchScore > score) {
+                        score = Math.max(matchScore, 50); // Min score of 50 for substring match
+                        matchedBoldName = boldName;
+                        console.log(`📍 Substring match: "${p.name}" ~ "${boldName}" (diff: ${lengthDiff}, score: ${score})`);
+                    }
+                    continue; // Don't process further for this boldName
+                }
+
+                // Key words matching (jacket, scarf, sweater, etc.)
+                const boldKeywords = boldWords.filter(w => productTypeKeywords.includes(w));
+                const productKeywords = productNameWords.filter(w => productTypeKeywords.includes(w));
+                const keywordMatches = boldKeywords.filter(k => productKeywords.includes(k));
+
+                // If product type matches (e.g., both are "jacket" or "scarf")
+                if (keywordMatches.length > 0) {
+                    // Check for additional word matches (color, material)
+                    const otherBoldWords = boldWords.filter(w => !productTypeKeywords.includes(w) && w.length > 2);
+                    const matchingOtherWords = otherBoldWords.filter(w =>
+                        productNameLower.includes(w) || productNameWords.some(pw => pw.includes(w) || w.includes(pw))
+                    );
+
+                    if (matchingOtherWords.length >= 1) {
+                        // Good match: product type + at least 1 other word
+                        const newScore = 60 + keywordMatches.length * 15 + matchingOtherWords.length * 10;
+                        if (newScore > score) {
+                            score = newScore;
+                            matchedBoldName = boldName;
+                            console.log(`🔍 Product "${p.name}": type match [${keywordMatches}] + words [${matchingOtherWords}]`);
+                        }
+                    }
+                }
+
+                // Fallback: partial word matching (at least 2 significant words)
+                if (score < 50) {
+                    const significantBoldWords = boldWords.filter(w => w.length > 3);
+                    const matchingWords = significantBoldWords.filter(w =>
+                        productNameLower.includes(w) || productNameWords.some(pw => pw === w)
+                    );
+                    if (matchingWords.length >= 2) {
+                        const newScore = 40 + matchingWords.length * 10;
+                        if (newScore > score) {
+                            score = newScore;
+                            matchedBoldName = boldName;
+                        }
+                    }
+                }
+            }
+
+            if (score > 0) {
+                console.log(`✅ Product "${p.name}" matched "${matchedBoldName}" with score ${score}`);
+            }
+
+            // Medium score if product name appears anywhere in the answer
+            if (score === 0 && answerLower.includes(productNameLower)) {
+                score = 30;
+                console.log(`📝 Product "${p.name}" found in answer text (score: 30)`);
+            }
+
+            // Bonus for color-matched products
+            if (colorMatchedProductIds.includes(p._id.toString())) {
+                score += 20;
+            }
+
+            return { product: p, score };
         });
+
+        // Sort by score descending
+        scoredProducts.sort((a, b) => b.score - a.score);
+
+        // Only include products with score > 0 (mentioned in answer), or top 3 if none match
+        let filteredProducts = scoredProducts.filter(sp => sp.score > 0).map(sp => sp.product);
+
+        if (filteredProducts.length === 0) {
+            // Fallback: use top products from orderedProducts
+            filteredProducts = orderedProducts.slice(0, 3);
+            console.log(`ℹ️ No products matched answer, using fallback products`);
+        } else {
+            console.log(`✅ Found ${filteredProducts.length} products mentioned in answer`);
+        }
+
+        // Replace orderedProducts with filtered ones
+        orderedProducts.length = 0;
+        orderedProducts.push(...filteredProducts);
 
         // Use requestedColor from earlier (already found in step 2)
 

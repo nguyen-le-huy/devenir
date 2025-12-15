@@ -1,6 +1,10 @@
 /**
  * Redis Cache Service
  * Cache image search results để giảm latency cho repeat queries
+ * 
+ * Environment Variables:
+ * - REDIS_URL: URL to Redis server (default: redis://localhost:6379)
+ * - DISABLE_REDIS: Set to 'true' to disable Redis (for development without Docker)
  */
 
 import { createClient } from 'redis';
@@ -9,21 +13,43 @@ import crypto from 'crypto';
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const CACHE_PREFIX = 'visual-search:';
 const CACHE_TTL = 3600; // 1 hour
+const DISABLE_REDIS = process.env.DISABLE_REDIS === 'true';
 
 let redisClient = null;
 let isConnected = false;
+let initAttempted = false;  // Only try once
 
 /**
  * Initialize Redis client
  */
 export async function initRedisCache() {
+    // Skip if disabled
+    if (DISABLE_REDIS) {
+        console.log('⚠️ Redis disabled via DISABLE_REDIS env. Caching will not work.');
+        return null;
+    }
+
+    // Only try to connect once
+    if (initAttempted) {
+        return redisClient;
+    }
+    initAttempted = true;
+
     if (redisClient && isConnected) return redisClient;
 
     try {
-        redisClient = createClient({ url: REDIS_URL });
+        redisClient = createClient({
+            url: REDIS_URL,
+            socket: {
+                connectTimeout: 5000,  // 5 second timeout
+                reconnectStrategy: false  // Don't auto-retry (prevents console spam)
+            }
+        });
 
         redisClient.on('error', (err) => {
-            console.error('❌ Redis connection error:', err.message);
+            if (isConnected) {  // Only log if was previously connected
+                console.error('❌ Redis connection lost:', err.message);
+            }
             isConnected = false;
         });
 
@@ -32,15 +58,15 @@ export async function initRedisCache() {
             isConnected = true;
         });
 
-        redisClient.on('reconnecting', () => {
-            console.log('🔄 Redis reconnecting...');
-        });
-
         await redisClient.connect();
         return redisClient;
     } catch (error) {
-        console.error('❌ Redis init failed:', error.message);
-        console.log('⚠️ Continuing without cache...');
+        console.error('⚠️ Redis init failed:', error.message);
+        console.log('⚠️ Continuing without cache - Image search will work but slower for repeat queries');
+        console.log('💡 Tip: Start Redis with: docker run -d -p 6379:6379 redis');
+        console.log('💡 Or disable with: DISABLE_REDIS=true npm run dev');
+        redisClient = null;
+        isConnected = false;
         return null;
     }
 }

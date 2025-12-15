@@ -241,7 +241,8 @@ const ChatWindow = ({ onClose }) => {
                 sender: 'bot',
                 timestamp: new Date(),
                 suggestedProducts: response.suggested_products || [],
-                suggestedAction: response.suggested_action || null
+                suggestedAction: response.suggested_action || null,
+                storeLocation: response.store_location || null
             };
 
             setMessages(prev => [...prev, botMessage]);

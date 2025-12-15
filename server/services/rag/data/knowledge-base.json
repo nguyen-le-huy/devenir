@@ -8,6 +8,17 @@
             "hotline": "0364075812",
             "email": "support@devenir.vn",
             "workingHours": "9:00 - 21:00 (T2-CN)"
+        },
+        "location": {
+            "address": "Toà nhà Văn phòng Symphony, P. Chu Huy Mân, Khu đô thị Vinhomes Riverside, Long Biên, Hà Nội",
+            "city": "Hà Nội",
+            "country": "Việt Nam",
+            "coordinates": {
+                "lat": 21.0495,
+                "lng": 105.9155
+            },
+            "googleMapsUrl": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1861.7903227673235!2d105.91550118835329!3d21.04945902994632!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135a9a0a78b480b%3A0xde012606025bd95e!2zVG_DoCBuaMOgIFbEg24gcGjDsm5nIFN5bXBob255!5e0!3m2!1svi!2s!4v1765770591615!5m2!1svi!2s",
+            "directionsUrl": "https://www.google.com/maps/dir/?api=1&destination=Toa+nha+Van+phong+Symphony,+Vinhomes+Riverside,+Long+Bien,+Ha+Noi"
         }
     },
     "sizeGuide": {
