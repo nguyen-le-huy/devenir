@@ -2,6 +2,7 @@ import styles from "./AddToBagNoti.module.css";
 import { useLenisControl } from "../../hooks/useLenisControl";
 import { useNavigate } from "react-router-dom";
 import { useRandomVariants } from "../../hooks/useProducts";
+import Loading from "../Loading/Loading.jsx";
 import Backdrop from "../Backdrop";
 
 const AddToBagNoti = ({ isOpen, onClose }) => {
@@ -61,7 +62,9 @@ const AddToBagNoti = ({ isOpen, onClose }) => {
                 <p className={styles.moreToDiscover}>More to discover</p>
                 <div className={styles.productSuggestion} data-lenis-prevent>
                     {isLoading ? (
-                        <p style={{ textAlign: 'center', padding: '20px' }}>Loading...</p>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', width: '100%' }}>
+                            <Loading inline size="md" />
+                        </div>
                     ) : (
                         randomVariants?.map((variant) => (
                             <div

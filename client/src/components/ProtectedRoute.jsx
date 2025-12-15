@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Loading from './Loading/Loading.jsx';
 
 /**
  * ProtectedRoute - Route protection dựa trên authentication
@@ -9,7 +10,7 @@ export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading size="md" />;
   }
 
   if (!isAuthenticated) {
@@ -27,7 +28,7 @@ export const AdminRoute = ({ children }) => {
   const { isAuthenticated, loading, isAdmin } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading size="md" />;
   }
 
   if (!isAuthenticated) {

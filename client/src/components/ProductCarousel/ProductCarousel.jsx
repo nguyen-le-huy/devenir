@@ -5,6 +5,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { useRef, useCallback, useState } from 'react';
 import ScarfCard from '../ProductCard/ScarfCard.jsx';
+import Loading from '../Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
 import 'swiper/css';
@@ -132,7 +133,7 @@ const ProductCarousel = ({
                 ) : (
                     // ✅ Placeholder khi không có products
                     <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ color: '#999' }}>Loading...</span>
+                        <Loading inline size="md" />
                     </div>
                 )}
 
