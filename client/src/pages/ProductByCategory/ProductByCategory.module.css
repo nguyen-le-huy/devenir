@@ -113,12 +113,30 @@
     flex-direction: column;
     justify-content: flex-end;
     padding: 20px;
+    position: relative;
+}
+
+/* Dark gradient at bottom of rightBox */
+.rightBox::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50%;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.6) 0%,
+            rgba(0, 0, 0, 0.3) 50%,
+            rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
 }
 
 .content {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    position: relative;
+    z-index: 1;
 }
 
 .content>h2 {

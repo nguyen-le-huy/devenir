@@ -21,6 +21,7 @@ const ProductCarousel = ({
     const containerRef = useRef(null);
     // ✅ Sử dụng state thay vì ref để trigger re-render khi Swiper sẵn sàng
     const [swiperInstance, setSwiperInstance] = useState(null);
+    const [currentSlidesPerView, setCurrentSlidesPerView] = useState(4);
 
     // Manual navigation handlers
     const handlePrev = useCallback(() => {
@@ -106,12 +107,12 @@ const ProductCarousel = ({
                         speed={400}
                         breakpoints={{
                             320: {
-                                slidesPerView: 2,
-                                spaceBetween: 2,
+                                slidesPerView: 1,
+                                spaceBetween: 0,
                             },
                             640: {
-                                slidesPerView: 2,
-                                spaceBetween: 2,
+                                slidesPerView: 1,
+                                spaceBetween: 0,
                             },
                             1024: {
                                 slidesPerView: 3,
@@ -122,7 +123,14 @@ const ProductCarousel = ({
                                 spaceBetween: 2,
                             },
                         }}
-                        onSwiper={(swiper) => setSwiperInstance(swiper)}
+                        onSwiper={(swiper) => {
+                            setSwiperInstance(swiper);
+                            // Get initial slidesPerView
+                            setCurrentSlidesPerView(swiper.params.slidesPerView);
+                        }}
+                        onBreakpoint={(swiper, breakpointParams) => {
+                            setCurrentSlidesPerView(breakpointParams.slidesPerView);
+                        }}
                     >
                         {products.map((product) => (
                             <SwiperSlide key={product.id}>
@@ -137,8 +145,8 @@ const ProductCarousel = ({
                     </div>
                 )}
 
-                {/* ✅ Chỉ hiển thị arrows khi có products và swiperInstance sẵn sàng */}
-                {hasProducts && (
+                {/* ✅ Chỉ hiển thị arrows khi products nhiều hơn số slides đang hiển thị */}
+                {hasProducts && products.length > currentSlidesPerView && (
                     <div className={styles.arrows}>
                         <svg
                             onClick={handlePrev}

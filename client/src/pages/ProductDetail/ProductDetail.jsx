@@ -1,5 +1,5 @@
 import styles from './ProductDetail.module.css';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
@@ -39,6 +39,10 @@ export default function ProductDetail() {
     const [product, setProduct] = useState(null);
     const [siblingVariants, setSiblingVariants] = useState([]);
     const [colorMap, setColorMap] = useState({});
+
+    // Ref to capture initial height of .right panel
+    const rightRef = useRef(null);
+    const [initialRightHeight, setInitialRightHeight] = useState(null);
 
     const handleToggle = (itemName) => {
         setOpenItem(openItem === itemName ? null : itemName);
@@ -113,11 +117,29 @@ export default function ProductDetail() {
         }
     ];
 
+    // Capture initial height of .right panel (before any accordion opens)
+    useLayoutEffect(() => {
+        if (rightRef.current && !initialRightHeight && !loading) {
+            // Wait for next frame to ensure layout is complete
+            requestAnimationFrame(() => {
+                const height = rightRef.current.offsetHeight;
+                if (height > 0) {
+                    setInitialRightHeight(height);
+                }
+            });
+        }
+    }, [loading, initialRightHeight]);
+
     // Gallery images: Get mainImage and images array from variant
     const mainImage = variant?.mainImage || './images/product/1.png';
     // images array chứa tất cả ảnh bao gồm mainImage, nên cần filter ra
     const otherImages = (variant?.images || []).filter(img => img !== mainImage);
     const allGalleryImages = [mainImage, ...otherImages];
+
+    // Check image count for layout adjustments
+    const imageCount = allGalleryImages.length;
+    const isSingleImage = imageCount === 1;
+    const isFewImages = imageCount <= 2; // 2 or fewer images - no sticky
 
     // Calculate progress bar position
     const progressBarLeft = (activeSlide / (allGalleryImages.length || 1)) * 100;
@@ -263,17 +285,34 @@ export default function ProductDetail() {
 
     return (
         <div className={styles.productDetail}>
-            <div className={styles.product}>
-                <div className={styles.leftCenterContainer} data-tryon-container>
+            <div className={`${styles.product} ${isFewImages ? styles.fewImages : ''}`}>
+                <div
+                    className={`${styles.leftCenterContainer} ${isSingleImage ? styles.singleImage : ''} ${isFewImages ? styles.fewImagesContainer : ''}`}
+                    data-tryon-container
+                    style={isFewImages && initialRightHeight ? { height: `${initialRightHeight}px` } : {}}
+                >
                     <TryOn />
-                    <div className={styles.left} style={{ top: `${headerHeight}px` }}>
-                        <img src={mainImage} alt={product.name} />
-                    </div>
-                    <div className={styles.center}>
-                        {otherImages.map((image, index) => (
-                            <img key={index} src={image} alt={`${product.name} ${index + 1}`} />
-                        ))}
-                    </div>
+                    {isSingleImage ? (
+                        // Single image: span full width
+                        <div className={styles.fullWidthImage}>
+                            <img src={mainImage} alt={product.name} />
+                        </div>
+                    ) : (
+                        // Multiple images: normal layout
+                        <>
+                            <div
+                                className={`${styles.left} ${isFewImages ? styles.noSticky : ''}`}
+                                style={isFewImages ? {} : { top: `${headerHeight}px` }}
+                            >
+                                <img src={mainImage} alt={product.name} />
+                            </div>
+                            <div className={`${styles.center} ${isFewImages ? styles.noSticky : ''}`}>
+                                {otherImages.map((image, index) => (
+                                    <img key={index} src={image} alt={`${product.name} ${index + 1}`} />
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* ✅ Mobile Gallery với Custom Progress Bar */}
@@ -313,8 +352,10 @@ export default function ProductDetail() {
                 </div>
 
 
-                <div className={styles.right}
-                    style={isMobile ? {} : { top: `${headerHeight}px` }}
+                <div
+                    ref={rightRef}
+                    className={`${styles.right} ${isFewImages ? styles.noSticky : ''}`}
+                    style={isMobile || isFewImages ? {} : { top: `${headerHeight}px` }}
                 >
                     <div className={styles.box1}>
                         <div className={styles.productInfo}>

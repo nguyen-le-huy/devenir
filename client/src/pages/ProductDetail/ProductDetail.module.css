@@ -3,6 +3,11 @@
     position: relative;
 }
 
+/* ✅ Few images layout - align left/center with right */
+.product.fewImages {
+    align-items: flex-start;
+}
+
 .productDetail {
     padding-bottom: 60px;
     display: flex;
@@ -40,6 +45,46 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+}
+
+/* ✅ No sticky for products with 2 or fewer images */
+.noSticky {
+    position: relative !important;
+    align-self: stretch !important;
+    height: 100% !important;
+}
+
+.leftCenterContainer.fewImagesContainer {
+    min-height: auto;
+    overflow: hidden;
+}
+
+.leftCenterContainer.fewImagesContainer .left,
+.leftCenterContainer.fewImagesContainer .center {
+    height: 100%;
+}
+
+.leftCenterContainer.fewImagesContainer .left>img,
+.leftCenterContainer.fewImagesContainer .center>img {
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ✅ Single image layout - spans full width */
+.singleImage {
+    min-height: auto;
+}
+
+.fullWidthImage {
+    width: 100%;
+    height: 100%;
+}
+
+.fullWidthImage>img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .right {
@@ -80,7 +125,7 @@
 .nameAndPrice {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .name,

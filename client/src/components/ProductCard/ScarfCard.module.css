@@ -61,6 +61,7 @@
     align-items: center;
     padding: 10px 25px;
     margin: 0;
+    gap: 15px;
 }
 
 .scarfName,
@@ -68,6 +69,18 @@
     font-size: 15px;
     font-weight: 500;
     margin: 0;
+}
+
+.scarfName {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.scarfPrice {
+    flex-shrink: 0;
 }
 
 .colorVariants {
