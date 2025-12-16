@@ -5,7 +5,7 @@ import { useRef } from 'react';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 
-gsap.registerPlugin(useGSAP,ScrollTrigger,SplitText);
+gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText);
 
 const SmallTreasures = () => {
     const titleRef = useRef(null);
@@ -42,7 +42,7 @@ const SmallTreasures = () => {
                 }
             })
         });
-        
+
     }, { scope: smallTreasureRef });
 
 
@@ -65,7 +65,7 @@ const SmallTreasures = () => {
                     </text>
                 </svg>
                 <svg aria-hidden="true" className="eye" width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
-                    <path className="eye__outer" d="M10.5 35.308c5.227-7.98 14.248-13.252 24.5-13.252s19.273 5.271 24.5 13.252c-5.227 7.98-14.248 13.253-24.5 13.253s-19.273-5.272-24.5-13.253z"/>
+                    <path className="eye__outer" d="M10.5 35.308c5.227-7.98 14.248-13.252 24.5-13.252s19.273 5.271 24.5 13.252c-5.227 7.98-14.248 13.253-24.5 13.253s-19.273-5.272-24.5-13.253z" />
                     <path className="eye__lashes-up" d="M35 8.802v8.836M49.537 11.383l-3.31 8.192M20.522 11.684l3.31 8.192" />
                     <path className="eye__lashes-down" d="M35 61.818v-8.836 8.836zM49.537 59.237l-3.31-8.193 3.31 8.193zM20.522 58.936l3.31-8.193-3.31 8.193z" />
                     <circle className="eye__iris" cx="35" cy="35.31" r="5.221" />
@@ -73,13 +73,13 @@ const SmallTreasures = () => {
                 </svg>
             </button>
             <div className={styles.imageParallaxContainer}>
-                <img className={`${styles.imageParallax} ${styles.image1}`} src="/images/treasure1.png" />
-                <img className={`${styles.imageParallax} ${styles.image2}`} src="/images/treasure2.png" />
-                <img className={`${styles.imageParallax} ${styles.image3}`} src="/images/treasure3.png" />
-                <img className={`${styles.imageParallax} ${styles.image4}`} src="/images/treasure4.png" />
-                <img className={`${styles.imageParallax} ${styles.image5}`} src="/images/treasure5.png" />
-                <img className={`${styles.imageParallax} ${styles.image6}`} src="/images/treasure6.png" />
-                <img className={`${styles.imageParallax} ${styles.image7}`} src="/images/treasure7.png" />
+                <img className={`${styles.imageParallax} ${styles.image1}`} src="/images/treasure1.webp" />
+                <img className={`${styles.imageParallax} ${styles.image2}`} src="/images/treasure2.webp" />
+                <img className={`${styles.imageParallax} ${styles.image3}`} src="/images/treasure3.webp" />
+                <img className={`${styles.imageParallax} ${styles.image4}`} src="/images/treasure4.webp" />
+                <img className={`${styles.imageParallax} ${styles.image5}`} src="/images/treasure5.webp" />
+                <img className={`${styles.imageParallax} ${styles.image6}`} src="/images/treasure6.webp" />
+                <img className={`${styles.imageParallax} ${styles.image7}`} src="/images/treasure7.webp" />
             </div>
         </div>
     );

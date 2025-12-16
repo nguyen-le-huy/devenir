@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { uploadImage, uploadImages, deleteImage } from '../controllers/UploadController.js';
+import { uploadImage, uploadImages, deleteImage, uploadCategoryImage } from '../controllers/UploadController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -38,6 +38,12 @@ router.post('/image', authenticate, isAdmin, upload.single('image'), uploadImage
  * Upload multiple images
  */
 router.post('/images', authenticate, isAdmin, upload.array('images', 10), uploadImages);
+
+/**
+ * POST /api/upload/category-image
+ * Upload category image (auto-convert to WebP)
+ */
+router.post('/category-image', authenticate, isAdmin, upload.single('image'), uploadCategoryImage);
 
 /**
  * DELETE /api/upload/:publicId

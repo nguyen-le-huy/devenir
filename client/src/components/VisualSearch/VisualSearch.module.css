@@ -46,10 +46,6 @@
     overflow: hidden;
 }
 
-.input:hover {
-    background-color: #f0f0f0;
-}
-
 .input.dragging {
     border-color: var(--dark-gray);
     background-color: #e8e8e8;

@@ -150,6 +150,79 @@ export const uploadImages = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Upload category image to Cloudinary (auto-convert to WebP)
+ * @route   POST /api/upload/category-image
+ * @access  Private/Admin
+ */
+export const uploadCategoryImage = asyncHandler(async (req, res) => {
+  console.log('=== UPLOAD CATEGORY IMAGE REQUEST ===');
+
+  if (!req.file) {
+    console.log('ERROR: No file in request');
+    return res.status(400).json({
+      success: false,
+      message: 'No file provided',
+    });
+  }
+
+  // Check Cloudinary config
+  const hasConfig = !!(process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET);
+
+  if (!hasConfig) {
+    console.error('Cloudinary credentials missing!');
+    return res.status(500).json({
+      success: false,
+      message: 'Server configuration error: Cloudinary credentials not configured',
+    });
+  }
+
+  try {
+    console.log('Starting category image upload...');
+    console.log('File:', req.file.originalname);
+    console.log('File size:', (req.file.buffer.length / 1024 / 1024).toFixed(2), 'MB');
+    console.log('MIME type:', req.file.mimetype);
+
+    // Convert buffer to base64 for upload
+    const base64String = req.file.buffer.toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${base64String}`;
+
+    console.log('Uploading to Cloudinary with WebP conversion...');
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'devenir/categories',
+      resource_type: 'image',
+      format: 'webp', // Convert to WebP
+      quality: 'auto:best', // Auto quality optimization
+      flags: 'lossy', // Use lossy compression for smaller file size
+    });
+
+    console.log('Upload successful:', result.public_id);
+    console.log('WebP URL:', result.secure_url);
+
+    res.status(200).json({
+      success: true,
+      message: 'Category image uploaded successfully (WebP format)',
+      data: {
+        id: result.public_id,
+        url: result.secure_url,
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        bytes: result.bytes,
+      },
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading category image to Cloudinary',
+      error: error.message,
+    });
+  }
+});
+
+/**
  * @desc    Delete image from Cloudinary
  * @route   DELETE /api/upload/:publicId
  * @access  Private/Admin
