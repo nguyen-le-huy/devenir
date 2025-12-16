@@ -1,30 +1,79 @@
 import styles from "./Bag.module.css";
 import { useHeaderHeight } from "../../hooks/useHeaderHeight";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLenisControl } from "../../hooks/useLenisControl";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../hooks/useCart.js";
 import Backdrop from "../Backdrop";
+import Loading from "../Loading/Loading";
 
 export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
     const navigate = useNavigate();
     const headerHeight = useHeaderHeight();
     const [isVisible, setIsVisible] = useState(false);
+    const [imagesLoaded, setImagesLoaded] = useState(false);
     useLenisControl(true);
 
     // Fetch real cart data
     const { data: cartData, isLoading } = useCart();
     const cart = cartData?.data || { items: [], totalItems: 0, totalPrice: 0 };
 
-    // Trigger animation after component mounts
-    useEffect(() => {
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-            setIsVisible(true);
+    // Preload all cart item images
+    const preloadImages = useCallback(async (imageUrls) => {
+        const promises = imageUrls.map((url) => {
+            return new Promise((resolve) => {
+                if (!url) {
+                    resolve();
+                    return;
+                }
+                const img = new Image();
+                img.onload = resolve;
+                img.onerror = resolve;
+                img.src = url;
+            });
         });
+
+        await Promise.all(promises);
+        setImagesLoaded(true);
     }, []);
 
+    // Start preloading when cart data is ready
+    useEffect(() => {
+        if (!isLoading) {
+            if (cart.items.length > 0) {
+                setImagesLoaded(false);
+
+                // Collect all product images
+                const imagesToPreload = cart.items
+                    .map(item => item.productVariant?.mainImage)
+                    .filter(Boolean);
+
+                // Remove duplicates
+                const uniqueImages = [...new Set(imagesToPreload)];
+
+                if (uniqueImages.length > 0) {
+                    preloadImages(uniqueImages);
+                } else {
+                    setImagesLoaded(true);
+                }
+            } else {
+                // No items, no images to preload
+                setImagesLoaded(true);
+            }
+        }
+    }, [isLoading, cart.items, preloadImages]);
+
+    // Trigger animation after images are loaded
+    useEffect(() => {
+        if (imagesLoaded) {
+            requestAnimationFrame(() => {
+                setIsVisible(true);
+            });
+        }
+    }, [imagesLoaded]);
+
     const handleCheckout = () => {
+        if (cart.items.length === 0) return;
         if (onClose) onClose();
         navigate("/checkout");
     };
@@ -76,6 +125,9 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
         });
     }, [cart.items]);
 
+    // Show loading while fetching data or preloading images
+    const showLoading = isLoading || !imagesLoaded;
+
     return (
         <>
             <Backdrop
@@ -88,7 +140,11 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
             >
-                {cart.items.length > 0 ? (
+                {showLoading ? (
+                    <div className={styles.loadingWrapper}>
+                        <Loading size="md" />
+                    </div>
+                ) : cart.items.length > 0 ? (
                     <div className={styles.bagContent}>
                         <div className={styles.productList} data-lenis-prevent>
                             {cartItems}

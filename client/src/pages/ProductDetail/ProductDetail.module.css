@@ -57,17 +57,23 @@
 .leftCenterContainer.fewImagesContainer {
     min-height: auto;
     overflow: hidden;
+    display: flex;
 }
 
 .leftCenterContainer.fewImagesContainer .left,
 .leftCenterContainer.fewImagesContainer .center {
     height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .leftCenterContainer.fewImagesContainer .left>img,
 .leftCenterContainer.fewImagesContainer .center>img {
     height: 100%;
+    width: 100%;
     object-fit: cover;
+    flex: 1;
 }
 
 /* ✅ Single image layout - spans full width */

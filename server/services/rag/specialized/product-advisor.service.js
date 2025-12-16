@@ -1,7 +1,7 @@
 import Product from '../../../models/ProductModel.js';
 import ProductVariant from '../../../models/ProductVariantModel.js';
 import Color from '../../../models/ColorModel.js';
-import { searchProducts } from '../retrieval/vector-search.service.js';
+import { searchProducts, searchByCategoryMongoDB } from '../retrieval/vector-search.service.js';
 import { rerankDocuments } from '../retrieval/reranking.service.js';
 import { generateResponse } from '../generation/response-generator.js';
 
@@ -157,6 +157,43 @@ export async function productAdvice(query, context = {}) {
         }
 
         if ((!searchResults || searchResults.length === 0) && colorMatchedProductIds.length === 0) {
+            // Try fallback: direct category/product search in MongoDB
+            const categoryFallback = await searchByCategoryMongoDB(query);
+            if (categoryFallback.products.length > 0) {
+                console.log(`📂 Fallback category search found ${categoryFallback.products.length} products`);
+
+                // Build suggested products from fallback
+                const suggested_products = await Promise.all(
+                    categoryFallback.products.slice(0, 3).map(async (p) => {
+                        const variants = await ProductVariant.find({
+                            product_id: p._id,
+                            isActive: true
+                        }).lean();
+
+                        const prices = variants.map(v => v.price).filter(pr => pr > 0);
+                        const mainVariant = variants[0];
+
+                        return {
+                            _id: p._id,
+                            name: p.name,
+                            urlSlug: p.urlSlug,
+                            variantId: mainVariant?._id || null,
+                            minPrice: prices.length > 0 ? Math.min(...prices) : 0,
+                            maxPrice: prices.length > 0 ? Math.max(...prices) : 0,
+                            mainImage: mainVariant?.mainImage || '',
+                            inStock: variants.some(v => v.quantity > 0),
+                            totalStock: variants.reduce((sum, v) => sum + v.quantity, 0)
+                        };
+                    })
+                );
+
+                return {
+                    answer: categoryFallback.answer,
+                    sources: [],
+                    suggested_products
+                };
+            }
+
             return {
                 answer: "Mình chưa tìm thấy sản phẩm phù hợp với yêu cầu của bạn. Bạn có thể mô tả chi tiết hơn được không?",
                 sources: [],

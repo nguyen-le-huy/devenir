@@ -48,6 +48,14 @@
     font-weight: 500;
 }
 
+.loadingWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    width: 300px;
+}
+
 .nameAndQuanity {
     display: flex;
     flex-direction: column;

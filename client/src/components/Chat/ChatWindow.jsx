@@ -25,7 +25,11 @@ const ChatWindow = ({ onClose }) => {
     const [messages, setMessages] = useState(() => {
         try {
             const saved = sessionStorage.getItem(CHAT_STORAGE_KEY);
-            return saved ? JSON.parse(saved) : [];
+            if (saved) {
+                // Mark all loaded messages as already streamed
+                return JSON.parse(saved).map(msg => ({ ...msg, isStreamed: true }));
+            }
+            return [];
         } catch {
             return [];
         }
@@ -242,7 +246,8 @@ const ChatWindow = ({ onClose }) => {
                 timestamp: new Date(),
                 suggestedProducts: response.suggested_products || [],
                 suggestedAction: response.suggested_action || null,
-                storeLocation: response.store_location || null
+                storeLocation: response.store_location || null,
+                isStreamed: false // Will be set to true after streaming completes
             };
 
             setMessages(prev => [...prev, botMessage]);
@@ -254,7 +259,8 @@ const ChatWindow = ({ onClose }) => {
                 id: Date.now() + 1,
                 text: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
                 sender: 'bot',
-                timestamp: new Date()
+                timestamp: new Date(),
+                isStreamed: true // Error messages don't need streaming
             };
 
             setMessages(prev => [...prev, errorMessage]);
@@ -327,6 +333,15 @@ const ChatWindow = ({ onClose }) => {
             setMessages(prev => [...prev, followUpMsg]);
         }
     }, [addToCartMutation]);
+
+    // Mark message as streamed (so it won't stream again on re-render)
+    const markMessageAsStreamed = useCallback((messageId) => {
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId
+                ? { ...msg, isStreamed: true }
+                : msg
+        ));
+    }, []);
 
     const focusInput = () => {
         if (inputRef.current) {
@@ -418,11 +433,13 @@ const ChatWindow = ({ onClose }) => {
                     </>
                 ) : (
                     <div className={styles.messagesArea} data-lenis-prevent data-scrollable>
-                        {messages.map((message) => (
+                        {messages.map((message, index) => (
                             <ChatMessage
                                 key={message.id}
                                 message={message}
                                 onActionClick={handleActionClick}
+                                isLatest={index === messages.length - 1 && message.sender === 'bot'}
+                                onStreamComplete={() => markMessageAsStreamed(message.id)}
                             />
                         ))}
                         {isTyping && (

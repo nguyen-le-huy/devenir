@@ -55,6 +55,15 @@ export async function classifyIntent(message, conversationHistory = []) {
 export function quickIntentDetection(message) {
     const lowerMessage = message.toLowerCase();
 
+    // HIGH PRIORITY: Product type keywords - route to product_advice immediately
+    const highPriorityProductTypes = [
+        'nước hoa', 'fragrance', 'perfume', 'cologne', 'eau de parfum',
+        'scarf', 'khăn', 'jacket', 'áo khoác', 'sweater', 'áo len'
+    ];
+    if (highPriorityProductTypes.some(k => lowerMessage.includes(k))) {
+        return { intent: 'product_advice', confidence: 0.85 };
+    }
+
     // Size related keywords
     const sizeKeywords = ['size', 'số đo', 'chiều cao', 'cân nặng', 'form', 'vừa', 'rộng', 'chật'];
     if (sizeKeywords.some(k => lowerMessage.includes(k))) {
@@ -97,10 +106,13 @@ export function quickIntentDetection(message) {
 
     // Product advice (default for product-related)
     const productKeywords = [
-        // Search/want keywords
-        'tìm', 'muốn', 'cần', 'gợi ý', 'tư vấn', 'sản phẩm',
+        // Search/want keywords + availability questions
+        'tìm', 'muốn', 'cần', 'gợi ý', 'tư vấn', 'sản phẩm', 'bán', 'có bán', 'còn',
         // Product types
         'áo', 'quần', 'váy', 'đầm', 'jacket', 'coat', 'scarf', 'khăn', 'túi', 'bag', 'giày', 'boots',
+        'nước hoa', 'fragrance', 'perfume', 'eau de parfum', 'cologne',
+        'wallet', 'ví', 'tie', 'cà vạt', 'cufflink', 'sweater', 'áo len',
+        'wallet', 'ví', 'tie', 'cà vạt', 'cufflink', 'sweater', 'áo len',
         // Product questions - origin, material, details
         'sản xuất', 'xuất xứ', 'made in', 'origin', 'chất liệu', 'nguyên liệu', 'material', 'fabric',
         'mô tả', 'chi tiết', 'thông tin', 'về sản phẩm', 'detail',
@@ -144,6 +156,11 @@ export async function hybridClassifyIntent(message, conversationHistory = []) {
         }
         if (quickResult.intent === 'add_to_cart' && quickResult.confidence >= 0.8) {
             console.log(`🛒 Add to cart detected via keywords`);
+            return quickResult;
+        }
+        // High-priority product type keywords (nước hoa, fragrance, etc.) - bypass LLM
+        if (quickResult.intent === 'product_advice' && quickResult.confidence >= 0.85) {
+            console.log(`🛍️ Product type detected via keywords`);
             return quickResult;
         }
 

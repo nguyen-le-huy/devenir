@@ -65,3 +65,87 @@ export async function searchByBrand(query, brandName) {
 export async function vectorSearch(query, options = {}) {
     return vectorStore.search(query, options);
 }
+
+// Vietnamese to English category mapping
+const CATEGORY_KEYWORDS = {
+    'nước hoa': 'Fragrances',
+    'fragrance': 'Fragrances',
+    'perfume': 'Fragrances',
+    'eau de parfum': 'Fragrances',
+    'cologne': 'Fragrances',
+    'khăn': 'Scarves',
+    'scarf': 'Scarves',
+    'áo jacket': 'Jackets',
+    'jacket': 'Jackets',
+    'áo khoác': 'Jackets',
+    'túi': 'Bags',
+    'bag': 'Bags',
+    'ví': 'Wallets',
+    'wallet': 'Wallets',
+    'áo len': 'Sweaters',
+    'sweater': 'Sweaters',
+    'áo sơ mi': 'Shirts',
+    'shirt': 'Shirts',
+    'cà vạt': 'Ties & Cufflinks',
+    'tie': 'Ties & Cufflinks',
+    'cufflink': 'Ties & Cufflinks'
+};
+
+/**
+ * Fallback search by category in MongoDB
+ * Used when vector search returns no results
+ */
+export async function searchByCategoryMongoDB(query) {
+    // Lazy import to avoid circular dependency
+    const Product = (await import('../../../models/ProductModel.js')).default;
+    const Category = (await import('../../../models/CategoryModel.js')).default;
+
+    const queryLower = query.toLowerCase();
+    let categoryName = null;
+
+    // Find matching category from keywords
+    for (const [keyword, catName] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (queryLower.includes(keyword)) {
+            categoryName = catName;
+            console.log(`🔍 Matched keyword "${keyword}" → Category "${catName}"`);
+            break;
+        }
+    }
+
+    if (!categoryName) {
+        return { products: [], answer: '', category: null };
+    }
+
+    // Find category by name
+    const category = await Category.findOne({
+        name: { $regex: new RegExp(categoryName, 'i') },
+        isActive: true
+    }).lean();
+
+    if (!category) {
+        console.log(`⚠️ Category "${categoryName}" not found in database`);
+        return { products: [], answer: '', category: null };
+    }
+
+    // Find products in this category
+    const products = await Product.find({
+        category: category._id,
+        isActive: true
+    }).populate('category').lean();
+
+    console.log(`📦 Found ${products.length} products in category "${category.name}"`);
+
+    if (products.length === 0) {
+        return { products: [], answer: '', category };
+    }
+
+    // Build answer
+    const productNames = products.slice(0, 3).map(p => `**${p.name}**`).join(', ');
+    const answer = `Có! Shop có bán ${category.name}. Hiện tại có ${products.length} sản phẩm, bao gồm: ${productNames}. Bạn muốn xem chi tiết sản phẩm nào?`;
+
+    return {
+        products,
+        answer,
+        category
+    };
+}

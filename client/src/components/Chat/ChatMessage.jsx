@@ -1,18 +1,111 @@
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './ChatMessage.module.css';
 
-const ChatMessage = ({ message, onActionClick }) => {
+// Optimized streaming text component
+const StreamingText = memo(({ text, onComplete, speed = 15 }) => {
+    const [displayedText, setDisplayedText] = useState('');
+    const [isComplete, setIsComplete] = useState(false);
+    const indexRef = useRef(0);
+    const rafRef = useRef(null);
+    const lastUpdateRef = useRef(0);
+
+    useEffect(() => {
+        if (!text) return;
+
+        // Reset for new message
+        indexRef.current = 0;
+        setDisplayedText('');
+        setIsComplete(false);
+
+        const animate = (timestamp) => {
+            // Throttle updates for performance (every ~15ms = ~66fps)
+            if (timestamp - lastUpdateRef.current < speed) {
+                rafRef.current = requestAnimationFrame(animate);
+                return;
+            }
+            lastUpdateRef.current = timestamp;
+
+            // Add characters in chunks for smoother feel
+            const charsPerFrame = 2;
+            const nextIndex = Math.min(indexRef.current + charsPerFrame, text.length);
+
+            if (indexRef.current < text.length) {
+                setDisplayedText(text.slice(0, nextIndex));
+                indexRef.current = nextIndex;
+                rafRef.current = requestAnimationFrame(animate);
+            } else {
+                setIsComplete(true);
+                onComplete?.();
+            }
+        };
+
+        rafRef.current = requestAnimationFrame(animate);
+
+        return () => {
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current);
+            }
+        };
+    }, [text, speed, onComplete]);
+
+    // Render text with bold support
+    const renderMessage = useCallback((content) => {
+        if (!content) return null;
+        const parts = content.split(/(\*\*.*?\*\*)/g);
+        return parts.map((part, index) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={index}>{part.slice(2, -2)}</strong>;
+            }
+            return part;
+        });
+    }, []);
+
+    return (
+        <span className={styles.streamingText}>
+            {renderMessage(displayedText)}
+            {!isComplete && <span className={styles.cursor}>|</span>}
+        </span>
+    );
+});
+
+StreamingText.displayName = 'StreamingText';
+
+const ChatMessage = memo(({ message, onActionClick, isLatest = false, onStreamComplete }) => {
     const isUser = message.sender === 'user';
+    // Only stream if: bot message + latest + hasn't been streamed yet
+    const shouldStream = !isUser && isLatest && !message.isStreamed;
+
+    const [showProducts, setShowProducts] = useState(!shouldStream);
+    const [showActions, setShowActions] = useState(!shouldStream);
+
+    // Handle streaming complete
+    const handleStreamComplete = useCallback(() => {
+        // Show products/actions after text finishes streaming
+        setShowProducts(true);
+        setShowActions(true);
+        // Notify parent to mark message as streamed
+        if (onStreamComplete) {
+            onStreamComplete();
+        }
+    }, [onStreamComplete]);
+
+    // For non-streaming messages, show everything immediately
+    useEffect(() => {
+        if (!shouldStream) {
+            setShowProducts(true);
+            setShowActions(true);
+        }
+    }, [shouldStream]);
 
     // Format price to $
     const formatPrice = (price) => {
         return '$' + new Intl.NumberFormat('en-US').format(price);
     };
 
-    // Render message with bold text support
+    // Render message with bold text support (for non-streaming)
     const renderMessage = (text) => {
         if (!text) return null;
-        // Split by ** to find bold parts
         const parts = text.split(/(\*\*.*?\*\*)/g);
         return parts.map((part, index) => {
             if (part.startsWith('**') && part.endsWith('**')) {
@@ -38,11 +131,22 @@ const ChatMessage = ({ message, onActionClick }) => {
     return (
         <div id={`msg-${message.id}`} className={isUser ? styles.userMessage : styles.botMessage}>
             <div className={styles.messageBubble}>
-                <p>{renderMessage(message.text)}</p>
+                <p>
+                    {/* Use streaming only for new bot messages that haven't been streamed */}
+                    {shouldStream ? (
+                        <StreamingText
+                            text={message.text}
+                            onComplete={handleStreamComplete}
+                            speed={12}
+                        />
+                    ) : (
+                        renderMessage(message.text)
+                    )}
+                </p>
 
-                {/* Product Cards */}
-                {!isUser && message.suggestedProducts && message.suggestedProducts.length > 0 && (
-                    <div className={styles.products}>
+                {/* Product Cards - animated entrance */}
+                {!isUser && message.suggestedProducts && message.suggestedProducts.length > 0 && showProducts && (
+                    <div className={`${styles.products} ${styles.fadeIn}`}>
                         {message.suggestedProducts.map((product) => (
                             <Link
                                 to={`/product-detail?variant=${product.variantId || product._id}`}
@@ -54,6 +158,7 @@ const ChatMessage = ({ message, onActionClick }) => {
                                         <img
                                             src={product.mainImage}
                                             alt={product.name}
+                                            loading="lazy"
                                         />
                                         {!product.inStock && (
                                             <div className={styles.outOfStockOverlay}>
@@ -77,8 +182,8 @@ const ChatMessage = ({ message, onActionClick }) => {
                 )}
 
                 {/* Store Location Map */}
-                {!isUser && message.storeLocation && (
-                    <div className={styles.mapContainer}>
+                {!isUser && message.storeLocation && showProducts && (
+                    <div className={`${styles.mapContainer} ${styles.fadeIn}`}>
                         <iframe
                             src={message.storeLocation.googleMapsEmbedUrl}
                             width="100%"
@@ -104,8 +209,8 @@ const ChatMessage = ({ message, onActionClick }) => {
                 )}
 
                 {/* Action Buttons - Yes/No for Add to Cart */}
-                {!isUser && message.suggestedAction && !message.actionHandled && (
-                    <div className={styles.actionButtons}>
+                {!isUser && message.suggestedAction && !message.actionHandled && showActions && (
+                    <div className={`${styles.actionButtons} ${styles.fadeIn}`}>
                         <p className={styles.actionPrompt}>{message.suggestedAction.prompt}</p>
                         <div className={styles.buttonGroup}>
                             <button
@@ -134,6 +239,8 @@ const ChatMessage = ({ message, onActionClick }) => {
             </div>
         </div>
     );
-};
+});
+
+ChatMessage.displayName = 'ChatMessage';
 
 export default ChatMessage;

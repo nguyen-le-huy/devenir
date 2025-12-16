@@ -120,7 +120,13 @@ export default function ProductDetail() {
 
     // Capture initial height of .right panel (before any accordion opens)
     useLayoutEffect(() => {
-        if (rightRef.current && !initialRightHeight && !loading) {
+        // Reset height when variant changes
+        setInitialRightHeight(null);
+    }, [variant?._id]);
+
+    useLayoutEffect(() => {
+        // Only calculate after images are loaded and we don't have a height yet
+        if (rightRef.current && !initialRightHeight && !loading && imagesLoaded) {
             // Wait for next frame to ensure layout is complete
             requestAnimationFrame(() => {
                 const height = rightRef.current.offsetHeight;
@@ -129,7 +135,7 @@ export default function ProductDetail() {
                 }
             });
         }
-    }, [loading, initialRightHeight]);
+    }, [loading, initialRightHeight, imagesLoaded]);
 
     // Gallery images: Get mainImage and images array from variant
     const mainImage = variant?.mainImage || './images/product/1.png';
