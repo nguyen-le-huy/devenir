@@ -101,11 +101,22 @@
     grid-template-columns: repeat(2, 1fr);
 }
 
+/* Prevent text overflow in grid items */
+.leftBox>* {
+    min-width: 0;
+    overflow: hidden;
+}
 
 .productList {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     padding-bottom: 60px;
+}
+
+/* Prevent text overflow in grid items */
+.productList>* {
+    min-width: 0;
+    overflow: hidden;
 }
 
 .rightBox {
@@ -189,7 +200,7 @@
 
 @media (max-width: 768px) {
     .title {
-        font-size: 24px;
+        font-size: 20px;
         padding: 10px;
     }
 
@@ -210,6 +221,7 @@
     .rightBox {
         width: 100%;
         height: 100vh;
+        padding: 10px;
     }
 
     .leftBox {
@@ -218,7 +230,7 @@
     }
 
     .content>h2 {
-        font-size: 28px;
+        font-size: 20px;
     }
 
     .content {

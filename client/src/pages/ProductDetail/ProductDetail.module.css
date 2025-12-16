@@ -410,9 +410,10 @@
     }
 
     .leftCenterContainer,
+    .leftCenterContainer.fewImagesContainer,
     .left,
     .center {
-        display: none;
+        display: none !important;
     }
 
     .right {

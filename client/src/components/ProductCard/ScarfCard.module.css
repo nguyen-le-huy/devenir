@@ -146,6 +146,10 @@
         gap: 5px;
     }
 
+    .scarfName {
+        max-width: 100%;
+    }
+
     .colorVariants {
         padding: 0 10px 10px 10px;
     }

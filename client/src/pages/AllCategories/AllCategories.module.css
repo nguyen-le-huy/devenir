@@ -170,10 +170,11 @@
 
     .box {
         height: 70vh;
+        padding: 20px;
     }
 
     .title {
-        font-size: 28px;
+        font-size: 22px;
     }
 
     .description {

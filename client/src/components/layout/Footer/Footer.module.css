@@ -22,7 +22,6 @@
 .link {
     color: var(--white);
     font-size: 20px;
-    font-weight: 500;
     cursor: pointer;
 }
 
@@ -49,7 +48,6 @@
     font-size: 20px;
     text-transform: uppercase;
     color: var(--white);
-    font-weight: 500;
     cursor: pointer;
 }
 
