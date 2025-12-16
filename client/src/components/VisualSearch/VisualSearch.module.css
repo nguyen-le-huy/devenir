@@ -1,6 +1,6 @@
 .visualSearchContainer {
     width: 650px;
-    height: 650px;
+    max-height: 90vh;
     background-color: var(--white);
     position: fixed;
     top: 50%;
@@ -11,6 +11,7 @@
     flex-direction: column;
     gap: 20px;
     z-index: 2000;
+    overflow: hidden;
 }
 
 .header {
@@ -31,6 +32,7 @@
 .input {
     width: 100%;
     flex: 1;
+    min-height: 400px;
     background-color: var(--light-gray);
     display: flex;
     align-items: center;
@@ -144,16 +146,160 @@
     margin: 0;
 }
 
+/* ========== Crop Container ========== */
+.cropContainer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-height: 0;
+}
+
+.cropArea {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--light-gray);
+    overflow: hidden;
+    min-height: 350px;
+    max-height: 450px;
+}
+
+.reactCrop {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.cropImage {
+    max-width: 100%;
+    max-height: 450px;
+    object-fit: contain;
+    display: block;
+}
+
+.cropInstructions {
+    text-align: center;
+}
+
+.cropInstructions p {
+    font-size: 14px;
+    color: var(--dark-gray);
+    margin: 0;
+}
+
+/* Crop Actions */
+.cropActions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.cropActions button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.backButton {
+    background-color: transparent;
+    color: var(--black);
+    border: 1px solid var(--dark-gray) !important;
+}
+
+.backButton:hover {
+    background-color: #f0f0f0;
+}
+
+.reUploadButton {
+    background-color: transparent;
+    color: var(--black);
+    border: 1px solid var(--dark-gray) !important;
+}
+
+.reUploadButton:hover {
+    background-color: #f0f0f0;
+}
+
+.searchButton {
+    background-color: var(--black);
+    color: var(--white);
+}
+
+.searchButton:hover {
+    background-color: #333;
+}
+
+.searchButton:disabled {
+    background-color: var(--dark-gray);
+    cursor: not-allowed;
+}
+
+/* Override react-image-crop styles */
+:global(.ReactCrop) {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+:global(.ReactCrop__crop-selection) {
+    border: 2px solid var(--white);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+:global(.ReactCrop__drag-handle) {
+    background-color: var(--white);
+    border: 2px solid var(--black);
+    width: 10px;
+    height: 10px;
+}
+
+:global(.ReactCrop__drag-handle::after) {
+    background-color: transparent;
+}
+
 /* Mobile Responsive */
 @media screen and (max-width: 768px) {
     .visualSearchContainer {
         width: 95%;
-        height: auto;
-        min-height: 400px;
+        max-height: 85vh;
         padding: 15px;
     }
 
     .input {
         min-height: 300px;
+    }
+
+    .cropArea {
+        min-height: 250px;
+        max-height: 350px;
+    }
+
+    .cropImage {
+        max-height: 350px;
+    }
+
+    .cropActions {
+        flex-wrap: wrap;
+    }
+
+    .cropActions button {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+
+    .backButton,
+    .reUploadButton {
+        flex: 1;
+    }
+
+    .searchButton {
+        width: 100%;
+        justify-content: center;
     }
 }
