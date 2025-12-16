@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import styles from './ProductByCategory.module.css';
@@ -66,8 +66,64 @@ const ProductByCategory = () => {
     const colorMap = useMemo(() => createColorMap(colors), [colors]);
     const category = useMemo(() => categoryData?.data || null, [categoryData]);
     const variants = useMemo(() => variantsData || [], [variantsData]);
-
     const loading = categoryLoading || variantsLoading;
+    const [imagesLoaded, setImagesLoaded] = useState(false);
+
+    // Preload all product images
+    const preloadImages = useCallback(async (imageUrls) => {
+        const promises = imageUrls.map((url) => {
+            return new Promise((resolve) => {
+                if (!url) {
+                    resolve();
+                    return;
+                }
+                const img = new Image();
+                img.onload = resolve;
+                img.onerror = resolve; // Still resolve on error
+                img.src = url;
+            });
+        });
+
+        await Promise.all(promises);
+        setImagesLoaded(true);
+    }, []);
+
+    // Start preloading when variants data is ready
+    useEffect(() => {
+        if (!loading && variants.length > 0) {
+            setImagesLoaded(false);
+
+            // Collect all images to preload
+            const imagesToPreload = [];
+
+            // Add category thumbnail if exists
+            if (category?.thumbnailUrl) {
+                imagesToPreload.push(category.thumbnailUrl);
+            }
+
+            // Add all variant main images and hover images
+            variants.forEach(variant => {
+                if (variant.mainImage) {
+                    imagesToPreload.push(variant.mainImage);
+                }
+                if (variant.hoverImage && variant.hoverImage !== variant.mainImage) {
+                    imagesToPreload.push(variant.hoverImage);
+                }
+            });
+
+            // Remove duplicates
+            const uniqueImages = [...new Set(imagesToPreload)];
+
+            if (uniqueImages.length > 0) {
+                preloadImages(uniqueImages);
+            } else {
+                setImagesLoaded(true);
+            }
+        } else if (!loading && variants.length === 0) {
+            // No variants, no images to preload
+            setImagesLoaded(true);
+        }
+    }, [loading, variants, category?.thumbnailUrl, preloadImages]);
 
     // Reset filters khi category hoặc subcategory thay đổi
     useEffect(() => {
@@ -223,7 +279,8 @@ const ProductByCategory = () => {
         return category?.children || [];
     }, [category]);
 
-    if (loading) {
+    // Show loading if data is loading OR images are not ready
+    if (loading || !imagesLoaded) {
         return (
             <div className={styles.productByCategory}>
                 <Loading />

@@ -1,5 +1,5 @@
 import styles from './ProductDetail.module.css';
-import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
@@ -35,6 +35,7 @@ export default function ProductDetail() {
 
     // Product data states
     const [loading, setLoading] = useState(true);
+    const [imagesLoaded, setImagesLoaded] = useState(false);
     const [variant, setVariant] = useState(null);
     const [product, setProduct] = useState(null);
     const [siblingVariants, setSiblingVariants] = useState([]);
@@ -135,6 +136,33 @@ export default function ProductDetail() {
     // images array chứa tất cả ảnh bao gồm mainImage, nên cần filter ra
     const otherImages = (variant?.images || []).filter(img => img !== mainImage);
     const allGalleryImages = [mainImage, ...otherImages];
+
+    // Preload all gallery images
+    const preloadImages = useCallback(async (imageUrls) => {
+        const promises = imageUrls.map((url) => {
+            return new Promise((resolve) => {
+                if (!url) {
+                    resolve();
+                    return;
+                }
+                const img = new Image();
+                img.onload = resolve;
+                img.onerror = resolve; // Still resolve on error to continue
+                img.src = url;
+            });
+        });
+
+        await Promise.all(promises);
+        setImagesLoaded(true);
+    }, []);
+
+    // Start preloading when variant images are ready
+    useEffect(() => {
+        if (!loading && variant && allGalleryImages.length > 0) {
+            setImagesLoaded(false);
+            preloadImages(allGalleryImages);
+        }
+    }, [loading, variant?._id, allGalleryImages.length, preloadImages]);
 
     // Check image count for layout adjustments
     const imageCount = allGalleryImages.length;
@@ -263,7 +291,8 @@ export default function ProductDetail() {
         }));
     }, [variantsData, product?._id, parentCategoryId, allCategories.length]);
 
-    if (loading) {
+    // Show loading if data is loading OR images are not ready
+    if (loading || (variant && !imagesLoaded)) {
         return (
             <div className={styles.productDetail}>
                 <Loading />
