@@ -104,4 +104,10 @@
         width: 100%;
         max-width: 380px;
     }
+
+    .socials {
+        justify-content: space-between;
+        width: 100%;
+        gap: 0;
+    }
 }

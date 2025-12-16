@@ -14,11 +14,29 @@
     flex-direction: column;
     justify-content: flex-end;
     align-items: flex-start;
+    position: relative;
 }
 
 /* Boxes that have sticky content - need overflow visible */
 .stickyBox {
     overflow: visible;
+}
+
+.box1::before,
+.box2::before,
+.box3::before,
+.box5::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50%;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.6) 0%,
+            rgba(0, 0, 0, 0.3) 50%,
+            rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
 }
 
 .box1 {
@@ -297,6 +315,13 @@
     .box5 {
         grid-column: 1 / 2;
         grid-row: auto;
+    }
+
+    .box1,
+    .box2,
+    .box3,
+    .box5 {
+        padding: 20px;
     }
 
     /* Ẩn video trên mobile */
