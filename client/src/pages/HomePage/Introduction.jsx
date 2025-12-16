@@ -114,104 +114,104 @@ const Introduction = () => {
             <div className={styles.introCards} ref={cardsContainerRef}>
                 {/* Set 1: Cards gốc */}
                 <div className={styles.introCard}>
-                    <img src="images/introCard1.png" alt="Intro card 1" />
+                    <img src="images/introCard1.webp" alt="Intro card 1" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard2.png" alt="Intro card 2" />
+                    <img src="images/introCard2.webp" alt="Intro card 2" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard3.png" alt="Intro card 3" />
+                    <img src="images/introCard3.webp" alt="Intro card 3" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard4.png" alt="Intro card 4" />
+                    <img src="images/introCard4.webp" alt="Intro card 4" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard5.png" alt="Intro card 5" />
+                    <img src="images/introCard5.webp" alt="Intro card 5" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard6.png" alt="Intro card 6" />
+                    <img src="images/introCard6.webp" alt="Intro card 6" />
                 </div>
 
 
                 {/* Set 2: Duplicate để tạo seamless loop */}
                 <div className={styles.introCard}>
-                    <img src="images/introCard1.png" alt="Intro card 1 duplicate" />
+                    <img src="images/introCard1.webp" alt="Intro card 1 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard2.png" alt="Intro card 2 duplicate" />
+                    <img src="images/introCard2.webp" alt="Intro card 2 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard3.png" alt="Intro card 3 duplicate" />
+                    <img src="images/introCard3.webp" alt="Intro card 3 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard4.png" alt="Intro card 4 duplicate" />
+                    <img src="images/introCard4.webp" alt="Intro card 4 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard5.png" alt="Intro card 5 duplicate" />
+                    <img src="images/introCard5.webp" alt="Intro card 5 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard6.png" alt="Intro card 6 duplicate" />
+                    <img src="images/introCard6.webp" alt="Intro card 6 duplicate" />
                 </div>
 
 
                 {/* Set 3: Duplicate để tạo seamless loop */}
                 <div className={styles.introCard}>
-                    <img src="images/introCard1.png" alt="Intro card 1 duplicate" />
+                    <img src="images/introCard1.webp" alt="Intro card 1 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard2.png" alt="Intro card 2 duplicate" />
+                    <img src="images/introCard2.webp" alt="Intro card 2 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard3.png" alt="Intro card 3 duplicate" />
+                    <img src="images/introCard3.webp" alt="Intro card 3 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard4.png" alt="Intro card 4 duplicate" />
+                    <img src="images/introCard4.webp" alt="Intro card 4 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard5.png" alt="Intro card 5 duplicate" />
+                    <img src="images/introCard5.webp" alt="Intro card 5 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard6.png" alt="Intro card 6 duplicate" />
+                    <img src="images/introCard6.webp" alt="Intro card 6 duplicate" />
                 </div>
 
                 {/* Set 4: Duplicate để tạo seamless loop */}
                 <div className={styles.introCard}>
-                    <img src="images/introCard1.png" alt="Intro card 1 duplicate" />
+                    <img src="images/introCard1.webp" alt="Intro card 1 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard2.png" alt="Intro card 2 duplicate" />
+                    <img src="images/introCard2.webp" alt="Intro card 2 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard3.png" alt="Intro card 3 duplicate" />
+                    <img src="images/introCard3.webp" alt="Intro card 3 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard4.png" alt="Intro card 4 duplicate" />
+                    <img src="images/introCard4.webp" alt="Intro card 4 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard5.png" alt="Intro card 5 duplicate" />
+                    <img src="images/introCard5.webp" alt="Intro card 5 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard6.png" alt="Intro card 6 duplicate" />
+                    <img src="images/introCard6.webp" alt="Intro card 6 duplicate" />
                 </div>
 
                 {/* Set 5: Duplicate để tạo seamless loop */}
                 <div className={styles.introCard}>
-                    <img src="images/introCard1.png" alt="Intro card 1 duplicate" />
+                    <img src="images/introCard1.webp" alt="Intro card 1 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard2.png" alt="Intro card 2 duplicate" />
+                    <img src="images/introCard2.webp" alt="Intro card 2 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard3.png" alt="Intro card 3 duplicate" />
+                    <img src="images/introCard3.webp" alt="Intro card 3 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard4.png" alt="Intro card 4 duplicate" />
+                    <img src="images/introCard4.webp" alt="Intro card 4 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard5.png" alt="Intro card 5 duplicate" />
+                    <img src="images/introCard5.webp" alt="Intro card 5 duplicate" />
                 </div>
                 <div className={styles.introCard}>
-                    <img src="images/introCard6.png" alt="Intro card 6 duplicate" />
+                    <img src="images/introCard6.webp" alt="Intro card 6 duplicate" />
                 </div>
             </div>
         </div>

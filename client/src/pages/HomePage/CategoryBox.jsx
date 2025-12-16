@@ -42,7 +42,7 @@ const CategoryBox = () => {
                 </div>
             </div>
             <div className={`${styles.box2} ${styles.box} ${styles.stickyBox}`} style={{
-                backgroundImage: `url('/images/category2.png')`
+                backgroundImage: `url('/images/category2.webp')`
             }}>
                 <div className={`${styles.contentBox} ${styles.stickyContent}`}>
                     <h2 className={styles.title}>New In Jackets</h2>
@@ -136,7 +136,7 @@ const CategoryBox = () => {
                 </div>
             </div>
             <div className={`${styles.box5} ${styles.box} ${styles.stickyBox}`} style={{
-                backgroundImage: `url('/images/category5.png')`
+                backgroundImage: `url('/images/category5.webp')`
             }}>
                 <div className={`${styles.contentBox} ${styles.stickyContent}`}>
                     <h2 className={styles.title}>The Gift Guide</h2>

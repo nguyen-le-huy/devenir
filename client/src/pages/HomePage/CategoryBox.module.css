@@ -306,11 +306,11 @@
 
     /* Hiển thị background image thay thế video */
     .box1 {
-        background-image: url('/images/category1.png');
+        background-image: url('/images/category1.webp');
     }
 
     .box3 {
-        background-image: url('/images/category3.png');
+        background-image: url('/images/category3.webp');
     }
 
     .box4Content>.title {
