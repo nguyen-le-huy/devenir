@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ProfileOverview from '../../components/profile/ProfileOverview';
 import PersonalDetails from '../../components/profile/PersonalDetails';
 import MarketingPreferences from '../../components/profile/MarketingPreferences';
+import ProfileOrders from '../../components/profile/ProfileOrders';
 import styles from './UserProfile.module.css';
 
 /**
@@ -14,7 +16,9 @@ import styles from './UserProfile.module.css';
 export default function UserProfile() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,8 +54,18 @@ export default function UserProfile() {
   const navItems = [
     { id: 'overview', label: 'Overview' },
     { id: 'personal', label: 'Personal Details' },
+    { id: 'orders', label: 'Orders' },
     { id: 'preferences', label: 'Marketing Preferences' },
   ];
+
+  const handleTabChange = (id) => {
+    setActiveTab(id);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', id);
+      return next;
+    });
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -74,6 +88,8 @@ export default function UserProfile() {
             setLoading={setLoading}
           />
         );
+      case 'orders':
+        return <ProfileOrders />;
       case 'preferences':
         return (
           <MarketingPreferences
@@ -107,7 +123,7 @@ export default function UserProfile() {
                 <button
                   key={item.id}
                   className={`${styles.tab} ${activeTab === item.id ? styles.tabActive : ''}`}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleTabChange(item.id)}
                 >
                   {item.label}
                 </button>
@@ -122,7 +138,7 @@ export default function UserProfile() {
                 <button
                   key={item.id}
                   className={`${styles.navLink} ${activeTab === item.id ? styles.navLinkActive : ''}`}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleTabChange(item.id)}
                 >
                   {item.label}
                 </button>

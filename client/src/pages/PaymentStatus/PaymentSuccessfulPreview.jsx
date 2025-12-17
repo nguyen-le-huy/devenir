@@ -1,6 +1,17 @@
+import { useNavigate } from "react-router-dom";
 import styles from "./PaymentSuccessful.module.css";
 
 const PaymentSuccessfulPreview = () => {
+    const navigate = useNavigate();
+
+    const handleTrackOrder = () => {
+        navigate('/profile?tab=orders');
+    };
+
+    const handleContinue = () => {
+        navigate('/');
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.paymentSuccessful}>
@@ -14,10 +25,10 @@ const PaymentSuccessfulPreview = () => {
                     <p className={styles.orderInfo}>
                         Order #123456 • $299.00 • PayOS
                     </p>
-                    <p>Thank you for your purchase! A confirmation email has been sent to you. <span>Track your order here.</span></p>
+                    <p>Thank you for your purchase! A confirmation email has been sent to you. <span onClick={handleTrackOrder}>Track your order here.</span></p>
                 </div>
                 <div className={styles.buttonContainer}>
-                    <div className={styles.button + " " + styles.buttonContinue}>
+                    <div className={styles.button + " " + styles.buttonContinue} onClick={handleContinue}>
                         <p>Continue Shopping</p>
                     </div>
                 </div>

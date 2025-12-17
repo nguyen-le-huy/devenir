@@ -7,6 +7,7 @@ import { sendOrderConfirmationEmail } from '../utils/emailService.js';
 import nowpaymentsClient from '../services/nowpayments/nowpaymentsClient.js';
 import crypto from 'crypto';
 import { sendOrderNotificationToTelegram } from '../services/telegram/telegramNotification.js';
+import { emitOrderUpdate } from '../utils/socketEmitter.js';
 
 const DELIVERY_OPTIONS = ['standard', 'next', 'nominated'];
 const SHIPPING_METHODS = ['home'];
@@ -32,7 +33,12 @@ const DELIVERY_LABELS = {
 
 const REQUIRED_ADDRESS_FIELDS = ['firstName', 'lastName', 'phoneNumber', 'address', 'city', 'district', 'zipCode'];
 
-const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const defaultClientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const getClientBaseUrl = (req) => {
+  const origin = req.get('origin');
+  if (origin && origin.startsWith('http')) return origin;
+  return defaultClientBaseUrl;
+};
 
 const getShippingFee = (deliveryWindow) => SHIPPING_FEES[deliveryWindow] ?? 0;
 
@@ -90,6 +96,7 @@ export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
   const user = req.user;
   const userId = req.userId;
   const { shippingMethod, deliveryTime, address: addressPayload, giftCode } = req.body;
+  const clientBaseUrl = getClientBaseUrl(req);
 
   // Check for valid gift code - fixed price 5000 VND
   const VALID_GIFT_CODE = 'emanhhuy';
@@ -249,7 +256,15 @@ export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
     });
 
     if (orderDoc?._id) {
-      await Order.findByIdAndDelete(orderDoc._id);
+      try {
+        await orderDoc.cancelOrder();
+        await Order.findByIdAndDelete(orderDoc._id);
+      } catch (cleanupError) {
+        logger.error('Failed to cleanup order after PayOS init failure', {
+          orderId: orderDoc._id,
+          error: cleanupError.message,
+        });
+      }
     }
 
     return res.status(500).json({
@@ -361,6 +376,8 @@ export const handlePayOSWebhook = asyncHandler(async (req, res) => {
 
     await order.save();
 
+    emitOrderUpdate(req.app.get('io'), order);
+
     // Send Telegram notification (non-blocking)
     sendOrderNotificationToTelegram(order).catch(err => {
       logger.error('Telegram notification failed for PayOS order', {
@@ -425,6 +442,7 @@ export const createNowPaymentsInvoice = asyncHandler(async (req, res) => {
   const user = req.user;
   const userId = req.userId;
   const { shippingMethod, deliveryTime, address: addressPayload, giftCode } = req.body;
+  const clientBaseUrl = getClientBaseUrl(req);
 
   // Check for valid gift code - fixed price 0.1 USDT
   const VALID_GIFT_CODE = 'emanhhuy';
@@ -547,7 +565,15 @@ export const createNowPaymentsInvoice = asyncHandler(async (req, res) => {
     });
 
     if (orderDoc?._id) {
-      await Order.findByIdAndDelete(orderDoc._id);
+      try {
+        await orderDoc.cancelOrder();
+        await Order.findByIdAndDelete(orderDoc._id);
+      } catch (cleanupError) {
+        logger.error('Failed to cleanup order after NowPayments init failure', {
+          orderId: orderDoc._id,
+          error: cleanupError.message,
+        });
+      }
     }
 
     return res.status(500).json({
@@ -662,6 +688,8 @@ export const handleNowPaymentsWebhook = asyncHandler(async (req, res) => {
     }
 
     await order.save();
+
+    emitOrderUpdate(req.app.get('io'), order);
 
     return res.status(200).json({ success: true });
   } catch (error) {

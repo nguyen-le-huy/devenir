@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "date-fns": "^4.1.0",
     "react-resizable-panels": "^3.0.6"
   }
 }

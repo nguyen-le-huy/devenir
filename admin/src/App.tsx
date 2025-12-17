@@ -22,6 +22,7 @@ import ChatbotPage from './pages/chatbot/ChatbotPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
 import ColorsPage from './pages/colors/ColorsPage'
 import SocialPostsPage from './pages/content/SocialPostsPage'
+import ShipmentsPage from './pages/shipments/ShipmentsPage'
 
 function App() {
   useRealtimeSync()
@@ -56,7 +57,7 @@ function App() {
           {/* Orders */}
           <Route path="/admin/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
           <Route path="/admin/orders/:id" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-          <Route path="/admin/shipments" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+          <Route path="/admin/shipments" element={<ProtectedRoute><ShipmentsPage /></ProtectedRoute>} />
           <Route path="/admin/returns" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
 
           {/* Customers */}

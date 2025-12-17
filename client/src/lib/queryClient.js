@@ -75,4 +75,11 @@ export const queryKeys = {
     latest: (limit) => [...['variants'], 'latest', limit],
     random: (limit) => [...['variants'], 'random', limit],
   },
+
+  // Orders
+  orders: {
+    all: ['orders'],
+    list: (filters) => [...['orders'], 'list', filters],
+    detail: (id) => [...['orders'], 'detail', id],
+  },
 };

@@ -29,6 +29,7 @@ import PaymentFailed from './pages/PaymentStatus/PaymentFailed.jsx';
 import VisuallySimilar from './pages/VisuallySimilar/VisuallySimilar.jsx';
 import PaymentSuccessfulPreview from './pages/PaymentStatus/PaymentSuccessfulPreview.jsx'
 import AllCategories from './pages/AllCategories/AllCategories.jsx';
+import { Navigate } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -95,6 +96,7 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
               <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+              <Route path="/orders" element={<ProtectedRoute><Navigate to="/profile?tab=orders" replace /> </ProtectedRoute>} />
               <Route path="/" element={<HomePage />} />
               <Route path="/products" element={<ProductByCategory />} />
               <Route path="/product-detail" element={<ProductDetail />} />

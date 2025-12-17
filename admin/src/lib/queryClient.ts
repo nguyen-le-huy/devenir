@@ -99,4 +99,22 @@ export const QUERY_KEYS = {
     detail: (id: string) => [...QUERY_KEYS.customers.details(), id] as const,
     orders: (id: string, params?: Record<string, unknown>) => [...QUERY_KEYS.customers.all, 'orders', id, params] as const,
   },
+  orders: {
+    all: ['orders'] as const,
+    lists: () => [...QUERY_KEYS.orders.all, 'list'] as const,
+    list: (filters?: any) => [...QUERY_KEYS.orders.lists(), filters] as const,
+    details: () => [...QUERY_KEYS.orders.all, 'detail'] as const,
+    detail: (id: string) => [...QUERY_KEYS.orders.details(), id] as const,
+    stats: (period?: string) => [...QUERY_KEYS.orders.all, 'stats', period] as const,
+  },
+  shipments: {
+    all: ['shipments'] as const,
+    lists: () => [...QUERY_KEYS.shipments.all, 'list'] as const,
+    list: (filters?: any) => [...QUERY_KEYS.shipments.lists(), filters] as const,
+  },
+  financial: {
+    all: ['financial'] as const,
+    dashboard: () => [...QUERY_KEYS.financial.all, 'dashboard'] as const,
+    stats: (params?: any) => [...QUERY_KEYS.financial.all, 'stats', params] as const,
+  },
 } as const

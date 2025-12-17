@@ -17,10 +17,9 @@ const PaymentSuccessful = () => {
         navigate("/");
     };
 
-    const handleTrackOrder = () => {
-        // Navigate to order tracking page (profile/orders)
-        navigate("/profile");
-    };
+        const handleTrackOrder = () => {
+            navigate("/profile?tab=orders");
+        };
 
     return (
         <div className={styles.container}>

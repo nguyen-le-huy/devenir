@@ -139,6 +139,10 @@ const orderSchema = new mongoose.Schema(
       },
       default: () => ({}),
     },
+    inventoryCommitted: {
+      type: Boolean,
+      default: false,
+    },
     totalPrice: {
       type: Number,
       required: [true, 'Total price is required'],
@@ -154,6 +158,21 @@ const orderSchema = new mongoose.Schema(
       required: [true, 'Shipping price is required'],
       min: [0, 'Shipping price cannot be negative'],
       default: 0,
+    },
+    shippedAt: {
+      type: Date,
+    },
+    trackingNumber: {
+      type: String,
+      trim: true,
+    },
+    estimatedDelivery: {
+      type: Date,
+    },
+    actualDeliveryTime: {
+      // Minutes from shippedAt to deliveredAt
+      type: Number,
+      min: [0, 'Actual delivery time cannot be negative'],
     },
     status: {
       type: String,
@@ -219,32 +238,71 @@ orderSchema.virtual('isDelivered').get(function () {
 // ============ INSTANCE METHODS ============
 
 /**
- * Mark order as paid
+ * Commit reserved stock -> reduce quantity & reserved; then mark as paid
  * @param {Object} paymentResult - Payment result from gateway
  */
 orderSchema.methods.markAsPaid = async function (paymentResult = {}) {
-  this.status = 'paid';
-  this.paidAt = Date.now();
-  this.paymentResult = {
-    id: paymentResult.id || '',
-    status: paymentResult.status || 'success',
-    update_time: paymentResult.update_time || new Date().toISOString(),
-    email_address: paymentResult.email_address || '',
-  };
+  if (this.status === 'paid') return this;
 
-  await this.save();
+  const ProductVariant = mongoose.model('ProductVariant');
+  const session = await mongoose.startSession();
+
+  await session.withTransaction(async () => {
+    for (const item of this.orderItems) {
+      const variant = item.productVariant
+        ? await ProductVariant.findById(item.productVariant).session(session)
+        : await ProductVariant.findOne({ sku: item.sku }).session(session);
+
+      if (!variant) {
+        throw new Error(`Product variant ${item.sku} not found when committing payment`);
+      }
+
+      if ((variant.quantity ?? 0) < item.quantity) {
+        throw new Error(`Insufficient stock for ${item.sku}`);
+      }
+
+      const reservedToRelease = Math.min(variant.reserved ?? 0, item.quantity);
+
+      const updated = await ProductVariant.updateOne(
+        { _id: variant._id, quantity: { $gte: item.quantity } },
+        { $inc: { reserved: -reservedToRelease, quantity: -item.quantity } },
+        { session }
+      );
+
+      if (updated.modifiedCount === 0) {
+        throw new Error(`Failed to commit stock for ${item.sku}`);
+      }
+    }
+
+    this.status = 'paid';
+    this.paidAt = Date.now();
+    this.paymentResult = {
+      id: paymentResult.id || '',
+      status: paymentResult.status || 'success',
+      update_time: paymentResult.update_time || new Date().toISOString(),
+      email_address: paymentResult.email_address || '',
+    };
+    this.inventoryCommitted = true;
+
+    await this.save({ session });
+  });
+
+  session.endSession();
   return this;
 };
 
 /**
  * Mark order as shipped
  */
-orderSchema.methods.markAsShipped = async function () {
+orderSchema.methods.markAsShipped = async function ({ trackingNumber, estimatedDelivery } = {}) {
   if (this.status !== 'paid') {
     throw new Error('Order must be paid before shipping');
   }
 
   this.status = 'shipped';
+  this.shippedAt = this.shippedAt || Date.now();
+  if (trackingNumber) this.trackingNumber = trackingNumber;
+  if (estimatedDelivery) this.estimatedDelivery = estimatedDelivery;
   await this.save();
   return this;
 };
@@ -252,13 +310,53 @@ orderSchema.methods.markAsShipped = async function () {
 /**
  * Mark order as delivered
  */
-orderSchema.methods.markAsDelivered = async function () {
+orderSchema.methods.markAsDelivered = async function ({ deliveredAt, actualDeliveryTime } = {}) {
   if (this.status !== 'shipped') {
     throw new Error('Order must be shipped before delivery');
   }
 
+  const ProductVariant = mongoose.model('ProductVariant');
+  if (!this.inventoryCommitted) {
+    const session = await mongoose.startSession();
+    await session.withTransaction(async () => {
+      for (const item of this.orderItems) {
+        const variant = item.productVariant
+          ? await ProductVariant.findById(item.productVariant).session(session)
+          : await ProductVariant.findOne({ sku: item.sku }).session(session);
+
+        if (!variant) {
+          throw new Error(`Product variant ${item.sku} not found when delivering`);
+        }
+
+        const reservedToRelease = Math.min(variant.reserved ?? 0, item.quantity);
+        const updated = await ProductVariant.updateOne(
+          { _id: variant._id, quantity: { $gte: item.quantity } },
+          { $inc: { reserved: -reservedToRelease, quantity: -item.quantity } },
+          { session }
+        );
+
+        if (updated.modifiedCount === 0) {
+          throw new Error(`Insufficient stock for ${item.sku} when delivering`);
+        }
+      }
+
+      this.inventoryCommitted = true;
+      await this.save({ session });
+    });
+    session.endSession();
+  }
+
+  const deliveredTimestamp = deliveredAt || Date.now();
   this.status = 'delivered';
-  this.deliveredAt = Date.now();
+  this.deliveredAt = deliveredTimestamp;
+  if (typeof actualDeliveryTime === 'number') {
+    this.actualDeliveryTime = actualDeliveryTime;
+  } else if (this.shippedAt) {
+    this.actualDeliveryTime = Math.max(
+      0,
+      Math.round((deliveredTimestamp - this.shippedAt) / 60000)
+    );
+  }
   await this.save();
   return this;
 };
@@ -273,30 +371,44 @@ orderSchema.methods.cancelOrder = async function () {
 
   // Restore stock for each item
   const ProductVariant = mongoose.model('ProductVariant');
+  const session = await mongoose.startSession();
+  await session.withTransaction(async () => {
+    for (const item of this.orderItems) {
+      let variant = null;
 
-  for (const item of this.orderItems) {
-    // Thử tìm variant bằng reference trước
-    let variant = null;
+      if (item.productVariant) {
+        variant = await ProductVariant.findById(item.productVariant).session(session);
+      }
 
-    if (item.productVariant) {
-      variant = await ProductVariant.findById(item.productVariant);
+      if (!variant) {
+        variant = await ProductVariant.findOne({ sku: item.sku }).session(session);
+      }
+
+      if (!variant) continue;
+
+      if (this.status === 'pending') {
+        // Release reservation
+        await ProductVariant.updateOne(
+          { _id: variant._id, reserved: { $gte: item.quantity } },
+          { $inc: { reserved: -item.quantity } },
+          { session }
+        );
+      } else if (['paid', 'shipped'].includes(this.status)) {
+        // Restock committed inventory
+        await ProductVariant.updateOne(
+          { _id: variant._id },
+          { $inc: { quantity: item.quantity } },
+          { session }
+        );
+      }
     }
 
-    // Nếu không tìm thấy, thử tìm bằng SKU
-    if (!variant) {
-      variant = await ProductVariant.findOne({ sku: item.sku });
-    }
+    this.status = 'cancelled';
+    this.cancelledAt = Date.now();
+    await this.save({ session });
+  });
 
-    // Nếu tìm thấy variant, hoàn trả stock
-    if (variant) {
-      await variant.increaseQuantity(item.quantity);
-    }
-    // Nếu không tìm thấy, bỏ qua (variant có thể đã bị xóa)
-  }
-
-  this.status = 'cancelled';
-  this.cancelledAt = Date.now();
-  await this.save();
+  session.endSession();
   return this;
 };
 
@@ -361,25 +473,20 @@ orderSchema.pre('save', async function (next) {
 
     try {
       for (const item of this.orderItems) {
-        // Nếu có productVariant reference, dùng nó để giảm stock
-        if (item.productVariant) {
-          const variant = await ProductVariant.findById(item.productVariant);
+        const variantId = item.productVariant;
+        const variant = variantId
+          ? await ProductVariant.findById(variantId)
+          : await ProductVariant.findOne({ sku: item.sku });
 
-          if (!variant) {
-            throw new Error(`Product variant ${item.sku} not found`);
-          }
-
-          // Giảm stock (sử dụng method decreaseQuantity thay vì decreaseStock)
-          await variant.decreaseQuantity(item.quantity);
-        } else {
-          // Fallback: tìm variant bằng SKU nếu không có reference
-          const variant = await ProductVariant.findOne({ sku: item.sku });
-
-          if (variant) {
-            await variant.decreaseQuantity(item.quantity);
-          }
-          // Nếu không tìm thấy variant, tiếp tục (vì có thể là variant đã bị xóa)
+        if (!variant) {
+          throw new Error(`Product variant ${item.sku} not found`);
         }
+
+        // Reserve stock on new order instead of deducting immediately
+        await ProductVariant.updateOne(
+          { _id: variant._id },
+          { $inc: { reserved: item.quantity } }
+        );
       }
     } catch (error) {
       return next(error);

@@ -28,22 +28,14 @@ apiClient.interceptors.request.use(
 
 // Interceptor để xử lý response errors
 apiClient.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
+  (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token hết hạn hoặc không hợp lệ
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/auth';
-    }
-
     const message = error.response?.data?.message || error.message || 'Lỗi khi kết nối';
     const customError = new Error(message);
     customError.status = error.response?.status;
     customError.data = error.response?.data;
 
+    // Không tự động đăng xuất ở đây để tránh bị kick ra sau thanh toán; xử lý 401 tại flow gọi API
     return Promise.reject(customError);
   }
 );

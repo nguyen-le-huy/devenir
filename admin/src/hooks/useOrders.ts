@@ -10,7 +10,7 @@ import {
 } from '@/services/orderService'
 
 // Extend QUERY_KEYS (will need to add to queryClient.ts)
-const ORDER_KEYS = {
+export const ORDER_KEYS = {
     all: ['orders'] as const,
     lists: () => [...ORDER_KEYS.all, 'list'] as const,
     list: (filters?: OrderListFilters) => [...ORDER_KEYS.lists(), filters] as const,

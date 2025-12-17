@@ -35,6 +35,11 @@ const productVariantSchema = new mongoose.Schema(
       min: [0, 'Stock must not be negative'],
       default: 0,
     },
+    costPrice: {
+      type: Number,
+      min: [0, 'Cost price must not be negative'],
+      default: 0,
+    },
     reserved: {
       type: Number,
       min: [0, 'Reserved stock must not be negative'],
@@ -109,6 +114,17 @@ productVariantSchema.virtual('available').get(function () {
   const reserved = this.reserved ?? 0;
   const available = qty - reserved;
   return available < 0 ? 0 : available;
+});
+
+// Alias virtuals to align with new naming without duplicating storage
+productVariantSchema.virtual('reservedQuantity').get(function () {
+  return this.reserved ?? 0;
+}).set(function (value) {
+  this.reserved = value;
+});
+
+productVariantSchema.virtual('availableQuantity').get(function () {
+  return this.available;
 });
 
 productVariantSchema.virtual('inventoryValue').get(function () {
@@ -253,6 +269,7 @@ productVariantSchema.index({ binLocation: 1 });
 productVariantSchema.index({ lowStockThreshold: 1 });
 productVariantSchema.index({ reorderPoint: 1 });
 productVariantSchema.index({ reserved: 1 });
+productVariantSchema.index({ costPrice: 1 });
 
 // ============ OPTIONS ============
 

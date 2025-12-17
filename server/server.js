@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import { Server as SocketIOServer } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import connectDB from './config/db.js';
 import logger from './config/logger.js';
 import authRoutes from './routes/authRoutes.js';
@@ -24,6 +25,9 @@ import chatRoutes from './routes/chatRoutes.js';
 import imageSearchRoutes from './routes/imageSearchRoutes.js';
 import socialRoutes from './routes/socialRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import userOrderRoutes from './routes/userOrderRoutes.js';
+import financialRoutes from './routes/financialRoutes.js';
+import shipmentRoutes from './routes/shipmentRoutes.js';
 import { handlePayOSWebhook } from './controllers/PaymentController.js';
 import { initImageSearchServices } from './controllers/ImageSearchController.js';
 
@@ -171,6 +175,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/colors', colorRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/orders', userOrderRoutes); // Customer order tracking
 app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/payments', paymentRoutes);
@@ -178,6 +183,8 @@ app.use('/api/chat', chatRoutes); // RAG Chat API
 app.use('/api/image-search', imageSearchRoutes); // Visual Search API
 app.use('/api/social', socialRoutes); // Social Media Posting Proxy
 app.use('/api/admin/orders', orderRoutes); // Admin Order Management
+app.use('/api/financial', financialRoutes); // Financial reporting
+app.use('/api/admin/shipments', shipmentRoutes); // Shipment management
 
 app.get('/', (req, res) => {
   res.send('API is running...');
@@ -200,11 +207,35 @@ const io = new SocketIOServer(server, {
 
 app.set('io', io);
 
+io.use((socket, next) => {
+  const authToken = socket.handshake.auth?.token
+    || (socket.handshake.headers?.authorization || '').replace('Bearer ', '')
+    || socket.handshake.query?.token;
+
+  if (!authToken) {
+    return next(new Error('AUTH_REQUIRED'));
+  }
+
+  try {
+    const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+    socket.userId = decoded.userId;
+    return next();
+  } catch (err) {
+    return next(new Error('AUTH_FAILED'));
+  }
+});
+
 io.on('connection', (socket) => {
-  logger.info('Admin socket connected', { socketId: socket.id });
+  const { userId } = socket;
+
+  if (userId) {
+    socket.join(`user:${userId}`);
+  }
+
+  logger.info('Socket connected', { socketId: socket.id, userId });
 
   socket.on('disconnect', (reason) => {
-    logger.info('Admin socket disconnected', { socketId: socket.id, reason });
+    logger.info('Socket disconnected', { socketId: socket.id, userId, reason });
   });
 });
 

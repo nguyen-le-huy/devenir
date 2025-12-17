@@ -1,6 +1,8 @@
 import asyncHandler from 'express-async-handler';
 import Order from '../models/OrderModel.js';
 import User from '../models/UserModel.js';
+import { upsertFinancialRecordForOrder } from './FinancialController.js';
+import { emitOrderUpdate } from '../utils/socketEmitter.js';
 
 /**
  * @desc    Get all orders (Admin)
@@ -151,7 +153,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const updateOrderStatus = asyncHandler(async (req, res) => {
-    const { status } = req.body;
+    const { status, trackingNumber, estimatedDelivery, deliveredAt, actualDeliveryTime } = req.body;
     const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
 
     if (!status || !validStatuses.includes(status)) {
@@ -172,10 +174,11 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
             await order.markAsPaid({ status: 'manual_update' });
             break;
         case 'shipped':
-            await order.markAsShipped();
+            await order.markAsShipped({ trackingNumber, estimatedDelivery });
             break;
         case 'delivered':
-            await order.markAsDelivered();
+            await order.markAsDelivered({ deliveredAt, actualDeliveryTime });
+            await upsertFinancialRecordForOrder({ orderId: order._id, status: 'confirmed' });
             break;
         case 'cancelled':
             await order.cancelOrder();
@@ -188,6 +191,8 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     const updatedOrder = await Order.findById(order._id)
         .populate('user', 'username email firstName lastName')
         .lean();
+
+    emitOrderUpdate(req.app.get('io'), updatedOrder);
 
     res.status(200).json({
         success: true,
@@ -562,4 +567,47 @@ export const exportOrdersReport = asyncHandler(async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     res.status(200).send('\uFEFF' + csvContent); // Add BOM for Excel UTF-8 compatibility
+});
+
+/**
+ * @desc    Get orders of current user
+ * @route   GET /api/orders/my
+ * @access  Private
+ */
+export const getMyOrders = asyncHandler(async (req, res) => {
+    const { status = 'all', limit = 50 } = req.query;
+
+    const query = { user: req.user._id };
+    if (status !== 'all') {
+        query.status = status;
+    }
+
+    const orders = await Order.find(query)
+        .select(
+            'status totalPrice shippingPrice paymentMethod createdAt paidAt shippedAt deliveredAt estimatedDelivery trackingNumber orderItems'
+        )
+        .sort({ createdAt: -1 })
+        .limit(Math.min(Number(limit) || 50, 200))
+        .lean();
+
+    return res.status(200).json({ success: true, data: orders });
+});
+
+/**
+ * @desc    Get a single order of current user
+ * @route   GET /api/orders/my/:id
+ * @access  Private
+ */
+export const getMyOrderById = asyncHandler(async (req, res) => {
+    const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
+        .select(
+            'status totalPrice shippingPrice paymentMethod createdAt paidAt shippedAt deliveredAt estimatedDelivery trackingNumber orderItems shippingAddress'
+        )
+        .lean();
+
+    if (!order) {
+        return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    return res.status(200).json({ success: true, data: order });
 });
