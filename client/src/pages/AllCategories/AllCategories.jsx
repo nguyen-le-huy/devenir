@@ -42,8 +42,9 @@ const AllCategories = () => {
     // Start preloading when categories are fetched
     useEffect(() => {
         if (categories.length > 0) {
+            // Preload the OPTIMIZED URLs (same as what will be displayed)
             const imageUrls = categories
-                .map((cat) => cat.thumbnailUrl)
+                .map((cat) => cat.thumbnailUrl ? getOptimizedImageUrl(cat.thumbnailUrl) : null)
                 .filter(Boolean);
 
             if (imageUrls.length > 0) {

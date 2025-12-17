@@ -44,10 +44,11 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
             if (cart.items.length > 0) {
                 setImagesLoaded(false);
 
-                // Collect all product images
+                // Collect and optimize all product images (same URLs as displayed)
                 const imagesToPreload = cart.items
                     .map(item => item.productVariant?.mainImage)
-                    .filter(Boolean);
+                    .filter(Boolean)
+                    .map(img => getOptimizedImageUrl(img));
 
                 // Remove duplicates
                 const uniqueImages = [...new Set(imagesToPreload)];
