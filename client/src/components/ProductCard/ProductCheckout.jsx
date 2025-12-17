@@ -1,5 +1,6 @@
 import styles from "./ProductCheckout.module.css";
 import { useNavigate } from "react-router-dom";
+import { getOptimizedImageUrl } from "../../utils/imageOptimization";
 
 const ProductCheckout = ({ item, onRemove, onUpdateQuantity, onEdit }) => {
     const navigate = useNavigate();
@@ -36,10 +37,11 @@ const ProductCheckout = ({ item, onRemove, onUpdateQuantity, onEdit }) => {
             <div className={styles.topSection}>
                 <div className={styles.productImage}>
                     <img
-                        src={image}
+                        src={getOptimizedImageUrl(image)}
                         alt={productName}
                         onClick={handleProductClick}
                         style={{ cursor: 'pointer' }}
+                        loading="lazy"
                     />
                 </div>
                 <div className={styles.productInfo}>

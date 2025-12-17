@@ -17,6 +17,7 @@ import SelectSize from '../../components/SelectSize/SelectSize.jsx';
 import SizeAndFit from '../../components/SizeAndFit/SizeAndFit.jsx';
 import AddToBagNoti from '../../components/Notification/AddToBagNoti.jsx';
 import TryOn from '../../components/TryOn/TryOn.jsx';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization.js';
 
 export default function ProductDetail() {
     const [searchParams] = useSearchParams();
@@ -138,12 +139,30 @@ export default function ProductDetail() {
     }, [loading, initialRightHeight, imagesLoaded]);
 
     // Gallery images: Get mainImage and images array from variant
-    const mainImage = variant?.mainImage || './images/product/1.png';
-    // images array chứa tất cả ảnh bao gồm mainImage, nên cần filter ra
-    const otherImages = (variant?.images || []).filter(img => img !== mainImage);
+    const rawMainImage = variant?.mainImage || './images/product/1.png';
+
+    // Helper function to extract Cloudinary public_id for comparison
+    const getPublicId = (url) => {
+        if (!url || !url.includes('cloudinary.com')) return url;
+        // Extract the path after /upload/ and remove transformations/version
+        const match = url.match(/\/upload\/(?:[^\/]+\/)*v?\d*\/?(.+?)(?:\.[^.]+)?$/);
+        return match ? match[1] : url;
+    };
+
+    const mainImageId = getPublicId(rawMainImage);
+
+    // Filter out mainImage from the images array (compare by public_id to handle URL variations)
+    const rawOtherImages = (variant?.images || []).filter(img => {
+        const imgId = getPublicId(img);
+        return imgId !== mainImageId;
+    });
+
+    // Optimize all gallery images for faster loading
+    const mainImage = getOptimizedImageUrl(rawMainImage);
+    const otherImages = rawOtherImages.map(img => getOptimizedImageUrl(img));
     const allGalleryImages = [mainImage, ...otherImages];
 
-    // Preload all gallery images
+    // Preload all gallery images (with optimized URLs)
     const preloadImages = useCallback(async (imageUrls) => {
         const promises = imageUrls.map((url) => {
             return new Promise((resolve) => {
@@ -251,15 +270,6 @@ export default function ProductDetail() {
         // Get current product ID to exclude variants from the same product
         const currentProductId = String(product?._id || '');
 
-        console.log('🔍 Related Products Debug:', {
-            totalVariants: variants.length,
-            currentProductId,
-            parentCategoryId,
-            categoryName: product?.category?.name,
-            parentCategoryName: product?.category?.parentCategory?.name,
-            allCategoriesCount: allCategories.length
-        });
-
         // Group variants by product (keep only one variant per product)
         const productMap = new Map();
         const uniqueVariants = variants.filter(variantItem => {
@@ -281,8 +291,6 @@ export default function ProductDetail() {
             }
             return false;
         });
-
-        console.log('🔍 Unique variants after filter:', uniqueVariants.length);
 
         // Transform to product format (no limit)
         return uniqueVariants.map(variantItem => ({

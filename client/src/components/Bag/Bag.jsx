@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../../hooks/useCart.js";
 import Backdrop from "../Backdrop";
 import Loading from "../Loading/Loading";
+import { getOptimizedImageUrl } from "../../utils/imageOptimization";
 
 export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
     const navigate = useNavigate();
@@ -43,10 +44,11 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
             if (cart.items.length > 0) {
                 setImagesLoaded(false);
 
-                // Collect all product images
+                // Collect and optimize all product images (same URLs as displayed)
                 const imagesToPreload = cart.items
                     .map(item => item.productVariant?.mainImage)
-                    .filter(Boolean);
+                    .filter(Boolean)
+                    .map(img => getOptimizedImageUrl(img));
 
                 // Remove duplicates
                 const uniqueImages = [...new Set(imagesToPreload)];
@@ -99,10 +101,11 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                     className={styles.product}
                 >
                     <img
-                        src={image}
+                        src={getOptimizedImageUrl(image)}
                         alt={productName}
                         onClick={() => handleProductClick(variant?._id)}
                         style={{ cursor: 'pointer' }}
+                        loading="lazy"
                     />
                     <div className={styles.productInfo}>
                         <div className={styles.nameAndQuanity}>

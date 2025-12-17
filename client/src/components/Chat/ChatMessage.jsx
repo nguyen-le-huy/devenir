@@ -1,6 +1,7 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './ChatMessage.module.css';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
 // Optimized streaming text component
 const StreamingText = memo(({ text, onComplete, speed = 15 }) => {
@@ -156,7 +157,7 @@ const ChatMessage = memo(({ message, onActionClick, isLatest = false, onStreamCo
                                 {product.mainImage && (
                                     <div className={styles.imageWrapper}>
                                         <img
-                                            src={product.mainImage}
+                                            src={getOptimizedImageUrl(product.mainImage)}
                                             alt={product.name}
                                             loading="lazy"
                                         />

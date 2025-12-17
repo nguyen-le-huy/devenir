@@ -40,46 +40,53 @@ const ProductCarousel = ({
         const container = containerRef.current;
         if (!container) return;
 
-        gsap.set([".titleSplit", ".viewAllLinkSplit"], { opacity: 1 });
+        // Wait for fonts to load before splitting text
+        document.fonts.ready.then(() => {
+            const targetsToSet = [".titleSplit"];
+            if (showViewAll) {
+                targetsToSet.push(".viewAllLinkSplit");
+            }
+            gsap.set(targetsToSet, { opacity: 1 });
 
-        const titleSplit = new SplitText(container.querySelector(".titleSplit"), {
-            type: "words, lines",
-            lineClass: "line"
-        });
+            const titleSplitElement = container.querySelector(".titleSplit");
+            if (titleSplitElement) {
+                const titleSplit = new SplitText(titleSplitElement, {
+                    type: "words, lines",
+                    lineClass: "line"
+                });
 
-        const linkSplit = container.querySelector(".viewAllLinkSplit");
-        let linkSplitInstance = null;
+                const tl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: container,
+                        start: "top 80%"
+                    }
+                });
 
-        if (linkSplit && showViewAll) {
-            linkSplitInstance = new SplitText(linkSplit, {
-                type: "words, lines",
-                lineClass: "line"
-            });
-        }
+                tl.from(titleSplit.lines, {
+                    duration: 0.8,
+                    yPercent: 50,
+                    opacity: 0,
+                    ease: "power3.out",
+                });
 
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: container,
-                start: "top 80%"
+                if (showViewAll) {
+                    const linkSplitElement = container.querySelector(".viewAllLinkSplit");
+                    if (linkSplitElement) {
+                        const linkSplitInstance = new SplitText(linkSplitElement, {
+                            type: "words, lines",
+                            lineClass: "line"
+                        });
+
+                        tl.from(linkSplitInstance.lines, {
+                            duration: 0.8,
+                            yPercent: 50,
+                            opacity: 0,
+                            ease: "power3.out",
+                        }, "-=0.4");
+                    }
+                }
             }
         });
-
-        tl.from(titleSplit.lines, {
-            duration: 0.8,
-            yPercent: 50,
-            opacity: 0,
-            ease: "power3.out",
-        });
-
-        if (linkSplitInstance && showViewAll) {
-            tl.from(linkSplitInstance.lines, {
-                duration: 0.8,
-                yPercent: 50,
-                opacity: 0,
-                ease: "power3.out",
-            }, "-=0.4");
-        }
-
     }, { scope: containerRef, dependencies: [title, showViewAll] });
 
     // ✅ Kiểm tra có products không

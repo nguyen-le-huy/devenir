@@ -1,9 +1,14 @@
 import styles from './ProductCard.module.css';
 import PropTypes from 'prop-types';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
 const ProductCard = ({ product }) => {
     const { name, price, images, colors, tag } = product;
     const [mainImage, hoverImage] = images;
+
+    // Optimize images to WebP format
+    const optimizedMainImage = getOptimizedImageUrl(mainImage);
+    const optimizedHoverImage = getOptimizedImageUrl(hoverImage);
 
     const getTagClassName = (tagValue) => {
         if (!tagValue) return '';
@@ -18,12 +23,12 @@ const ProductCard = ({ product }) => {
 
     return (
         <div className={styles.productCard}>
-            <div className={styles.imageContainer} style={{ 
-                backgroundImage: `url(${hoverImage})`,
+            <div className={styles.imageContainer} style={{
+                backgroundImage: `url(${optimizedHoverImage})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center'
-                }}>
-                <img src={mainImage} />
+            }}>
+                <img src={optimizedMainImage} alt={name} loading="lazy" />
                 <div className={styles.showNowButton}>Shop now</div>
             </div>
             <div className={styles.productInfo}>

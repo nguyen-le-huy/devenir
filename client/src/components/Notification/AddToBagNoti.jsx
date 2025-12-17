@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useRandomVariants } from "../../hooks/useProducts";
 import Loading from "../Loading/Loading.jsx";
 import Backdrop from "../Backdrop";
+import { getOptimizedImageUrl } from "../../utils/imageOptimization";
 
 const AddToBagNoti = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
@@ -74,8 +75,9 @@ const AddToBagNoti = ({ isOpen, onClose }) => {
                                 style={{ cursor: 'pointer' }}
                             >
                                 <img
-                                    src={variant.mainImage || '/images/placeholder.png'}
+                                    src={getOptimizedImageUrl(variant.mainImage || '/images/placeholder.png')}
                                     alt={variant.productInfo?.name || 'Product'}
+                                    loading="lazy"
                                 />
                                 <div className={styles.productInfo}>
                                     <p>{variant.productInfo?.name || 'Product'}</p>

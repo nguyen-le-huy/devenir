@@ -1,18 +1,22 @@
 import styles from "./Header.module.css";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 import UserMenu from "../../UserMenu/UserMenu";
-import Search from "../../Search/Search";
-import Bag from "../../Bag/Bag";
 import Snowfall from "../../Snowfall/Snowfall";
 import CursorTrailer from "../../CursorTrailer/CursorTrailer";
 import { getMainCategories } from "../../../services/categoryService";
 import { useCart } from "../../../hooks/useCart.js";
+import Loading from "../../Loading/Loading.jsx";
+
+// Lazy load heavy interactive components
+const Search = lazy(() => import("../../Search/Search"));
+const Bag = lazy(() => import("../../Bag/Bag"));
 
 const Header = () => {
     const navigate = useNavigate();
     const { isAuthenticated, logout } = useAuth();
+
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isBagOpen, setIsBagOpen] = useState(false);
@@ -99,6 +103,15 @@ const Header = () => {
         setIsSearchOpen(false);
     };
 
+    // Preload heavy components on hover
+    const preloadSearch = () => {
+        const loadSearch = import("../../Search/Search");
+    };
+
+    const preloadBag = () => {
+        const loadBag = import("../../Bag/Bag");
+    };
+
     const handleCategoryClick = (categoryId) => {
         navigate(`/products?category=${categoryId}`);
     };
@@ -177,6 +190,7 @@ const Header = () => {
                         fill="none"
                         className={styles.searchIcon}
                         onClick={toggleSearch}
+                        onMouseEnter={preloadSearch}
                         style={{ cursor: 'pointer' }}
                     >
                         <path d="M19.4412 19.4412C20.2607 18.6217 20.9108 17.6488 21.3543 16.578C21.7979 15.5073 22.0262 14.3596 22.0262 13.2006C22.0262 12.0416 21.7979 10.894 21.3543 9.82322C20.9108 8.75245 20.2607 7.77953 19.4412 6.96C18.6217 6.14047 17.6487 5.49038 16.578 5.04685C15.5072 4.60333 14.3596 4.37505 13.2006 4.37505C12.0416 4.37505 10.8939 4.60333 9.82317 5.04685C8.75241 5.49038 7.77948 6.14047 6.95995 6.96C5.30483 8.61511 4.375 10.8599 4.375 13.2006C4.375 15.5413 5.30483 17.7861 6.95995 19.4412C8.61507 21.0964 10.8599 22.0262 13.2006 22.0262C15.5413 22.0262 17.7861 21.0964 19.4412 19.4412ZM19.4412 19.4412L25 25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -259,13 +273,19 @@ const Header = () => {
                 </div>
             </div >
             {isBagOpen && (
-                <Bag
-                    onMouseEnter={handleBagComponentMouseEnter}
-                    onMouseLeave={handleBagComponentMouseLeave}
-                    onClose={() => setIsBagOpen(false)}
-                />
+                <Suspense fallback={null}>
+                    <Bag
+                        onMouseEnter={handleBagComponentMouseEnter}
+                        onMouseLeave={handleBagComponentMouseLeave}
+                        onClose={() => setIsBagOpen(false)}
+                    />
+                </Suspense>
             )}
-            {isSearchOpen && <Search onClose={closeSearch} />}
+            {isSearchOpen && (
+                <Suspense fallback={null}>
+                    <Search onClose={closeSearch} />
+                </Suspense>
+            )}
         </>
     );
 };
