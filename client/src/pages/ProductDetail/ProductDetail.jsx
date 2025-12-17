@@ -140,9 +140,22 @@ export default function ProductDetail() {
 
     // Gallery images: Get mainImage and images array from variant
     const rawMainImage = variant?.mainImage || './images/product/1.png';
-    // images array chứa tất cả ảnh bao gồm mainImage, nên cần filter ra
-    const rawOtherImages = (variant?.images || []).filter(img => img !== rawMainImage);
-    const rawAllGalleryImages = [rawMainImage, ...rawOtherImages];
+
+    // Helper function to extract Cloudinary public_id for comparison
+    const getPublicId = (url) => {
+        if (!url || !url.includes('cloudinary.com')) return url;
+        // Extract the path after /upload/ and remove transformations/version
+        const match = url.match(/\/upload\/(?:[^\/]+\/)*v?\d*\/?(.+?)(?:\.[^.]+)?$/);
+        return match ? match[1] : url;
+    };
+
+    const mainImageId = getPublicId(rawMainImage);
+
+    // Filter out mainImage from the images array (compare by public_id to handle URL variations)
+    const rawOtherImages = (variant?.images || []).filter(img => {
+        const imgId = getPublicId(img);
+        return imgId !== mainImageId;
+    });
 
     // Optimize all gallery images for faster loading
     const mainImage = getOptimizedImageUrl(rawMainImage);

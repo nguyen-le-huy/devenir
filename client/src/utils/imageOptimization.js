@@ -27,6 +27,9 @@ export const getOptimizedImageUrl = (imageUrl) => {
   const transformPattern = /^([a-z]_[^\/]+\/)+/;
   imagePath = imagePath.replace(transformPattern, '');
 
+  // Change extension to .webp for clarity (Cloudinary supports this)
+  imagePath = imagePath.replace(/\.(png|jpg|jpeg|gif)$/i, '.webp');
+
   // Only apply WebP format with maximum quality (100)
   // No resizing, no cropping - preserve original dimensions
   const transformString = 'f_webp,q_100';
