@@ -173,8 +173,8 @@ const Introduction = () => {
                     onPress() {
                         startProgress = loopRef.current.progress();
                         loopRef.current.progress(0);
-                        populateWidths();
-                        totalWidth = getTotalWidth();
+                        // populateWidths(); // REMOVED to prevent INP
+                        // totalWidth = getTotalWidth(); // REMOVED
                         ratio = 1 / totalWidth;
                         dragSnap = totalWidth / items.length;
                         roundFactor = Math.pow(
@@ -196,6 +196,12 @@ const Introduction = () => {
                 })[0];
             }
 
+            // Allow manual refresh
+            tl.refresh = () => {
+                populateWidths();
+                totalWidth = getTotalWidth();
+            };
+
             return tl;
         };
 
@@ -207,6 +213,19 @@ const Introduction = () => {
             speed: 0.5, // Adjust speed as needed
             paddingRight: 10 // Gap between cards
         });
+
+        // Handle window resize to update widths
+        const handleResize = () => {
+            if (loopRef.current && typeof loopRef.current.refresh === 'function') {
+                // We need to reset progress to ensure calculations are correct
+                const currentProgress = loopRef.current.progress();
+                loopRef.current.progress(0);
+                loopRef.current.refresh();
+                loopRef.current.progress(currentProgress);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
 
         // SplitText animation for title (like ChatWindow)
         let splitInstance = null;
@@ -265,6 +284,7 @@ const Introduction = () => {
 
         // Cleanup
         return () => {
+            window.removeEventListener('resize', handleResize);
             if (splitInstance) {
                 splitInstance.revert();
             }

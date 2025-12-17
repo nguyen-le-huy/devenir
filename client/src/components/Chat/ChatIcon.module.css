@@ -11,7 +11,7 @@
     bottom: 30px;
     right: 30px;
     cursor: pointer;
-    z-index: 10000;
+    z-index: 4999;
 }
 
 .chatIcon>svg {

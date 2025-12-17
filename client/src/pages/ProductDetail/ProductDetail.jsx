@@ -270,15 +270,6 @@ export default function ProductDetail() {
         // Get current product ID to exclude variants from the same product
         const currentProductId = String(product?._id || '');
 
-        console.log('🔍 Related Products Debug:', {
-            totalVariants: variants.length,
-            currentProductId,
-            parentCategoryId,
-            categoryName: product?.category?.name,
-            parentCategoryName: product?.category?.parentCategory?.name,
-            allCategoriesCount: allCategories.length
-        });
-
         // Group variants by product (keep only one variant per product)
         const productMap = new Map();
         const uniqueVariants = variants.filter(variantItem => {
@@ -300,8 +291,6 @@ export default function ProductDetail() {
             }
             return false;
         });
-
-        console.log('🔍 Unique variants after filter:', uniqueVariants.length);
 
         // Transform to product format (no limit)
         return uniqueVariants.map(variantItem => ({
