@@ -9,7 +9,7 @@
 }
 
 .title {
-    
+
     font-size: 50px;
     text-align: center;
     text-transform: uppercase;
@@ -30,49 +30,44 @@
 
 .logosContainer {
     width: 100%;
-    overflow: hidden;
+    height: 100px;
     position: relative;
+    overflow: hidden;
+    cursor: grab;
 }
 
-.logos {
-    display: inline-flex;
+.logosContainer:active {
+    cursor: grabbing;
+}
+
+.logoItem {
+    position: absolute;
+    display: flex;
     align-items: center;
-    gap: 100px;
-    animation: scroll 90s linear infinite;
-    width: fit-content;
+    justify-content: center;
+    width: 250px;
+    height: 100%;
 }
 
-.logos > img {
+.logoItem>img {
     width: 100%;
-    max-width: 250px;
-    flex-shrink: 0;
-}
-
-@keyframes scroll {
-    0% {
-        transform: translateX(0);
-    }
-    100% {
-        transform: translateX(-50%);
-    }
-}
-
-.logos:hover {
-    animation-play-state: paused;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
 }
 
 @media (max-width: 768px) {
-    .title > h1 {
+    .title>h1 {
         font-size: 50px;
     }
-    
-    .logos {
-        gap: 50px;
-        animation: scroll 20s linear infinite;
+
+    .logosContainer {
+        height: 60px;
     }
-    
-    .logos > img {
-        width: 100%;
-        max-width: 100px;
+
+    .logoItem {
+        width: 100px;
     }
 }
