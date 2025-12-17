@@ -55,10 +55,9 @@ export const uploadImage = asyncHandler(async (req, res) => {
     console.log('Uploading to Cloudinary...');
     const result = await cloudinary.uploader.upload(dataURI, {
       folder: 'devenir/products',
-      resource_type: 'auto',
-      quality: 100, // Upload with maximum quality (no compression)
-      flags: 'preserve_transparency', // Preserve PNG transparency
-      // No fetch_format - keep original format (PNG, JPG, etc.)
+      resource_type: 'image',
+      format: 'webp', // Convert to WebP for smaller file size
+      quality: 100, // Maximum quality - preserve original
     });
 
     console.log('Upload successful:', result.public_id);
@@ -118,10 +117,9 @@ export const uploadImages = asyncHandler(async (req, res) => {
 
       const result = await cloudinary.uploader.upload(dataURI, {
         folder: 'devenir/products',
-        resource_type: 'auto',
-        quality: 100, // Upload with maximum quality (no compression)
-        flags: 'preserve_transparency', // Preserve PNG transparency
-        // No fetch_format - keep original format (PNG, JPG, etc.)
+        resource_type: 'image',
+        format: 'webp', // Convert to WebP for smaller file size
+        quality: 100, // Maximum quality - preserve original
       });
 
       console.log(`Upload successful: ${result.public_id}`);

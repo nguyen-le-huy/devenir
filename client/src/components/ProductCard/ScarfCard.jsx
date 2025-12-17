@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import styles from './ScarfCard.module.css';
 import { Link } from 'react-router-dom';
-import { getLazyLoadProps } from '../../utils/imageOptimization.js';
+import { getLazyLoadProps, getOptimizedImageUrl } from '../../utils/imageOptimization.js';
 
 /**
  * ScarfCard - Product card with color variants
@@ -106,13 +106,13 @@ const ScarfCard = ({ scarf, colorVariants = [] }) => {
         >
             <div className={styles.imageWrapper}>
                 <img
-                    src={displayedVariant.image}
+                    src={getOptimizedImageUrl(displayedVariant.image)}
                     alt={displayedVariant.name}
                     className={styles.imageDefault}
                     {...getLazyLoadProps()}
                 />
                 <img
-                    src={displayedVariant.imageHover}
+                    src={getOptimizedImageUrl(displayedVariant.imageHover)}
                     alt={`${displayedVariant.name} hover`}
                     className={styles.imageHover}
                     {...getLazyLoadProps()}

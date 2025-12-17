@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../../hooks/useCart.js";
 import Backdrop from "../Backdrop";
 import Loading from "../Loading/Loading";
+import { getOptimizedImageUrl } from "../../utils/imageOptimization";
 
 export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
     const navigate = useNavigate();
@@ -99,10 +100,11 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                     className={styles.product}
                 >
                     <img
-                        src={image}
+                        src={getOptimizedImageUrl(image)}
                         alt={productName}
                         onClick={() => handleProductClick(variant?._id)}
                         style={{ cursor: 'pointer' }}
+                        loading="lazy"
                     />
                     <div className={styles.productInfo}>
                         <div className={styles.nameAndQuanity}>

@@ -1,29 +1,16 @@
 /**
  * Cloudinary image optimization utility
- * Generates optimized Cloudinary URLs with automatic format and quality
+ * Converts images to WebP format while preserving original quality and dimensions
  */
 
 /**
- * Get optimized image URL from Cloudinary
+ * Convert Cloudinary image to WebP format
+ * Preserves original quality and dimensions - only changes format for smaller file size
+ * 
  * @param {string} imageUrl - Original Cloudinary URL
- * @param {Object} options - Optimization options
- * @param {number} options.width - Desired width
- * @param {number} options.height - Desired height
- * @param {string} options.quality - Quality ('auto', 'best', 'good', 'eco', 'low')
- * @param {string} options.format - Format ('auto', 'webp', 'jpg', 'png')
- * @param {string} options.crop - Crop mode ('fill', 'fit', 'scale', 'crop', 'thumb')
- * @returns {string} Optimized Cloudinary URL
+ * @returns {string} WebP optimized URL (same quality, same dimensions, smaller file)
  */
-export const getOptimizedImageUrl = (
-  imageUrl,
-  {
-    width,
-    height,
-    quality = 'auto',
-    format = 'auto',
-    crop = 'fill',
-  } = {}
-) => {
+export const getOptimizedImageUrl = (imageUrl) => {
   if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
     return imageUrl;
   }
@@ -33,87 +20,18 @@ export const getOptimizedImageUrl = (
   if (uploadIndex === -1) return imageUrl;
 
   const baseUrl = imageUrl.substring(0, uploadIndex + 8);
-  const imagePath = imageUrl.substring(uploadIndex + 8);
+  let imagePath = imageUrl.substring(uploadIndex + 8);
 
-  // Build transformation string
-  const transformations = [];
+  // Remove existing transformations (like q_90/) to avoid double transformation
+  // Pattern: transformations are before version (v1234/) or folder path
+  const transformPattern = /^([a-z]_[^\/]+\/)+/;
+  imagePath = imagePath.replace(transformPattern, '');
 
-  // Format and quality (always include for optimization)
-  transformations.push(`f_${format}`);
-  transformations.push(`q_${quality}`);
-
-  // Dimensions
-  if (width) transformations.push(`w_${width}`);
-  if (height) transformations.push(`h_${height}`);
-  if (width || height) transformations.push(`c_${crop}`);
-
-  // Add DPR for responsive images
-  transformations.push('dpr_auto');
-
-  // Combine transformations
-  const transformString = transformations.join(',');
+  // Only apply WebP format with maximum quality (100)
+  // No resizing, no cropping - preserve original dimensions
+  const transformString = 'f_webp,q_100';
 
   return `${baseUrl}${transformString}/${imagePath}`;
-};
-
-/**
- * Preset configurations for common use cases
- */
-export const ImagePresets = {
-  // Product thumbnails in grids
-  thumbnail: {
-    width: 600,
-    height: 750,
-    quality: 'auto:best',
-    crop: 'fill',
-  },
-
-  // Product detail page main image
-  productMain: {
-    width: 800,
-    height: 1000,
-    quality: 'auto:best',
-    crop: 'fit',
-  },
-
-  // Gallery/carousel images
-  gallery: {
-    width: 1200,
-    height: 1500,
-    quality: 'auto:good',
-    crop: 'fit',
-  },
-
-  // Hero/banner images
-  hero: {
-    width: 1920,
-    height: 800,
-    quality: 'auto:good',
-    crop: 'fill',
-  },
-
-  // Mobile optimized
-  mobile: {
-    width: 600,
-    height: 750,
-    quality: 'auto:eco',
-    crop: 'fill',
-  },
-};
-
-/**
- * Generate srcSet for responsive images
- * @param {string} imageUrl - Original image URL
- * @param {Array<number>} widths - Array of widths for srcSet
- * @returns {string} srcSet string
- */
-export const generateSrcSet = (imageUrl, widths = [400, 800, 1200, 1600]) => {
-  return widths
-    .map(width => {
-      const url = getOptimizedImageUrl(imageUrl, { width, quality: 'auto' });
-      return `${url} ${width}w`;
-    })
-    .join(', ');
 };
 
 /**
@@ -124,3 +42,4 @@ export const getLazyLoadProps = () => ({
   loading: 'lazy',
   decoding: 'async',
 });
+

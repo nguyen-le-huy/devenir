@@ -4,6 +4,7 @@ import styles from './ColourVarients.module.css';
 import ScarfCard from '../ProductCard/ScarfCard';
 import { useLenisControl } from '../../hooks/useLenisControl';
 import Backdrop from '../Backdrop';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
 const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantId, colorMap = {} }) => {
     const navigate = useNavigate();
@@ -102,8 +103,9 @@ const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantI
                                 onClick={() => handleVariantClick(variant._id)}
                             >
                                 <img
-                                    src={variant.mainImage || '/images/scarf/scarf1.png'}
+                                    src={getOptimizedImageUrl(variant.mainImage || '/images/scarf/scarf1.png')}
                                     alt={variant.color}
+                                    loading="lazy"
                                 />
                                 <div className={styles.info}>
                                     <p className={`${styles.colour} ${isActive ? styles.active : ''}`}>
