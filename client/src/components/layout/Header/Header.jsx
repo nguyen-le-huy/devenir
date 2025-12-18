@@ -50,6 +50,14 @@ const Header = () => {
         fetchCategories();
     }, []);
 
+    // Preload Bag component to ensure instant open
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            import("../../Bag/Bag");
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, []);
+
     const handleBagIconMouseEnter = () => {
         if (bagTimeoutRef.current) {
             clearTimeout(bagTimeoutRef.current);

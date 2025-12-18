@@ -33,6 +33,8 @@ const Introduction = () => {
         // Get all card elements
         const boxes = gsap.utils.toArray(container.querySelectorAll(`.${styles.introCard}`));
 
+        if (!boxes.length) return;
+
         // Calculate card width based on container
         const containerWidth = container.offsetWidth;
         const cardWidth = Math.min(460, containerWidth * 0.8); // Responsive card width
@@ -255,13 +257,15 @@ const Introduction = () => {
                 trigger: introContainer,
                 start: 'top 80%',
                 onEnter: () => {
-                    gsap.to(splitInstance.lines, {
-                        duration: 0.8,
-                        yPercent: 0,
-                        opacity: 1,
-                        stagger: 0.08,
-                        ease: "power2.out",
-                    });
+                    if (splitInstance && splitInstance.lines) {
+                        gsap.to(splitInstance.lines, {
+                            duration: 0.8,
+                            yPercent: 0,
+                            opacity: 1,
+                            stagger: 0.08,
+                            ease: "power2.out",
+                        });
+                    }
                 }
             });
         });

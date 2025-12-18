@@ -14,6 +14,8 @@ gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, MotionPathPlugin, MotionP
 
 const NewArrivals = () => {
     const newArrContainerRef = useRef(null);
+    const titleRef = useRef(null);
+    const linkRef = useRef(null);
 
     // Fetch 4 latest variants
     const { data: variantsData, isLoading } = useLatestVariants(4);
@@ -36,20 +38,24 @@ const NewArrivals = () => {
 
     useGSAP(() => {
         const container = newArrContainerRef.current;
-        if (!container) return;
+        const titleElement = titleRef.current;
+        const linkElement = linkRef.current;
+
+        if (!container || !titleElement || !linkElement) return;
 
         let titleSplitInstance = null;
         let linkSplitInstance = null;
 
-        gsap.set([".titleSplit", ".viewAllLinkSplit"], { opacity: 1 });
+        // Use refs instead of string selectors to ensure targets are found
+        gsap.set([titleElement, linkElement], { opacity: 1 });
 
         document.fonts.ready.then(() => {
-            titleSplitInstance = new SplitText(".titleSplit", {
+            titleSplitInstance = new SplitText(titleElement, {
                 type: "words, lines",
                 linesClass: "line"
             });
 
-            linkSplitInstance = new SplitText(".viewAllLinkSplit", {
+            linkSplitInstance = new SplitText(linkElement, {
                 type: "words, lines",
                 linesClass: "line"
             });
@@ -119,8 +125,8 @@ const NewArrivals = () => {
     return (
         <div className={`${styles.newArrivals} container`} ref={newArrContainerRef}>
             <div className="titleSection">
-                <h3 className="titleSplit">New Arrivals, new journeys</h3>
-                <a href="#" className="viewAllLinkSplit">
+                <h3 className="titleSplit" ref={titleRef}>New Arrivals, new journeys</h3>
+                <a href="#" className="viewAllLinkSplit" ref={linkRef}>
                     View All
                 </a>
             </div>

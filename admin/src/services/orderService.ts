@@ -72,6 +72,7 @@ export interface Order {
     totalItems?: number
     isPaid?: boolean
     isDelivered?: boolean
+    trackingNumber?: string
 }
 
 export interface OrderListFilters {

@@ -12,67 +12,19 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
     const navigate = useNavigate();
     const headerHeight = useHeaderHeight();
     const [isVisible, setIsVisible] = useState(false);
-    const [imagesLoaded, setImagesLoaded] = useState(false);
+
     useLenisControl(true);
 
     // Fetch real cart data
     const { data: cartData, isLoading } = useCart();
     const cart = cartData?.data || { items: [], totalItems: 0, totalPrice: 0 };
 
-    // Preload all cart item images
-    const preloadImages = useCallback(async (imageUrls) => {
-        const promises = imageUrls.map((url) => {
-            return new Promise((resolve) => {
-                if (!url) {
-                    resolve();
-                    return;
-                }
-                const img = new Image();
-                img.onload = resolve;
-                img.onerror = resolve;
-                img.src = url;
-            });
+    // Trigger animation immediately on mount
+    useEffect(() => {
+        requestAnimationFrame(() => {
+            setIsVisible(true);
         });
-
-        await Promise.all(promises);
-        setImagesLoaded(true);
     }, []);
-
-    // Start preloading when cart data is ready
-    useEffect(() => {
-        if (!isLoading) {
-            if (cart.items.length > 0) {
-                setImagesLoaded(false);
-
-                // Collect and optimize all product images (same URLs as displayed)
-                const imagesToPreload = cart.items
-                    .map(item => item.productVariant?.mainImage)
-                    .filter(Boolean)
-                    .map(img => getOptimizedImageUrl(img));
-
-                // Remove duplicates
-                const uniqueImages = [...new Set(imagesToPreload)];
-
-                if (uniqueImages.length > 0) {
-                    preloadImages(uniqueImages);
-                } else {
-                    setImagesLoaded(true);
-                }
-            } else {
-                // No items, no images to preload
-                setImagesLoaded(true);
-            }
-        }
-    }, [isLoading, cart.items, preloadImages]);
-
-    // Trigger animation after images are loaded
-    useEffect(() => {
-        if (imagesLoaded) {
-            requestAnimationFrame(() => {
-                setIsVisible(true);
-            });
-        }
-    }, [imagesLoaded]);
 
     const handleCheckout = () => {
         if (cart.items.length === 0) return;
@@ -128,8 +80,8 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
         });
     }, [cart.items]);
 
-    // Show loading while fetching data or preloading images
-    const showLoading = isLoading || !imagesLoaded;
+    // Show loading while fetching data
+    const showLoading = isLoading;
 
     return (
         <>
