@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Header from '../../components/layout/Header/Header';
 import Footer from '../../components/layout/Footer/Footer';
 import Loading from '../../components/Loading/Loading';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
 const AllCategories = () => {
     const navigate = useNavigate();
@@ -41,8 +42,9 @@ const AllCategories = () => {
     // Start preloading when categories are fetched
     useEffect(() => {
         if (categories.length > 0) {
+            // Preload the OPTIMIZED URLs (same as what will be displayed)
             const imageUrls = categories
-                .map((cat) => cat.thumbnailUrl)
+                .map((cat) => cat.thumbnailUrl ? getOptimizedImageUrl(cat.thumbnailUrl) : null)
                 .filter(Boolean);
 
             if (imageUrls.length > 0) {
@@ -80,7 +82,7 @@ const AllCategories = () => {
                             className={styles.box}
                             style={{
                                 backgroundImage: category.thumbnailUrl
-                                    ? `url(${category.thumbnailUrl})`
+                                    ? `url(${getOptimizedImageUrl(category.thumbnailUrl)})`
                                     : `linear-gradient(135deg, #5C4439 0%, #3d2d26 100%)`
                             }}
                             onClick={() => handleCategoryClick(category._id)}

@@ -104,8 +104,10 @@ const Snowfall = memo(({
             draw(ctx) {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = color.replace(/[\d.]+\)$/, `${this.opacity})`);
+                ctx.fillStyle = color;
+                ctx.globalAlpha = this.opacity;
                 ctx.fill();
+                ctx.globalAlpha = 1;
             }
         }
 

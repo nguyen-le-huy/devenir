@@ -10,6 +10,7 @@ import { useCategoryById, useCategories } from '../../hooks/useCategories.js';
 import { useColors } from '../../hooks/useColors.js';
 import { createColorMap } from '../../services/colorService.js';
 import { getVariantsByCategory, getVariantsByCategoryWithChildren } from '../../services/productService.js';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization.js';
 
 const ProductByCategory = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -93,21 +94,21 @@ const ProductByCategory = () => {
         if (!loading && variants.length > 0) {
             setImagesLoaded(false);
 
-            // Collect all images to preload
+            // Collect all images to preload (with optimized URLs)
             const imagesToPreload = [];
 
             // Add category thumbnail if exists
             if (category?.thumbnailUrl) {
-                imagesToPreload.push(category.thumbnailUrl);
+                imagesToPreload.push(getOptimizedImageUrl(category.thumbnailUrl));
             }
 
-            // Add all variant main images and hover images
+            // Add all variant main images and hover images (optimized)
             variants.forEach(variant => {
                 if (variant.mainImage) {
-                    imagesToPreload.push(variant.mainImage);
+                    imagesToPreload.push(getOptimizedImageUrl(variant.mainImage));
                 }
                 if (variant.hoverImage && variant.hoverImage !== variant.mainImage) {
-                    imagesToPreload.push(variant.hoverImage);
+                    imagesToPreload.push(getOptimizedImageUrl(variant.hoverImage));
                 }
             });
 
@@ -378,7 +379,7 @@ const ProductByCategory = () => {
                         </div>
                         <div className={styles.rightBox}
                             style={{
-                                backgroundImage: `url('${category.thumbnailUrl}')`,
+                                backgroundImage: `url('${getOptimizedImageUrl(category.thumbnailUrl)}')`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
                                 backgroundRepeat: 'no-repeat'

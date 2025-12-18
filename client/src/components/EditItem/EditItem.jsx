@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useProductVariants } from '../../hooks/useProducts';
 import { useUpdateCartItem, useAddToCart, useRemoveFromCart } from '../../hooks/useCart';
 import Backdrop from '../Backdrop';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
 const EditItem = ({ item, onClose }) => {
     const [isVisible, setIsVisible] = useState(false);
@@ -166,7 +167,7 @@ const EditItem = ({ item, onClose }) => {
                     </svg>
                 </div>
                 <div className={styles.body}>
-                    <img src={image} alt={productName} />
+                    <img src={getOptimizedImageUrl(image)} alt={productName} loading="lazy" />
                     <div className={styles.info}>
                         <h2>{productName}</h2>
                         <div className={styles.selectQuantity}>

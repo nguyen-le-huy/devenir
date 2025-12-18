@@ -33,6 +33,8 @@ const Introduction = () => {
         // Get all card elements
         const boxes = gsap.utils.toArray(container.querySelectorAll(`.${styles.introCard}`));
 
+        if (!boxes.length) return;
+
         // Calculate card width based on container
         const containerWidth = container.offsetWidth;
         const cardWidth = Math.min(460, containerWidth * 0.8); // Responsive card width
@@ -173,8 +175,8 @@ const Introduction = () => {
                     onPress() {
                         startProgress = loopRef.current.progress();
                         loopRef.current.progress(0);
-                        populateWidths();
-                        totalWidth = getTotalWidth();
+                        // populateWidths(); // REMOVED to prevent INP
+                        // totalWidth = getTotalWidth(); // REMOVED
                         ratio = 1 / totalWidth;
                         dragSnap = totalWidth / items.length;
                         roundFactor = Math.pow(
@@ -196,6 +198,12 @@ const Introduction = () => {
                 })[0];
             }
 
+            // Allow manual refresh
+            tl.refresh = () => {
+                populateWidths();
+                totalWidth = getTotalWidth();
+            };
+
             return tl;
         };
 
@@ -207,6 +215,19 @@ const Introduction = () => {
             speed: 0.5, // Adjust speed as needed
             paddingRight: 10 // Gap between cards
         });
+
+        // Handle window resize to update widths
+        const handleResize = () => {
+            if (loopRef.current && typeof loopRef.current.refresh === 'function') {
+                // We need to reset progress to ensure calculations are correct
+                const currentProgress = loopRef.current.progress();
+                loopRef.current.progress(0);
+                loopRef.current.refresh();
+                loopRef.current.progress(currentProgress);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
 
         // SplitText animation for title (like ChatWindow)
         let splitInstance = null;
@@ -236,13 +257,15 @@ const Introduction = () => {
                 trigger: introContainer,
                 start: 'top 80%',
                 onEnter: () => {
-                    gsap.to(splitInstance.lines, {
-                        duration: 0.8,
-                        yPercent: 0,
-                        opacity: 1,
-                        stagger: 0.08,
-                        ease: "power2.out",
-                    });
+                    if (splitInstance && splitInstance.lines) {
+                        gsap.to(splitInstance.lines, {
+                            duration: 0.8,
+                            yPercent: 0,
+                            opacity: 1,
+                            stagger: 0.08,
+                            ease: "power2.out",
+                        });
+                    }
                 }
             });
         });
@@ -265,6 +288,7 @@ const Introduction = () => {
 
         // Cleanup
         return () => {
+            window.removeEventListener('resize', handleResize);
             if (splitInstance) {
                 splitInstance.revert();
             }

@@ -1,25 +1,13 @@
 import './global.css'
-import HomePage from './pages/HomePage/HomePage'
-import ResetPasswordPage from './pages/auth/ResetPasswordPage'
-import EmailVerificationPage from './pages/auth/EmailVerificationPage'
-import RegisterPage from './pages/RegisterPage'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import AuthPage from './pages/auth/AuthPage'
-import Layout from './components/layout/Layout.jsx'
-import CheckoutLayout from './components/checkoutLayout/CheckoutLayout.jsx'
-import UserProfile from './pages/UserProfile/UserProfile.jsx'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import Lenis from 'lenis';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/all';
-import ProductByCategory from './pages/ProductByCategory/ProductByCategory.jsx';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
-import ProductDetail from './pages/ProductDetail/ProductDetail.jsx';
-import Checkout from './pages/Checkout/Checkout';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
-import Shipping from './pages/Checkout/Shipping.jsx';
 import ChatIcon from './components/Chat/ChatIcon';
 import ChatWindow from './components/Chat/ChatWindow';
 import PayOSResult from './pages/PayOS/PayOSResult.jsx';
@@ -29,9 +17,24 @@ import PaymentFailed from './pages/PaymentStatus/PaymentFailed.jsx';
 import VisuallySimilar from './pages/VisuallySimilar/VisuallySimilar.jsx';
 import PaymentSuccessfulPreview from './pages/PaymentStatus/PaymentSuccessfulPreview.jsx'
 import AllCategories from './pages/AllCategories/AllCategories.jsx';
-import { Navigate } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import Loading from './components/Loading/Loading';
+
 
 gsap.registerPlugin(ScrollTrigger);
+
+const Layout = lazy(() => import('./components/layout/Layout'));
+const HomePage = lazy(() => import('./pages/HomePage/HomePage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const AuthPage = lazy(() => import('./pages/auth/AuthPage'));
+const EmailVerificationPage = lazy(() => import('./pages/auth/EmailVerificationPage'));
+const UserProfile = lazy(() => import('./pages/UserProfile/UserProfile'));
+const ProductByCategory = lazy(() => import('./pages/ProductByCategory/ProductByCategory'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail/ProductDetail'));
+const CheckoutLayout = lazy(() => import('./components/checkoutLayout/CheckoutLayout'));
+const Checkout = lazy(() => import('./pages/Checkout/Checkout'));
+const Shipping = lazy(() => import('./pages/Checkout/Shipping'));
 
 export let lenisInstance
 
@@ -77,7 +80,7 @@ function App() {
 
   // Validate Google Client ID
   if (!GOOGLE_CLIENT_ID) {
-    console.error('⚠️ VITE_GOOGLE_CLIENT_ID is not set in environment variables');
+    // console.warn('⚠️ VITE_GOOGLE_CLIENT_ID is not set in environment variables');
   }
 
   return (
@@ -85,64 +88,67 @@ function App() {
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
-          <Routes>
-            {/* ✅ Routes KHÔNG cần Layout */}
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path="/categories" element={<AllCategories />} />
+          <ErrorBoundary>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                {/* ✅ Routes KHÔNG cần Layout */}
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/categories" element={<AllCategories />} />
 
-            {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
-            <Route element={<Layout />}>
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
-              <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-              <Route path="/orders" element={<ProtectedRoute><Navigate to="/profile?tab=orders" replace /> </ProtectedRoute>} />
-              <Route path="/" element={<HomePage />} />
-              <Route path="/products" element={<ProductByCategory />} />
-              <Route path="/product-detail" element={<ProductDetail />} />
-              <Route path="*" element={<HomePage />} />
-              <Route path="/visually-similar" element={<VisuallySimilar />} />
-            </Route>
+                {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
+                <Route element={<Layout />}>
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
+                  <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/products" element={<ProductByCategory />} />
+                  <Route path="/product-detail" element={<ProductDetail />} />
+                  <Route path="*" element={<HomePage />} />
+                  <Route path="/visually-similar" element={<VisuallySimilar />} />
+                </Route>
 
-            <Route element={<CheckoutLayout />}>
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/shipping" element={<Shipping />} />
-              <Route
-                path="/checkout/payos/success"
-                element={
-                  <ProtectedRoute>
-                    <PayOSResult />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment-successful"
-                element={
-                  <PaymentSuccessful />
-                }
-              />
-              <Route
-                path="/payment-failed"
-                element={
-                  <PaymentFailed />
-                }
-              />
-              <Route
-                path="/payment-successful-preview"
-                element={
-                  <PaymentSuccessfulPreview />
-                }
-              />
-              <Route
-                path="/checkout/nowpayments/success"
-                element={
-                  <ProtectedRoute>
-                    <NowPaymentsResult />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
-          </Routes>
+                <Route element={<CheckoutLayout />}>
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/shipping" element={<Shipping />} />
+                  <Route
+                    path="/checkout/payos/success"
+                    element={
+                      <ProtectedRoute>
+                        <PayOSResult />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/payment-successful"
+                    element={
+                      <PaymentSuccessful />
+                    }
+                  />
+                  <Route
+                    path="/payment-failed"
+                    element={
+                      <PaymentFailed />
+                    }
+                  />
+                  <Route
+                    path="/payment-successful-preview"
+                    element={
+                      <PaymentSuccessfulPreview />
+                    }
+                  />
+                  <Route
+                    path="/checkout/nowpayments/success"
+                    element={
+                      <ProtectedRoute>
+                        <NowPaymentsResult />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Route>
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
           <ChatIcon onClick={handleOpenChat} />
           {isChatOpen && <ChatWindow onClose={handleCloseChat} />}
         </AuthProvider>
