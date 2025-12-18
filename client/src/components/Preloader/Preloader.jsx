@@ -38,38 +38,80 @@ const Preloader = () => {
         }
     }, []);
 
-    // ✅ Detect khi tất cả resources đã load xong
+    // ✅ Detect khi tất cả resources đã load xong (images, videos, fonts)
     useEffect(() => {
         if (!shouldShowPreloader) return;
 
-        const checkResourcesLoaded = () => {
-            // Đã load xong tất cả
-            setIsResourcesLoaded(true);
+        const checkResourcesLoaded = async () => {
+            try {
+                // 1. Đợi fonts load
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready;
+                }
+
+                // 2. Đợi tất cả images load
+                const images = Array.from(document.querySelectorAll('img'));
+                const imagePromises = images.map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise((resolve) => {
+                        img.onload = resolve;
+                        img.onerror = resolve; // Don't block on failed images
+                    });
+                });
+
+                // 3. Đợi video có thể play (Hero video)
+                const videos = Array.from(document.querySelectorAll('video'));
+                const videoPromises = videos.map(video => {
+                    if (video.readyState >= 3) return Promise.resolve(); // HAVE_FUTURE_DATA
+                    return new Promise((resolve) => {
+                        video.oncanplay = resolve;
+                        video.onerror = resolve;
+                        // Timeout fallback for videos (3s max)
+                        setTimeout(resolve, 3000);
+                    });
+                });
+
+                // 4. Preload critical images từ Introduction
+                const criticalImages = [
+                    '/images/introCard1.webp',
+                    '/images/introCard2.webp',
+                    '/images/introCard3.webp',
+                    '/images/introCard4.webp',
+                ];
+                const preloadPromises = criticalImages.map(src => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                        img.src = src;
+                    });
+                });
+
+                // 5. Đợi tất cả resources
+                await Promise.all([
+                    ...imagePromises,
+                    ...videoPromises,
+                    ...preloadPromises
+                ]);
+
+                // Thêm delay nhỏ để đảm bảo render mượt
+                setTimeout(() => {
+                    setIsResourcesLoaded(true);
+                }, 100);
+
+            } catch (error) {
+                console.error('Error loading resources:', error);
+                // Fallback: continue anyway after error
+                setIsResourcesLoaded(true);
+            }
         };
 
-        // Nếu document đã ready
+        // Nếu document đã ready, bắt đầu check resources
         if (document.readyState === 'complete') {
-            // Đợi thêm fonts nếu có
-            if (document.fonts && document.fonts.ready) {
-                document.fonts.ready.then(() => {
-                    // Thêm delay nhỏ để đảm bảo mượt
-                    setTimeout(checkResourcesLoaded, 100);
-                });
-            } else {
-                setTimeout(checkResourcesLoaded, 100);
-            }
+            checkResourcesLoaded();
         } else {
-            // Đợi window load
-            const handleLoad = () => {
-                if (document.fonts && document.fonts.ready) {
-                    document.fonts.ready.then(() => {
-                        setTimeout(checkResourcesLoaded, 100);
-                    });
-                } else {
-                    setTimeout(checkResourcesLoaded, 100);
-                }
-            };
-
+            // Đợi window load trước
+            const handleLoad = () => checkResourcesLoaded();
             window.addEventListener('load', handleLoad);
             return () => window.removeEventListener('load', handleLoad);
         }
