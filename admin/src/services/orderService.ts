@@ -60,6 +60,9 @@ export interface Order {
     totalPrice: number
     originalTotalPrice?: number
     shippingPrice: number
+    trackingNumber?: string
+    estimatedDelivery?: string
+    shippedAt?: string
     status: OrderStatus
     paidAt?: string
     deliveredAt?: string

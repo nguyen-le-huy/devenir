@@ -4,7 +4,8 @@ import Order from '../models/OrderModel.js';
 import ProductVariant from '../models/ProductVariantModel.js';
 import logger from '../config/logger.js';
 
-const PLATFORM_FEE_RATE = 0.03;
+// Platform fee disabled as requested
+const PLATFORM_FEE_RATE = 0;
 
 // Simple in-memory cache for dashboard metrics to avoid heavy aggregation on every hit
 const metricsCache = {
@@ -39,9 +40,7 @@ const computeOrderFinancials = async (order) => {
 
   const revenue = order.totalPrice || 0;
   const shippingCost = order.shippingPrice || 0;
-  const platformFee = ['Bank', 'Crypto'].includes(order.paymentMethod)
-    ? Number((revenue * PLATFORM_FEE_RATE).toFixed(2))
-    : 0;
+  const platformFee = 0;
   const netProfit = Number((revenue - costOfGoodsSold - platformFee - shippingCost).toFixed(2));
 
   return {
