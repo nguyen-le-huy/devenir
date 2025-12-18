@@ -64,9 +64,11 @@ function App() {
     // Đồng bộ Lenis với GSAP ScrollTrigger
     lenis.on('scroll', ScrollTrigger.update)
 
-    gsap.ticker.add((time) => {
+    // Store callback reference for proper cleanup
+    const tickerCallback = (time) => {
       lenis.raf(time * 1000)
-    })
+    }
+    gsap.ticker.add(tickerCallback)
 
     gsap.ticker.lagSmoothing(0)
 
@@ -74,7 +76,7 @@ function App() {
     return () => {
       lenisInstance = null
       lenis.destroy()
-      gsap.ticker.remove()
+      gsap.ticker.remove(tickerCallback)
     }
   }, []);
 
@@ -89,7 +91,7 @@ function App() {
         <ScrollToTop />
         <AuthProvider>
           <ErrorBoundary>
-            <Suspense fallback={<Loading />}>
+            <Suspense fallback={null}>
               <Routes>
                 {/* ✅ Routes KHÔNG cần Layout */}
                 <Route path="/register" element={<RegisterPage />} />

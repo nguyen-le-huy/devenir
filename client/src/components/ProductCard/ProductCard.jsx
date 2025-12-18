@@ -1,8 +1,9 @@
+import { memo } from 'react';
 import styles from './ProductCard.module.css';
 import PropTypes from 'prop-types';
 import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
-const ProductCard = ({ product }) => {
+const ProductCard = memo(({ product }) => {
     const { name, price, images, colors, tag } = product;
     const [mainImage, hoverImage] = images;
 
@@ -38,6 +39,6 @@ const ProductCard = ({ product }) => {
             </div>
         </div>
     );
-};
+});
 
 export default ProductCard;
