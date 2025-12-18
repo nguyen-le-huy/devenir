@@ -70,24 +70,38 @@ const percentChange = (current = 0, previous = 0) => {
 }
 
 const getTierFromSpend = (total = 0) => {
-  if (total >= 3000) return 'platinum'
-  if (total >= 1500) return 'gold'
-  if (total >= 600) return 'silver'
-  return 'bronze'
+  if (total >= 10000) return 'platinum'  // ≥ $10,000
+  if (total >= 5000) return 'gold'       // ≥ $5,000
+  if (total >= 2500) return 'silver'     // ≥ $2,500
+  return 'bronze'                         // < $2,500 (Khách mới)
 }
 
-const determineSegment = ({ totalSpent = 0, totalOrders = 0, lastOrderDate, createdAt }) => {
+const determineSegment = ({ totalSpent = 0, totalOrders = 0, lastOrderDate, createdAt, lastLogin }) => {
   const now = Date.now()
+  const fiveDaysAgo = now - 5 * DAY_IN_MS
+  const tenDaysAgo = now - 10 * DAY_IN_MS
+  const fifteenDaysAgo = now - 15 * DAY_IN_MS
   const thirtyDaysAgo = now - 30 * DAY_IN_MS
-  const ninetyDaysAgo = now - 90 * DAY_IN_MS
   const createdTime = createdAt ? new Date(createdAt).getTime() : now
   const lastOrderTime = lastOrderDate ? new Date(lastOrderDate).getTime() : null
+  const lastLoginTime = lastLogin ? new Date(lastLogin).getTime() : null
 
-  if (totalSpent >= 1500 && totalOrders >= 3) return 'vip'
-  if (totalOrders >= 2 && lastOrderTime && lastOrderTime >= thirtyDaysAgo) return 'returning'
-  if (totalOrders === 1 && createdTime >= thirtyDaysAgo) return 'new'
-  if (totalOrders === 0 && createdTime < ninetyDaysAgo) return 'inactive'
-  if (totalOrders > 0 && lastOrderTime && lastOrderTime < ninetyDaysAgo) return 'at-risk'
+  // VIP: Chi >$10,000 VÀ ≥5 đơn
+  if (totalSpent >= 10000 && totalOrders >= 5) return 'vip'
+  
+  // Returning: ≥3 đơn VÀ lần cuối <10 ngày
+  if (totalOrders >= 3 && lastOrderTime && lastOrderTime >= tenDaysAgo) return 'returning'
+  
+  // New: Đăng ký mới <5 ngày (không cần đơn)
+  if (createdTime >= fiveDaysAgo) return 'new'
+  
+  // At-risk: ≥1 đơn NHƯNG lần cuối >30 ngày
+  if (totalOrders >= 1 && lastOrderTime && lastOrderTime < thirtyDaysAgo) return 'at-risk'
+  
+  // Inactive: 0 đơn VÀ không login gần đây (>15 ngày)
+  if (totalOrders === 0 && (!lastLoginTime || lastLoginTime < fifteenDaysAgo)) return 'inactive'
+  
+  // Regular: 0 đơn NHƯNG vẫn login gần đây (<15 ngày)
   return 'regular'
 }
 
@@ -110,7 +124,9 @@ const buildCustomerAggregationPipeline = ({ searchRegex = null, additionalMatch 
   const thirtyDaysAgo = new Date(Date.now() - 30 * DAY_IN_MS)
   const ninetyDaysAgo = new Date(Date.now() - 90 * DAY_IN_MS)
 
-  const baseMatch = { role: 'user', isArchived: { $ne: true }, ...additionalMatch }
+  // CHANGED: Remove role filter to include all users (including admin if needed)
+  // Only exclude archived users
+  const baseMatch = { isArchived: { $ne: true }, ...additionalMatch }
   if (searchRegex) {
     baseMatch.$or = [
       { email: searchRegex },
@@ -197,67 +213,76 @@ const buildCustomerAggregationPipeline = ({ searchRegex = null, additionalMatch 
         calculatedTier: {
           $switch: {
             branches: [
-              { case: { $gte: ['$orderStats.totalSpent', 3000] }, then: 'platinum' },
-              { case: { $gte: ['$orderStats.totalSpent', 1500] }, then: 'gold' },
-              { case: { $gte: ['$orderStats.totalSpent', 600] }, then: 'silver' },
+              { case: { $gte: ['$orderStats.totalSpent', 10000] }, then: 'platinum' },  // ≥ $10,000
+              { case: { $gte: ['$orderStats.totalSpent', 5000] }, then: 'gold' },       // ≥ $5,000
+              { case: { $gte: ['$orderStats.totalSpent', 2500] }, then: 'silver' },     // ≥ $2,500
             ],
-            default: 'bronze',
+            default: 'bronze',  // < $2,500 (Khách mới)
           },
         },
       },
     },
     {
       $addFields: {
-        loyaltyTier: { $ifNull: ['$customerProfile.loyaltyTier', '$calculatedTier'] },
+        // ALWAYS use calculated tier based on actual totalSpent (ignore old manual tier)
+        loyaltyTier: '$calculatedTier',
         customerSegment: {
           $switch: {
             branches: [
               {
+                // VIP: Chi >$10,000 VÀ ≥5 đơn
                 case: {
                   $and: [
-                    { $gte: ['$orderStats.totalSpent', 1500] },
-                    { $gte: ['$orderStats.totalOrders', 3] },
+                    { $gte: ['$orderStats.totalSpent', 10000] },
+                    { $gte: ['$orderStats.totalOrders', 5] },
                   ],
                 },
                 then: 'vip',
               },
               {
+                // Returning: ≥3 đơn VÀ lần cuối <10 ngày
                 case: {
                   $and: [
-                    { $gte: ['$orderStats.totalOrders', 2] },
-                    { $gte: ['$orderStats.lastOrderDate', thirtyDaysAgo] },
+                    { $gte: ['$orderStats.totalOrders', 3] },
+                    { $gte: ['$orderStats.lastOrderDate', new Date(Date.now() - 10 * DAY_IN_MS)] },
                   ],
                 },
                 then: 'returning',
               },
               {
+                // New: Đăng ký mới <5 ngày (không cần đơn)
                 case: {
-                  $and: [
-                    { $eq: ['$orderStats.totalOrders', 1] },
-                    { $gte: ['$createdAt', thirtyDaysAgo] },
-                  ],
+                  $gte: ['$createdAt', new Date(Date.now() - 5 * DAY_IN_MS)],
                 },
                 then: 'new',
               },
               {
+                // At-risk: ≥1 đơn NHƯNG lần cuối >30 ngày
                 case: {
                   $and: [
-                    { $gt: ['$orderStats.totalOrders', 0] },
-                    { $lt: ['$orderStats.lastOrderDate', ninetyDaysAgo] },
+                    { $gte: ['$orderStats.totalOrders', 1] },
+                    { $lt: ['$orderStats.lastOrderDate', new Date(Date.now() - 30 * DAY_IN_MS)] },
                   ],
                 },
                 then: 'at-risk',
               },
               {
+                // Inactive: 0 đơn VÀ không login gần đây (>15 ngày hoặc null)
                 case: {
                   $and: [
                     { $eq: ['$orderStats.totalOrders', 0] },
-                    { $lt: ['$createdAt', ninetyDaysAgo] },
+                    {
+                      $or: [
+                        { $eq: ['$lastLogin', null] },
+                        { $lt: ['$lastLogin', new Date(Date.now() - 15 * DAY_IN_MS)] },
+                      ],
+                    },
                   ],
                 },
                 then: 'inactive',
               },
             ],
+            // Regular: Còn lại (0 đơn NHƯNG vẫn login gần đây)
             default: 'regular',
           },
         },

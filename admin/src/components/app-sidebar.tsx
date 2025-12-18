@@ -13,7 +13,6 @@ import {
   IconTag,
   IconBarcode,
   IconUserCheck,
-  IconUsersGroup,
   IconMessage,
   IconClipboardList,
   IconTruck,
@@ -85,25 +84,6 @@ const data = {
           url: "/admin/orders",
           icon: IconShoppingCart,
           badge: null,
-          items: [
-            {
-              title: "All Orders",
-              url: "/admin/orders",
-            },
-            {
-              title: "Pending Orders",
-              url: "/admin/orders?status=pending",
-              badge: 12,
-            },
-            {
-              title: "Paid Orders",
-              url: "/admin/orders?status=paid",
-            },
-            {
-              title: "Shipped",
-              url: "/admin/orders?status=shipped",
-            },
-          ],
         },
         {
           title: "Shipments",
@@ -196,17 +176,7 @@ const data = {
               title: "All Customers",
               url: "/admin/customers",
             },
-            {
-              title: "VIP Customers",
-              url: "/admin/customers?segment=vip",
-            },
           ],
-        },
-        {
-          title: "Customer Groups",
-          url: "/admin/customer-groups",
-          icon: IconUsersGroup,
-          badge: null,
         },
         {
           title: "Reviews",
@@ -369,9 +339,6 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAdminAuth()
-  const [_expandedGroups, _setExpandedGroups] = React.useState<Set<string>>(
-    new Set(["Dashboard & Overview", "Sales & Orders Management"])
-  )
   const [userData, setUserData] = React.useState<any>(null)
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(() => {
     // Initialize from localStorage
@@ -386,6 +353,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return new Set(['Dashboard & Overview'])
   })
 
+  const getItemKey = (groupName: string, itemTitle: string) => `${groupName}::${itemTitle}`
+  const [expandedItems, setExpandedItems] = React.useState<Set<string>>(() => {
+    const saved = localStorage.getItem('sidebar-expanded-items')
+    if (saved) {
+      try {
+        return new Set(JSON.parse(saved))
+      } catch {
+        return new Set()
+      }
+    }
+    // Keep the most-used sections expanded by default to mirror previous UX
+    return new Set([
+      getItemKey('Sales & Orders Management', 'Orders'),
+      getItemKey('Product Management', 'Products'),
+      getItemKey('Product Management', 'Inventory'),
+    ])
+  })
+
   const toggleGroup = (groupName: string) => {
     const newExpanded = new Set(expandedGroups)
     if (newExpanded.has(groupName)) {
@@ -396,6 +381,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setExpandedGroups(newExpanded)
     // Persist to localStorage
     localStorage.setItem('sidebar-expanded-groups', JSON.stringify(Array.from(newExpanded)))
+  }
+
+  const toggleItem = (groupName: string, itemTitle: string) => {
+    const key = getItemKey(groupName, itemTitle)
+    const next = new Set(expandedItems)
+    if (next.has(key)) {
+      next.delete(key)
+    } else {
+      next.add(key)
+    }
+    setExpandedItems(next)
+    localStorage.setItem('sidebar-expanded-items', JSON.stringify(Array.from(next)))
   }
 
   // Get user data from context
@@ -484,7 +481,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <SidebarMenu>
                     {section.items.map((item: any) =>
                       item.items ? (
-                        <Collapsible key={item.title} defaultOpen={true} className="group/collapsible">
+                        <Collapsible
+                          key={item.title}
+                          open={expandedItems.has(getItemKey(section.group, item.title))}
+                          onOpenChange={() => toggleItem(section.group, item.title)}
+                          className="group/collapsible"
+                        >
                           <SidebarMenuItem>
                             <CollapsibleTrigger asChild>
                               <SidebarMenuButton tooltip={item.title}>

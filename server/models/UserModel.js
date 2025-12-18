@@ -213,7 +213,10 @@ const userSchema = new mongoose.Schema(
     },
     lastLogin: {
       type: Date,
-      default: null,
+      default: function() {
+        // Default = createdAt (giả định user login lần đầu khi đăng ký)
+        return this.createdAt || new Date()
+      },
     },
     loginAttempts: {
       type: Number,

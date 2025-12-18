@@ -13,7 +13,7 @@ const statusText = {
   all: 'All',
   pending: 'Pending',
   paid: 'Processing',
-  shipped: 'Shipped',
+  shipped: 'Shipping',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
 }
@@ -25,7 +25,7 @@ function Timeline({ order }) {
   const steps = [
     { key: 'pending', label: 'Ordered', at: order.createdAt },
     { key: 'paid', label: 'Paid', at: order.paidAt },
-    { key: 'shipped', label: 'Shipped', at: order.shippedAt || order.estimatedDelivery },
+    { key: 'shipped', label: 'Shipping', at: order.shippedAt || order.estimatedDelivery },
     { key: 'delivered', label: 'Delivered', at: order.deliveredAt },
   ]
 
@@ -215,7 +215,7 @@ export default function ProfileOrders() {
           <div className={styles.tableCard}>
             <div className={styles.tableToolbar}>
               <div className={styles.tabs}>
-                {['all', 'shipped', 'paid', 'delivered'].map((key) => (
+                {['all', 'paid', 'shipped', 'delivered'].map((key) => (
                   <button
                     key={key}
                     className={`${styles.tab} ${statusFilter === key ? styles.tabActive : ''}`}

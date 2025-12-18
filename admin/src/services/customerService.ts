@@ -71,8 +71,16 @@ export interface CustomerListFilters {
   status?: CustomerStatus | 'all'
   channel?: PreferredChannel | 'all'
   tags?: string[]
-  period?: '30d' | '60d' | '90d' | 'ytd'
+  period?: 'all' | '30d' | '60d' | '90d' | 'ytd'
   sort?: 'recent' | 'value_desc' | 'orders_desc' | 'engagement_desc'
+  marketingOptIn?: 'all' | 'yes' | 'no'
+  rfmSegment?: string
+  spendMin?: number
+  spendMax?: number
+  ordersMin?: number
+  ordersMax?: number
+  city?: string
+  province?: string
 }
 
 export interface CustomerListResponse {

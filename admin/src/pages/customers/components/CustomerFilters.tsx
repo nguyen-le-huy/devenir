@@ -1,4 +1,4 @@
-import { IconAdjustments, IconFilter, IconSearch, IconTags } from '@tabler/icons-react'
+import { IconAdjustments, IconFilter, IconMapPin, IconSearch, IconTags } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -49,6 +49,7 @@ const channelOptions = [
 ]
 
 const periodOptions = [
+  { label: 'Tất cả thời gian', value: 'all' },
   { label: '30 ngày gần nhất', value: '30d' },
   { label: '60 ngày gần nhất', value: '60d' },
   { label: '90 ngày gần nhất', value: '90d' },
@@ -60,6 +61,20 @@ const sortOptions = [
   { label: 'Theo giá trị cao nhất', value: 'value_desc' },
   { label: 'Theo số đơn', value: 'orders_desc' },
   { label: 'Theo điểm gắn kết', value: 'engagement_desc' },
+]
+
+const marketingOptions = [
+  { label: 'Mọi trạng thái', value: 'all' },
+  { label: 'Đã opt-in', value: 'yes' },
+  { label: 'Chưa opt-in', value: 'no' },
+]
+
+const rfmSegments = [
+  { label: 'Tất cả RFM', value: 'all' },
+  { label: 'Loyal Customers', value: 'loyal' },
+  { label: 'Potential Loyalists', value: 'potential' },
+  { label: 'New / One-time', value: 'new' },
+  { label: 'At Risk', value: 'risk' },
 ]
 
 export function CustomerFilters({ filters, onChange, onReset, metaTags = [] }: CustomerFiltersProps) {
@@ -202,6 +217,90 @@ export function CustomerFilters({ filters, onChange, onReset, metaTags = [] }: C
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <Select
+          value={filters.marketingOptIn ?? 'all'}
+          onValueChange={(value) => onChange({ marketingOptIn: value as CustomerListFilters['marketingOptIn'], page: 1 })}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Marketing opt-in" />
+          </SelectTrigger>
+          <SelectContent>
+            {marketingOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.rfmSegment ?? 'all'}
+          onValueChange={(value) => onChange({ rfmSegment: value === 'all' ? undefined : value, page: 1 })}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="RFM Segment" />
+          </SelectTrigger>
+          <SelectContent>
+            {rfmSegments.map(option => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            min={0}
+            placeholder="Min orders"
+            value={filters.ordersMin ?? ''}
+            onChange={(e) => onChange({ ordersMin: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+          />
+          <Input
+            type="number"
+            min={0}
+            placeholder="Max orders"
+            value={filters.ordersMax ?? ''}
+            onChange={(e) => onChange({ ordersMax: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            min={0}
+            placeholder="Min spend"
+            value={filters.spendMin ?? ''}
+            onChange={(e) => onChange({ spendMin: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+          />
+          <Input
+            type="number"
+            min={0}
+            placeholder="Max spend"
+            value={filters.spendMax ?? ''}
+            onChange={(e) => onChange({ spendMax: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            placeholder="Thành phố"
+            value={filters.city ?? ''}
+            onChange={(e) => onChange({ city: e.target.value || undefined, page: 1 })}
+          />
+          <Input
+            placeholder="Quận / Tỉnh"
+            value={filters.province ?? ''}
+            onChange={(e) => onChange({ province: e.target.value || undefined, page: 1 })}
+          />
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <IconMapPin className="h-4 w-4" />
+          Lọc theo khu vực, giá trị đơn, RFM và opt-in.
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

@@ -1,24 +1,27 @@
-import { IconChevronLeft, IconChevronRight, IconDotsVertical, IconUsers } from '@tabler/icons-react'
+import { IconChevronLeft, IconChevronRight, IconMail, IconMapPin, IconUsers } from '@tabler/icons-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import type { CustomerListItem, CustomerListResponse, CustomerSegment, LoyaltyTier } from '@/services/customerService'
 import { cn } from '@/lib/utils'
 
 interface CustomerTableProps {
-  customers?: CustomerListItem[]
+  customers?: Array<CustomerListItem & {
+    rfm?: { r: number; f: number; m: number; segment?: string }
+    emailSubscribed?: boolean
+    lastOrderRelative?: string
+    city?: string
+    province?: string
+  }>
   isLoading?: boolean
   pagination?: CustomerListResponse['pagination']
   locale: string
   currencyFormatter: Intl.NumberFormat
   onSelect?: (customer: CustomerListItem) => void
   onView?: (customer: CustomerListItem) => void
-  onEdit?: (customer: CustomerListItem) => void
-  onDelete?: (customer: CustomerListItem) => void
   onPageChange?: (page: number) => void
   onPageSizeChange?: (limit: number) => void
 }
@@ -49,6 +52,28 @@ const formatDate = (value?: string | null, locale = 'vi') => {
   return formatter.format(new Date(value))
 }
 
+const formatRelativeTime = (value?: string | null) => {
+  if (!value) return '—'
+  const now = Date.now()
+  const date = new Date(value).getTime()
+  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) return 'Hôm nay'
+  if (diffDays === 1) return '1 ngày trước'
+  if (diffDays < 7) return `${diffDays} ngày trước`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} tháng trước`
+  return `${Math.floor(diffDays / 365)} năm trước`
+}
+
+const statusStyles: Record<string, string> = {
+  active: 'bg-emerald-100 text-emerald-900 border-emerald-200',
+  vip: 'bg-purple-100 text-purple-900 border-purple-200',
+  'at-risk': 'bg-red-100 text-red-900 border-red-200',
+  inactive: 'bg-muted text-muted-foreground',
+  prospect: 'bg-blue-100 text-blue-900 border-blue-200',
+}
+
 const initialsOf = (customer: CustomerListItem) => {
   const first = customer.firstName?.[0] || customer.username?.[0] || customer.email[0]
   const last = customer.lastName?.[0] || customer.email.split('@')[0]?.[1]
@@ -70,8 +95,6 @@ export function CustomerTable({
   currencyFormatter,
   onSelect,
   onView,
-  onEdit,
-  onDelete,
   onPageChange,
   onPageSizeChange,
 }: CustomerTableProps) {
@@ -87,12 +110,10 @@ export function CustomerTable({
           <TableHeader>
             <TableRow>
               <TableHead>Khách hàng</TableHead>
-              <TableHead>Phân khúc</TableHead>
-              <TableHead>Giá trị & đơn hàng</TableHead>
-              <TableHead>Lần mua cuối</TableHead>
-              <TableHead>Kênh ưu tiên</TableHead>
-              <TableHead>Tags</TableHead>
-              <TableHead className="w-12 text-right">&nbsp;</TableHead>
+              <TableHead>Hành trình</TableHead>
+              <TableHead>Trạng thái & Thời gian</TableHead>
+              <TableHead>Khu vực</TableHead>
+              <TableHead>Marketing</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -100,19 +121,17 @@ export function CustomerTable({
               [...Array(5)].map((_, index) => (
                 <TableRow key={`skeleton-${index}`}>
                   <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-28" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-28" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-20" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                  <TableCell><Skeleton className="ml-auto h-6 w-6" /></TableCell>
                 </TableRow>
               ))
             )}
 
             {!isLoading && customers && customers.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={5} className="text-center">
                   <div className="flex flex-col items-center gap-2 py-10 text-muted-foreground">
                     <IconUsers className="h-8 w-8" />
                     <p>Chưa có khách hàng nào phù hợp với bộ lọc hiện tại.</p>
@@ -125,100 +144,79 @@ export function CustomerTable({
               <TableRow
                 key={customer._id}
                 className="cursor-pointer hover:bg-muted/40"
-                onClick={() => onSelect?.(customer)}
+                onClick={() => { onSelect?.(customer); onView?.(customer) }}
               >
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback>{initialsOf(customer)}</AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="font-medium">
-                        {customer.firstName || customer.lastName
-                          ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
-                          : customer.username || customer.email}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{customer.email}</p>
-                      {customer.phone && (
-                        <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">
+                          {customer.firstName || customer.lastName
+                            ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
+                            : customer.username || customer.email}
+                        </p>
+                        <Badge className={cn('capitalize', tierStyles[customer.loyaltyTier])}>{customer.loyaltyTier}</Badge>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>{customer.email}</span>
+                        {customer.customerProfile?.preferredChannel === 'email' && <IconMail className="h-3.5 w-3.5" />}
+                        {customer.phone && <span>• {customer.phone}</span>}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <Badge variant="secondary" className={cn('capitalize', segmentVariants[customer.customerSegment])}>{customer.customerSegment}</Badge>
+                        <span className="text-muted-foreground">Engagement {customer.engagementScore}/100</span>
+                        {customer.lastOrderRelative && <span className="text-muted-foreground">• {customer.lastOrderRelative}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold">{customer.totalOrders} đơn • {currencyFormatter.format(Math.round(customer.totalSpent || 0))}</p>
+                    <p className="text-xs text-muted-foreground">AOV {currencyFormatter.format(Math.round(customer.averageOrderValue || 0))}</p>
+                    <div className="flex flex-wrap gap-1 text-xs">
+                      {(customer.customerProfile?.tags || []).slice(0, 3).map(tag => (
+                        <Badge key={tag} variant="outline" className="capitalize">{tag}</Badge>
+                      ))}
+                      {(customer.customerProfile?.tags?.length || 0) > 3 && (
+                        <Badge variant="outline">+{(customer.customerProfile?.tags?.length || 0) - 3}</Badge>
                       )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-2">
-                    <Badge className={cn('w-fit capitalize', segmentVariants[customer.customerSegment])}>
-                      {customer.customerSegment}
+                  <div className="space-y-1.5 text-sm">
+                    <Badge variant="outline" className={cn('capitalize border', statusStyles[customer.customerProfile?.status || 'active'])}>
+                      {customer.customerProfile?.status || 'active'}
                     </Badge>
-                    <Badge className={cn('w-fit capitalize', tierStyles[customer.loyaltyTier])}>
-                      {customer.loyaltyTier}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground">Engagement: {customer.engagementScore}/100</p>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    <p className="font-semibold">{currencyFormatter.format(Math.round(customer.totalSpent || 0))}</p>
                     <p className="text-xs text-muted-foreground">
-                      {customer.totalOrders} đơn • AOV {currencyFormatter.format(Math.round(customer.averageOrderValue || 0))}
+                      Khách từ {formatDate(customer.createdAt, locale)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Lần mua: {formatRelativeTime(customer.lastOrderDate)}
                     </p>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="space-y-1">
-                    <p className="font-medium">{formatDate(customer.lastOrderDate, locale)}</p>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <IconMapPin className="h-4 w-4" />
+                      <span>{customer.city || customer.primaryAddress?.city || '—'}</span>
+                    </div>
+                    <p className="text-xs">{customer.province || customer.primaryAddress?.district || ''}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1 text-sm">
+                    <Badge variant="outline" className="capitalize">{customer.customerProfile?.preferredChannel || 'email'}</Badge>
                     <p className="text-xs text-muted-foreground">
-                      Lần cuối: {customer.lastOrderValue ? currencyFormatter.format(Math.round(customer.lastOrderValue)) : '—'}
+                      Opt-in email: {(customer.emailSubscribed ?? customer.customerProfile?.marketingOptIn) ? 'Có' : 'Không'}
                     </p>
+                    <p className="text-xs text-muted-foreground">Sửa đổi: {formatDate(customer.updatedAt, locale)}</p>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="capitalize">
-                    {customer.customerProfile?.preferredChannel || 'email'}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Opt-in: {customer.customerProfile?.marketingOptIn ? 'Có' : 'Không'}
-                  </p>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {(customer.customerProfile?.tags || []).slice(0, 3).map((tag) => (
-                      <Badge key={tag} variant="secondary" className="capitalize">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {(customer.customerProfile?.tags?.length || 0) > 3 && (
-                      <Badge variant="outline">+{(customer.customerProfile?.tags?.length || 0) - 3}</Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <IconDotsVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(event) => { event.stopPropagation(); onView?.(customer) }}>
-                        Xem chi tiết
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(event) => { event.stopPropagation(); onEdit?.(customer) }}>
-                        Chỉnh sửa
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={(event) => { event.stopPropagation(); onDelete?.(customer) }}
-                      >
-                        Xóa khách hàng
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
