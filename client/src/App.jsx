@@ -5,7 +5,6 @@ import Lenis from 'lenis';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/all';
-import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
 import ChatIcon from './components/Chat/ChatIcon';
@@ -89,71 +88,69 @@ function App() {
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <BrowserRouter>
         <ScrollToTop />
-        <AuthProvider>
-          <ErrorBoundary>
-            <Suspense fallback={null}>
-              <Routes>
-                {/* ✅ Routes KHÔNG cần Layout */}
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-                <Route path="/categories" element={<AllCategories />} />
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <Routes>
+              {/* ✅ Routes KHÔNG cần Layout */}
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+              <Route path="/categories" element={<AllCategories />} />
 
-                {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
-                <Route element={<Layout />}>
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
-                  <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/products" element={<ProductByCategory />} />
-                  <Route path="/product-detail" element={<ProductDetail />} />
-                  <Route path="*" element={<HomePage />} />
-                  <Route path="/visually-similar" element={<VisuallySimilar />} />
-                </Route>
+              {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
+              <Route element={<Layout />}>
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
+                <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+                <Route path="/" element={<HomePage />} />
+                <Route path="/products" element={<ProductByCategory />} />
+                <Route path="/product-detail" element={<ProductDetail />} />
+                <Route path="*" element={<HomePage />} />
+                <Route path="/visually-similar" element={<VisuallySimilar />} />
+              </Route>
 
-                <Route element={<CheckoutLayout />}>
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/shipping" element={<Shipping />} />
-                  <Route
-                    path="/checkout/payos/success"
-                    element={
-                      <ProtectedRoute>
-                        <PayOSResult />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/payment-successful"
-                    element={
-                      <PaymentSuccessful />
-                    }
-                  />
-                  <Route
-                    path="/payment-failed"
-                    element={
-                      <PaymentFailed />
-                    }
-                  />
-                  <Route
-                    path="/payment-successful-preview"
-                    element={
-                      <PaymentSuccessfulPreview />
-                    }
-                  />
-                  <Route
-                    path="/checkout/nowpayments/success"
-                    element={
-                      <ProtectedRoute>
-                        <NowPaymentsResult />
-                      </ProtectedRoute>
-                    }
-                  />
-                </Route>
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-          <ChatIcon onClick={handleOpenChat} />
-          {isChatOpen && <ChatWindow onClose={handleCloseChat} />}
-        </AuthProvider>
+              <Route element={<CheckoutLayout />}>
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/shipping" element={<Shipping />} />
+                <Route
+                  path="/checkout/payos/success"
+                  element={
+                    <ProtectedRoute>
+                      <PayOSResult />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/payment-successful"
+                  element={
+                    <PaymentSuccessful />
+                  }
+                />
+                <Route
+                  path="/payment-failed"
+                  element={
+                    <PaymentFailed />
+                  }
+                />
+                <Route
+                  path="/payment-successful-preview"
+                  element={
+                    <PaymentSuccessfulPreview />
+                  }
+                />
+                <Route
+                  path="/checkout/nowpayments/success"
+                  element={
+                    <ProtectedRoute>
+                      <NowPaymentsResult />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+        <ChatIcon onClick={handleOpenChat} />
+        {isChatOpen && <ChatWindow onClose={handleCloseChat} />}
       </BrowserRouter>
     </GoogleOAuthProvider>
   );

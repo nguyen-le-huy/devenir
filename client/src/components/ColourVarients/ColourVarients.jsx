@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ColourVarients.module.css';
 import ScarfCard from '../ProductCard/ScarfCard';
@@ -6,7 +6,7 @@ import { useLenisControl } from '../../hooks/useLenisControl';
 import Backdrop from '../Backdrop';
 import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
-const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantId, colorMap = {} }) => {
+const ColourVarients = memo(({ isOpen, onClose, siblingVariants = [], currentVariantId, colorMap = {} }) => {
     const navigate = useNavigate();
 
     // Lock scroll when modal is open using useLenisControl instead of useScrollLock
@@ -32,10 +32,10 @@ const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantI
         });
     }, [siblingVariants, currentVariantId]);
 
-    const handleVariantClick = (variantId) => {
+    const handleVariantClick = useCallback((variantId) => {
         navigate(`/product-detail?variant=${variantId}`);
         onClose();
-    };
+    }, [navigate, onClose]);
 
     // Handle click outside to close
     useEffect(() => {
@@ -119,6 +119,7 @@ const ColourVarients = ({ isOpen, onClose, siblingVariants = [], currentVariantI
             </div>
         </>
     );
-};
+});
 
+ColourVarients.displayName = 'ColourVarients';
 export default ColourVarients;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/useAuthStore';
 import LoginForm from '../form/LoginForm';
 import ForgotPasswordForm from '../form/ForgotPasswordForm';
 import authService from '../../services/authService';
@@ -14,7 +14,7 @@ import Backdrop from '../Backdrop';
  */
 export default function AuthModal({ isOpen, onClose }) {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const login = useAuthStore((state) => state.login);
   const [activeForm, setActiveForm] = useState('login'); // 'login', 'forgot'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

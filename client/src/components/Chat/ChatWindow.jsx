@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import styles from './ChatWindow.module.css';
 import Devi from './Devi';
 import ChatMessage from './ChatMessage';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/useAuthStore';
 import { sendChatMessage } from '../../services/chatService';
 import { useAddToCart } from '../../hooks/useCart';
 import gsap from 'gsap';
@@ -19,7 +19,9 @@ const ChatWindow = ({ onClose }) => {
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    const { user, isAuthenticated } = useAuth();
+    // Atomic selectors
+    const user = useAuthStore((state) => state.user);
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     // Load messages from sessionStorage on mount
     const [messages, setMessages] = useState(() => {
@@ -269,16 +271,16 @@ const ChatWindow = ({ onClose }) => {
         }
     }, [inputValue, messages, isAuthenticated]);
 
-    const handleKeyPress = (e) => {
+    const handleKeyPress = useCallback((e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
         }
-    };
+    }, [handleSendMessage]);
 
-    const handlePromptClick = (promptText) => {
+    const handlePromptClick = useCallback((promptText) => {
         handleSendMessage(promptText);
-    };
+    }, [handleSendMessage]);
 
     // Add to cart hook
     const addToCartMutation = useAddToCart();
@@ -343,11 +345,11 @@ const ChatWindow = ({ onClose }) => {
         ));
     }, []);
 
-    const focusInput = () => {
+    const focusInput = useCallback(() => {
         if (inputRef.current) {
             inputRef.current.focus();
         }
-    };
+    }, []);
 
     return (
         <div className={styles.chatWindow} ref={chatWindowRef} data-lenis-prevent>

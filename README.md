@@ -88,7 +88,7 @@
 | Category | Technology |
 |----------|------------|
 | Framework | React 18 + Vite |
-| State | React Query, Context API |
+| State | React Query (Server State), Zustand (Client State) |
 | Styling | CSS Modules, Vanilla CSS |
 | Animations | GSAP, ScrollTrigger, SplitText |
 | Real-time | Socket.io Client |
@@ -99,7 +99,7 @@
 |----------|------------|
 | Framework | React 18 + TypeScript + Vite |
 | UI Library | Shadcn/ui, TailwindCSS |
-| State | React Query, Zustand |
+| State | React Query (Server State), Zustand (Client State) |
 | Charts | Recharts |
 | Forms | React Hook Form, Zod |
 

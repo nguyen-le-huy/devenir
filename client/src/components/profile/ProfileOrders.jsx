@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
 import { useMyOrders } from '../../hooks/useOrders'
-import { useAuth } from '../../contexts/AuthContext'
+import { useAuthStore } from '../../stores/useAuthStore'
 import { queryKeys } from '../../lib/queryClient'
 import { getSocket } from '../../lib/socket'
 import styles from './ProfileOrders.module.css'
@@ -124,7 +124,9 @@ function ShipStatusStrip({ order }) {
 
 export default function ProfileOrders() {
   const queryClient = useQueryClient()
-  const { token, isAuthenticated } = useAuth()
+  // Atomic selectors
+  const token = useAuthStore((state) => state.token)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const { data, isLoading, error } = useMyOrders()
   const orders = data?.data || []
   const [statusFilter, setStatusFilter] = useState('all')

@@ -1,7 +1,7 @@
 import styles from "./Header.module.css";
 import { useState, useRef, useEffect, lazy, Suspense, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useAuthStore } from "../../../stores/useAuthStore";
 import UserMenu from "../../UserMenu/UserMenu";
 import Snowfall from "../../Snowfall/Snowfall";
 import CursorTrailer from "../../CursorTrailer/CursorTrailer";
@@ -15,7 +15,9 @@ const Bag = lazy(() => import("../../Bag/Bag"));
 
 const Header = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, logout } = useAuth();
+    // Atomic selectors - only re-render when these specific values change
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const logout = useAuthStore((state) => state.logout);
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
