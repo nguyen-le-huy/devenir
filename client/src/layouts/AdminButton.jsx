@@ -1,8 +1,11 @@
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/useAuthStore';
 import styles from './AdminButton.module.css';
 
 export default function AdminButton() {
-  const { isAdmin, user, token } = useAuth();
+  // Atomic selectors
+  const isAdmin = useAuthStore((state) => state.isAdmin);
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
 
   if (!isAdmin()) return null;
 

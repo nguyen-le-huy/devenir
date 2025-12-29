@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/useAuthStore';
 import Loading from './Loading/Loading.jsx';
 
 /**
@@ -7,7 +7,9 @@ import Loading from './Loading/Loading.jsx';
  * Redirect đến /auth nếu chưa đăng nhập
  */
 export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  // Atomic selectors - only re-render when these specific values change
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const loading = useAuthStore((state) => state.loading);
 
   if (loading) {
     return <Loading size="md" />;
@@ -25,7 +27,10 @@ export const ProtectedRoute = ({ children }) => {
  * Redirect đến home nếu không phải admin
  */
 export const AdminRoute = ({ children }) => {
-  const { isAuthenticated, loading, isAdmin } = useAuth();
+  // Atomic selectors
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const loading = useAuthStore((state) => state.loading);
+  const isAdmin = useAuthStore((state) => state.isAdmin);
 
   if (loading) {
     return <Loading size="md" />;

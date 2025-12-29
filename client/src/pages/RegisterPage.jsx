@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/useAuthStore';
 import RegisterForm from '../components/form/RegisterForm';
 import authService from '../services/authService';
 import styles from './RegisterPage.module.css';
@@ -11,7 +11,7 @@ import styles from './RegisterPage.module.css';
  */
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const login = useAuthStore((state) => state.login);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

@@ -1,7 +1,7 @@
 import styles from "./Header.module.css";
-import { useState, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, lazy, Suspense, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useAuthStore } from "../../../stores/useAuthStore";
 import UserMenu from "../../UserMenu/UserMenu";
 import Snowfall from "../../Snowfall/Snowfall";
 import CursorTrailer from "../../CursorTrailer/CursorTrailer";
@@ -15,7 +15,9 @@ const Bag = lazy(() => import("../../Bag/Bag"));
 
 const Header = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, logout } = useAuth();
+    // Atomic selectors - only re-render when these specific values change
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const logout = useAuthStore((state) => state.logout);
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -58,71 +60,71 @@ const Header = () => {
         return () => clearTimeout(timer);
     }, []);
 
-    const handleBagIconMouseEnter = () => {
+    const handleBagIconMouseEnter = useCallback(() => {
         if (bagTimeoutRef.current) {
             clearTimeout(bagTimeoutRef.current);
         }
         setIsBagOpen(true);
-    }
+    }, []);
 
-    const handleBagIconMouseLeave = () => {
+    const handleBagIconMouseLeave = useCallback(() => {
         bagTimeoutRef.current = setTimeout(() => {
             setIsBagOpen(false);
         }, 300);
-    }
+    }, []);
 
-    const handleBagComponentMouseEnter = () => {
+    const handleBagComponentMouseEnter = useCallback(() => {
         if (bagTimeoutRef.current) {
             clearTimeout(bagTimeoutRef.current);
         }
-    }
+    }, []);
 
-    const handleBagComponentMouseLeave = () => {
+    const handleBagComponentMouseLeave = useCallback(() => {
         setIsBagOpen(false); // Immediate close, no delay
-    }
+    }, []);
 
-    const handleOpenMenu = () => {
+    const handleOpenMenu = useCallback(() => {
         setIsMenuOpen(true);
-    }
+    }, []);
 
-    const handleCloseMenu = () => {
+    const handleCloseMenu = useCallback(() => {
         setIsMenuOpen(false);
-    }
+    }, []);
 
-    const handleOpenAuth = () => {
+    const handleOpenAuth = useCallback(() => {
         navigate('/auth');
-    }
+    }, [navigate]);
 
-    const handleLogoClick = () => {
+    const handleLogoClick = useCallback(() => {
         navigate('/');
-    }
+    }, [navigate]);
 
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async () => {
         await logout();
         setIsMenuOpen(false);
         navigate('/');
-    }
+    }, [logout, navigate]);
 
-    const toggleSearch = () => {
+    const toggleSearch = useCallback(() => {
         setIsSearchOpen((prev) => !prev);
-    };
+    }, []);
 
-    const closeSearch = () => {
+    const closeSearch = useCallback(() => {
         setIsSearchOpen(false);
-    };
+    }, []);
 
     // Preload heavy components on hover
-    const preloadSearch = () => {
-        const loadSearch = import("../../Search/Search");
-    };
+    const preloadSearch = useCallback(() => {
+        import("../../Search/Search");
+    }, []);
 
-    const preloadBag = () => {
-        const loadBag = import("../../Bag/Bag");
-    };
+    const preloadBag = useCallback(() => {
+        import("../../Bag/Bag");
+    }, []);
 
-    const handleCategoryClick = (categoryId) => {
+    const handleCategoryClick = useCallback((categoryId) => {
         navigate(`/products?category=${categoryId}`);
-    };
+    }, [navigate]);
 
 
     return (

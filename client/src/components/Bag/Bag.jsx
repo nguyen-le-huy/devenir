@@ -26,16 +26,16 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
         });
     }, []);
 
-    const handleCheckout = () => {
+    const handleCheckout = useCallback(() => {
         if (cart.items.length === 0) return;
         if (onClose) onClose();
         navigate("/checkout");
-    };
+    }, [cart.items.length, onClose, navigate]);
 
-    const handleProductClick = (variantId) => {
+    const handleProductClick = useCallback((variantId) => {
         if (onClose) onClose();
         navigate(`/product-detail?variant=${variantId}`);
-    };
+    }, [onClose, navigate]);
 
     // Memoize cart items to prevent unnecessary re-renders
     const cartItems = useMemo(() => {

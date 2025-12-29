@@ -84,34 +84,28 @@ export const getVariantsByCategory = async (categoryId) => {
             return [];
         }
 
-        // Lấy variants cho từng product
-        const allVariants = [];
-        for (const product of products) {
-            try {
-                const variantsResponse = await apiClient.get(`/products/${product._id}/variants`);
+        // Fetch variants cho tất cả products cùng lúc (parallel) thay vì tuần tự
+        const variantPromises = products.map(product =>
+            apiClient.get(`/products/${product._id}/variants`)
+                .then(response => ({ product, variants: response.data || [] }))
+                .catch(() => ({ product, variants: [] })) // Graceful fallback
+        );
+        const variantResults = await Promise.all(variantPromises);
 
-                // apiClient đã unwrap, nên variantsResponse = { success: true, data: [...] }
-                const variants = variantsResponse.data || [];
-
-                if (variants.length > 0) {
-                    // Thêm thông tin product vào mỗi variant
-                    const enrichedVariants = variants.map(variant => ({
-                        ...variant,
-                        productInfo: {
-                            _id: product._id,
-                            name: product.name,
-                            description: product.description,
-                            category: product.category,
-                            brand: product.brand,
-                            averageRating: product.averageRating,
-                        }
-                    }));
-                    allVariants.push(...enrichedVariants);
+        // Enrich variants với thông tin product
+        const allVariants = variantResults.flatMap(({ product, variants }) =>
+            variants.map(variant => ({
+                ...variant,
+                productInfo: {
+                    _id: product._id,
+                    name: product.name,
+                    description: product.description,
+                    category: product.category,
+                    brand: product.brand,
+                    averageRating: product.averageRating,
                 }
-            } catch (err) {
-                console.error(`Error fetching variants for product ${product._id}:`, err);
-            }
-        }
+            }))
+        );
 
         return allVariants;
     } catch (error) {
@@ -204,31 +198,27 @@ export const getLatestVariants = async (limit = 4) => {
             return [];
         }
 
-        // Lấy variants và flatten
-        const allVariants = [];
-        for (const product of products) {
-            try {
-                const variantsResponse = await apiClient.get(`/products/${product._id}/variants`);
-                const variants = variantsResponse.data || [];
+        // Fetch variants parallel thay vì tuần tự
+        const variantPromises = products.map(product =>
+            apiClient.get(`/products/${product._id}/variants`)
+                .then(response => ({ product, variants: response.data || [] }))
+                .catch(() => ({ product, variants: [] }))
+        );
+        const variantResults = await Promise.all(variantPromises);
 
-                if (variants.length > 0) {
-                    const enrichedVariants = variants.map(variant => ({
-                        ...variant,
-                        productInfo: {
-                            _id: product._id,
-                            name: product.name,
-                            description: product.description,
-                            category: product.category,
-                            brand: product.brand,
-                            averageRating: product.averageRating,
-                        }
-                    }));
-                    allVariants.push(...enrichedVariants);
+        const allVariants = variantResults.flatMap(({ product, variants }) =>
+            variants.map(variant => ({
+                ...variant,
+                productInfo: {
+                    _id: product._id,
+                    name: product.name,
+                    description: product.description,
+                    category: product.category,
+                    brand: product.brand,
+                    averageRating: product.averageRating,
                 }
-            } catch (err) {
-                console.error(`Error fetching variants for product ${product._id}:`, err);
-            }
-        }
+            }))
+        );
 
         // Sort by createdAt (newest first)
         const sortedVariants = allVariants.sort((a, b) => {
@@ -277,31 +267,27 @@ export const getRandomVariants = async (limit = 8) => {
             return [];
         }
 
-        // Lấy variants và flatten
-        const allVariants = [];
-        for (const product of products) {
-            try {
-                const variantsResponse = await apiClient.get(`/products/${product._id}/variants`);
-                const variants = variantsResponse.data || [];
+        // Fetch variants parallel thay vì tuần tự
+        const variantPromises = products.map(product =>
+            apiClient.get(`/products/${product._id}/variants`)
+                .then(response => ({ product, variants: response.data || [] }))
+                .catch(() => ({ product, variants: [] }))
+        );
+        const variantResults = await Promise.all(variantPromises);
 
-                if (variants.length > 0) {
-                    const enrichedVariants = variants.map(variant => ({
-                        ...variant,
-                        productInfo: {
-                            _id: product._id,
-                            name: product.name,
-                            description: product.description,
-                            category: product.category,
-                            brand: product.brand,
-                            averageRating: product.averageRating,
-                        }
-                    }));
-                    allVariants.push(...enrichedVariants);
+        const allVariants = variantResults.flatMap(({ product, variants }) =>
+            variants.map(variant => ({
+                ...variant,
+                productInfo: {
+                    _id: product._id,
+                    name: product.name,
+                    description: product.description,
+                    category: product.category,
+                    brand: product.brand,
+                    averageRating: product.averageRating,
                 }
-            } catch (err) {
-                console.error(`Error fetching variants for product ${product._id}:`, err);
-            }
-        }
+            }))
+        );
 
         // Filter unique by product+color combination
         const uniqueMap = new Map();

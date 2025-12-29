@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import ProfileOverview from '../../components/profile/ProfileOverview';
 import PersonalDetails from '../../components/profile/PersonalDetails';
@@ -14,7 +14,10 @@ import styles from './UserProfile.module.css';
  * Mobile: Horizontal tabs navigation + Content
  */
 export default function UserProfile() {
-  const { user, token, logout } = useAuth();
+  // Atomic selectors
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'overview';
@@ -164,7 +167,7 @@ export default function UserProfile() {
                   onClick={handleGoToAdmin}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M13 21H3V8H1V3H5V1H8V3H16V1H19V3H23V8H21V21H11V23H13V21ZM19 5H5V7H19V5ZM3 9H21V21H3V9Z" fill="currentColor"/>
+                    <path d="M13 21H3V8H1V3H5V1H8V3H16V1H19V3H23V8H21V21H11V23H13V21ZM19 5H5V7H19V5ZM3 9H21V21H3V9Z" fill="currentColor" />
                   </svg>
                   Admin Dashboard
                 </button>
@@ -175,7 +178,7 @@ export default function UserProfile() {
                 onClick={handleLogout}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 21H5C4.44772 21 4 20.5523 4 20V4C4 3.44772 4.44772 3 5 3H9M16 17L21 12M21 12L16 7M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M9 21H5C4.44772 21 4 20.5523 4 20V4C4 3.44772 4.44772 3 5 3H9M16 17L21 12M21 12L16 7M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 Sign out
               </button>

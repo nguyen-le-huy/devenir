@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import styles from './ScarfCard.module.css';
 import { Link } from 'react-router-dom';
 import { getLazyLoadProps, getOptimizedImageUrl } from '../../utils/imageOptimization.js';
@@ -10,7 +10,7 @@ import { getLazyLoadProps, getOptimizedImageUrl } from '../../utils/imageOptimiz
  * @param {Array} colorVariants - Optional: Array of sibling variants with different colors
  *                                Each variant should have: _id, color, colorHex, mainImage, hoverImage
  */
-const ScarfCard = ({ scarf, colorVariants = [] }) => {
+const ScarfCard = memo(({ scarf, colorVariants = [] }) => {
     // State for current displayed variant
     const [activeVariant, setActiveVariant] = useState(null);
 
@@ -145,6 +145,6 @@ const ScarfCard = ({ scarf, colorVariants = [] }) => {
             )}
         </Link>
     );
-};
+});
 
 export default ScarfCard;

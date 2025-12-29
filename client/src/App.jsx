@@ -5,8 +5,9 @@ import Lenis from 'lenis';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/all';
-import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
+import { setLenisInstance } from './lib/lenis';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
 import ChatIcon from './components/Chat/ChatIcon';
 import ChatWindow from './components/Chat/ChatWindow';
@@ -37,8 +38,6 @@ const ProductDetail = lazy(() => import('./pages/ProductDetail/ProductDetail'));
 const CheckoutLayout = lazy(() => import('./components/checkoutLayout/CheckoutLayout'));
 const Checkout = lazy(() => import('./pages/Checkout/Checkout'));
 const Shipping = lazy(() => import('./pages/Checkout/Shipping'));
-
-export let lenisInstance
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -77,22 +76,24 @@ function App() {
       infinite: false,
     });
 
-    lenisInstance = lenis;
+    setLenisInstance(lenis);
 
     // Đồng bộ Lenis với GSAP ScrollTrigger
     lenis.on('scroll', ScrollTrigger.update)
 
-    gsap.ticker.add((time) => {
+    // Store callback reference for proper cleanup
+    const tickerCallback = (time) => {
       lenis.raf(time * 1000)
-    })
+    }
+    gsap.ticker.add(tickerCallback)
 
     gsap.ticker.lagSmoothing(0)
 
     // Cleanup
     return () => {
-      lenisInstance = null
-      lenis.destroy()
-      gsap.ticker.remove()
+      setLenisInstance(null);
+      lenis.destroy();
+      gsap.ticker.remove(tickerCallback);
     }
   }, []);
 
@@ -168,9 +169,9 @@ function App() {
               </Routes>
             </Suspense>
           </ErrorBoundary>
-          <ChatIcon onClick={handleOpenChat} />
-          {isChatOpen && <ChatWindow onClose={handleCloseChat} />}
         </AuthProvider>
+        <ChatIcon onClick={handleOpenChat} />
+        {isChatOpen && <ChatWindow onClose={handleCloseChat} />}
       </BrowserRouter>
     </GoogleOAuthProvider>
   );

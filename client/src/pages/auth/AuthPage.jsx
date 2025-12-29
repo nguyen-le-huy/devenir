@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/useAuthStore';
 import LoginForm from '../../components/form/LoginForm';
 import RegisterForm from '../../components/form/RegisterForm';
 import ForgotPasswordForm from '../../components/form/ForgotPasswordForm';
@@ -13,8 +13,8 @@ import styles from './AuthPage.module.css';
  * Right: Benefits (default) or Register Form or Forgot Password or Phone Verification
  */
 export default function AuthPage() {
-  const { login } = useAuth();
-  
+  const login = useAuthStore((state) => state.login);
+
   // Form state: 'benefits', 'register', 'forgot', 'phone'
   const [rightForm, setRightForm] = useState('benefits');
   const [loading, setLoading] = useState(false);
@@ -82,7 +82,7 @@ export default function AuthPage() {
 
     try {
       const response = await authService.googleLogin(credential);
-      
+
       // Check if user already exists or account just created
       if (response.user && response.token) {
         // Account already existed or verification not needed
@@ -218,37 +218,37 @@ export default function AuthPage() {
                 <ul className={styles.benefits}>
                   <li className={styles.benefit}>
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Faster checkout with saved information</span>
                   </li>
                   <li className={styles.benefit}>
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Track orders and easily manage returns</span>
                   </li>
                   <li className={styles.benefit}>
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Discover the latest updates from Devenir</span>
                   </li>
                   <li className={styles.benefit}>
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Manage your profile and preferences</span>
                   </li>
                   <li className={styles.benefit}>
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>Get expert support from our customer team</span>
                   </li>
                 </ul>
               </div>
-              <button 
+              <button
                 className={styles.createAccountBtn}
                 onClick={() => setRightForm('register')}
               >

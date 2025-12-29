@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthStore } from '../../stores/useAuthStore';
 import authService from '../../services/authService';
 import FormInput from '../form/FormInput';
 import FormButton from '../form/FormButton';
@@ -19,7 +19,7 @@ export default function PersonalDetails({
   setSuccessMessage,
   setLoading
 }) {
-  const { updateUser } = useAuth();
+  const updateUser = useAuthStore((state) => state.updateUser);
   const [formData, setFormData] = useState({
     username: user?.username || '',
     email: user?.email || '',
