@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { lenisInstance } from '../App';
+import { lenisInstance } from '../lib/lenis';
 
 // Reference counter để track số lượng components đang yêu cầu stop scroll
 let scrollStopCount = 0;

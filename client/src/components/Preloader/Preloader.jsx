@@ -3,7 +3,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
-import { lenisInstance } from '../../App.jsx';
+import { lenisInstance } from '../../lib/lenis';
 
 gsap.registerPlugin(useGSAP, DrawSVGPlugin);
 

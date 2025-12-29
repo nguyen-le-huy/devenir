@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { lenisInstance } from '../../App';
+import { lenisInstance } from '../../lib/lenis';
 
 /**
  * ScrollToTop Component

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './Filter.module.css';
 import { useLenisControl } from '../../hooks/useLenisControl';
-import { lenisInstance } from '../../App';
+import { lenisInstance } from '../../lib/lenis';
 import Backdrop from '../Backdrop';
 import { trackEvent } from '../../utils/eventTracker.js';
 
