@@ -69,14 +69,6 @@ const marketingOptions = [
   { label: 'Chưa opt-in', value: 'no' },
 ]
 
-const rfmSegments = [
-  { label: 'Tất cả RFM', value: 'all' },
-  { label: 'Loyal Customers', value: 'loyal' },
-  { label: 'Potential Loyalists', value: 'potential' },
-  { label: 'New / One-time', value: 'new' },
-  { label: 'At Risk', value: 'risk' },
-]
-
 export function CustomerFilters({ filters, onChange, onReset, metaTags = [] }: CustomerFiltersProps) {
   const activeTagCount = filters.tags?.length ?? 0
 
@@ -234,20 +226,6 @@ export function CustomerFilters({ filters, onChange, onReset, metaTags = [] }: C
           </SelectContent>
         </Select>
 
-        <Select
-          value={filters.rfmSegment ?? 'all'}
-          onValueChange={(value) => onChange({ rfmSegment: value === 'all' ? undefined : value, page: 1 })}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="RFM Segment" />
-          </SelectTrigger>
-          <SelectContent>
-            {rfmSegments.map(option => (
-              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         <div className="grid grid-cols-2 gap-2">
           <Input
             type="number"
@@ -264,9 +242,7 @@ export function CustomerFilters({ filters, onChange, onReset, metaTags = [] }: C
             onChange={(e) => onChange({ ordersMax: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
           />
         </div>
-      </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div className="grid grid-cols-2 gap-2">
           <Input
             type="number"
@@ -283,7 +259,9 @@ export function CustomerFilters({ filters, onChange, onReset, metaTags = [] }: C
             onChange={(e) => onChange({ spendMax: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
           />
         </div>
+      </div>
 
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <div className="grid grid-cols-2 gap-2">
           <Input
             placeholder="Thành phố"
@@ -299,7 +277,7 @@ export function CustomerFilters({ filters, onChange, onReset, metaTags = [] }: C
 
         <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
           <IconMapPin className="h-4 w-4" />
-          Lọc theo khu vực, giá trị đơn, RFM và opt-in.
+          Lọc theo khu vực, giá trị đơn và opt-in.
         </div>
       </div>
 

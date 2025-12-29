@@ -18,6 +18,8 @@ import SizeAndFit from '../../components/SizeAndFit/SizeAndFit.jsx';
 import AddToBagNoti from '../../components/Notification/AddToBagNoti.jsx';
 import TryOn from '../../components/TryOn/TryOn.jsx';
 import { getOptimizedImageUrl } from '../../utils/imageOptimization.js';
+import { trackEvent } from '../../utils/eventTracker.js';
+import { useProductTracking } from '../../hooks/useTracking';
 
 export default function ProductDetail() {
     const [searchParams] = useSearchParams();
@@ -45,6 +47,18 @@ export default function ProductDetail() {
     // Ref to capture initial height of .right panel
     const rightRef = useRef(null);
     const [initialRightHeight, setInitialRightHeight] = useState(null);
+
+    // Track product view with variant details
+    useProductTracking(
+        product ? {
+            _id: product._id,
+            name: product.name,
+            category: product.category?.name,
+            basePrice: variant?.price || product.basePrice
+        } : null,
+        variant?.size,
+        variant?.colorName || variant?.color
+    );
 
     const handleToggle = (itemName) => {
         setOpenItem(openItem === itemName ? null : itemName);
@@ -79,6 +93,21 @@ export default function ProductDetail() {
                 setVariant(data.variant);
                 setProduct(data.product);
                 setSiblingVariants(data.siblingVariants);
+                
+                // Track product view event
+                if (data.variant && data.product) {
+                    trackEvent.productView({
+                        productId: data.product._id,
+                        productName: data.product.name,
+                        variantId: data.variant._id,
+                        category: data.product.category?.name || 'Unknown',
+                        brand: data.product.brand?.name || 'Unknown',
+                        color: data.variant.color?.name || 'Unknown',
+                        size: data.variant.size || 'Free Size',
+                        price: data.variant.salePrice || data.variant.basePrice,
+                        sku: data.variant.sku
+                    });
+                }
             } catch (error) {
                 console.error('Error fetching product data:', error);
             } finally {

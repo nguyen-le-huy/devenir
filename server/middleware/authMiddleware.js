@@ -76,3 +76,34 @@ export const isAdmin = (req, res, next) => {
 
   next();
 };
+
+/**
+ * OPTIONAL AUTH MIDDLEWARE
+ * Similar to authenticate but doesn't fail if no token
+ * Used for tracking endpoints that work for both logged-in and anonymous users
+ */
+export const optionalAuth = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  // If no token, just continue (anonymous user)
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId);
+    
+    if (user) {
+      req.user = user;
+      req.userId = decoded.userId;
+    }
+  } catch (error) {
+    // Token invalid, but continue anyway (treat as anonymous)
+    console.log('Optional auth failed, continuing as anonymous:', error.message);
+  }
+  
+  next();
+});

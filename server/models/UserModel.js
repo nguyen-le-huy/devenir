@@ -83,6 +83,32 @@ const customerProfileSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    notesList: [
+      {
+        type: {
+          type: String,
+          enum: ['preference', 'consultation', 'feedback', 'issue', 'opportunity', 'context'],
+          default: 'context',
+        },
+        content: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        createdBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+        isPinned: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
     source: {
       type: String,
       default: 'organic',
@@ -213,10 +239,7 @@ const userSchema = new mongoose.Schema(
     },
     lastLogin: {
       type: Date,
-      default: function() {
-        // Default = createdAt (giả định user login lần đầu khi đăng ký)
-        return this.createdAt || new Date()
-      },
+      default: Date.now,
     },
     loginAttempts: {
       type: Number,

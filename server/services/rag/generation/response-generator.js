@@ -6,9 +6,10 @@ import { buildCoVePrompt } from './prompt-builder.js';
  * @param {string} query - User query
  * @param {string} context - Context from RAG retrieval
  * @param {Array} conversationHistory - Previous messages
+ * @param {Object} customerContext - Customer intelligence context (optional)
  */
-export async function generateResponse(query, context, conversationHistory = []) {
-    const systemPrompt = buildCoVePrompt(context, conversationHistory);
+export async function generateResponse(query, context, conversationHistory = [], customerContext = null) {
+    const systemPrompt = buildCoVePrompt(context, conversationHistory, customerContext);
 
     // Build messages array
     const messages = [

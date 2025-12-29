@@ -24,10 +24,15 @@ Tôi sẽ gợi ý những outfit phù hợp cho bạn!`
             };
         }
 
-        // Build style suggestion prompt
-        const prompt = `
-Bạn là stylist chuyên nghiệp. Hãy gợi ý outfit phối đồ.
+        // Build style suggestion prompt with customer context
+        const customerInfo = context.customerContext || '';
+        const toneNote = context.customerProfile?.customerType 
+            ? `\n(Khách hàng là ${context.customerProfile.customerType} - Điều chỉnh giọng điệu và đề xuất phù hợp)` 
+            : '';
 
+        const prompt = `
+Bạn là stylist chuyên nghiệp. Hãy gợi ý outfit phối đồ.${toneNote}
+${customerInfo}
 **Yêu cầu khách hàng:** ${query}
 
 **Sản phẩm có sẵn:**
@@ -37,6 +42,7 @@ ${productResults.suggested_products.map((p, i) =>
 
 Hãy đề xuất 2-3 cách phối đồ sử dụng các sản phẩm trên.
 Giải thích style và dịp phù hợp cho mỗi outfit.
+${context.hasCustomerContext ? 'Tham khảo sở thích màu sắc và thương hiệu của khách (nếu có trong thông tin khách hàng).' : ''}
 
 Format trả lời:
 1. Mô tả ngắn gọn về style

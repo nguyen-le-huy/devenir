@@ -7,10 +7,43 @@ import { sendChatMessage } from '../../services/chatService';
 import { useAddToCart } from '../../hooks/useCart';
 import gsap from 'gsap';
 import SplitText from 'gsap/src/SplitText';
+import { trackEvent } from '../../utils/eventTracker.js';
 
 gsap.registerPlugin(SplitText);
 
 const CHAT_STORAGE_KEY = 'devenir_chat_session';
+
+// Helper function to detect intent from message
+const detectIntent = (message) => {
+    const lowerMsg = message.toLowerCase();
+    
+    // Size-related keywords
+    if (lowerMsg.match(/size|kích thước|mặc thử|vừa|lớn|nhỏ/)) {
+        return 'size-help';
+    }
+    
+    // Product recommendation keywords
+    if (lowerMsg.match(/gợi ý|đề xuất|tìm|muốn mua|cần|nên|phù hợp/)) {
+        return 'product-recommendation';
+    }
+    
+    // Styling advice keywords
+    if (lowerMsg.match(/phối|đồ|mix|match|styling|style|phong cách/)) {
+        return 'styling-advice';
+    }
+    
+    // Order/shipping keywords
+    if (lowerMsg.match(/đơn hàng|giao hàng|ship|vận chuyển|order/)) {
+        return 'order-inquiry';
+    }
+    
+    // Consultation keywords
+    if (lowerMsg.match(/tư vấn|hỏi|giúp|hướng dẫn|không biết/)) {
+        return 'consultation';
+    }
+    
+    return 'general';
+};
 
 const ChatWindow = ({ onClose }) => {
     const chatWindowRef = useRef(null);
@@ -213,6 +246,12 @@ const ChatWindow = ({ onClose }) => {
         const messageText = directText || inputValue;
         if (!messageText.trim()) return;
 
+        // Track chat_start if this is the first message
+        const isFirstMessage = messages.length === 0;
+        if (isFirstMessage) {
+            trackEvent.chatStart();
+        }
+
         // Hide initial view
         setShowInitialView(false);
 
@@ -237,6 +276,14 @@ const ChatWindow = ({ onClose }) => {
                 [...messages, userMessage],
                 isAuthenticated
             );
+            
+            // Track chat message with detected intent
+            trackEvent.chatMessage({
+                message: messageText,
+                intent: response.intent || detectIntent(messageText),
+                hasProducts: response.suggested_products?.length > 0,
+                hasAction: !!response.suggested_action
+            });
 
             // Create bot message from response
             const botMessage = {

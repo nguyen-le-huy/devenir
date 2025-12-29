@@ -66,7 +66,7 @@ export function CustomerFormDrawer({ open, mode, initialData, loading, onOpenCha
         status: initialData.customerProfile?.status || 'prospect',
         preferredChannel: initialData.customerProfile?.preferredChannel || 'email',
         marketingOptIn: initialData.customerProfile?.marketingOptIn ?? true,
-        tags: initialData.customerProfile?.tags || [],
+        tags: (initialData as any).tags || initialData.customerProfile?.tags || [],
         notes: initialData.customerProfile?.notes || '',
         password: '',
       })

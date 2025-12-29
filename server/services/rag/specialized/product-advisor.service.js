@@ -341,7 +341,12 @@ export async function productAdvice(query, context = {}) {
         console.log(contextText.substring(0, 2000));
         console.log('=== END CONTEXT ===\\n');
 
-        const answer = await generateResponse(query, contextText, context.recent_messages);
+        const answer = await generateResponse(
+            query, 
+            contextText, 
+            context.recent_messages,
+            context.hasCustomerContext ? context : null
+        );
 
         // 8. Prepare sources and suggested products
         const sources = reranked.map(r => {

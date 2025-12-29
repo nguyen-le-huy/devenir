@@ -385,7 +385,7 @@ export const getCustomers = asyncHandler(async (req, res) => {
   if (tier && tier !== 'all') filterConditions.push({ loyaltyTier: tier })
   if (status && status !== 'all') filterConditions.push({ 'customerProfile.status': status })
   if (channel && channel !== 'all') filterConditions.push({ 'customerProfile.preferredChannel': channel })
-  if (tagList.length) filterConditions.push({ 'customerProfile.tags': { $all: tagList } })
+  if (tagList.length) filterConditions.push({ tags: { $all: tagList } })
 
   const periodDate = convertPeriodToDate(period)
   if (periodDate) {
@@ -423,8 +423,8 @@ export const getCustomers = asyncHandler(async (req, res) => {
         { $group: { _id: '$customerProfile.preferredChannel', count: { $sum: 1 } } },
       ],
       tagCounts: [
-        { $unwind: { path: '$customerProfile.tags', preserveNullAndEmptyArrays: false } },
-        { $group: { _id: '$customerProfile.tags', count: { $sum: 1 } } },
+        { $unwind: { path: '$tags', preserveNullAndEmptyArrays: false } },
+        { $group: { _id: '$tags', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 30 },
       ],
@@ -880,6 +880,20 @@ export const updateCustomer = asyncHandler(async (req, res) => {
       ...currentProfile,
       ...incomingProfile,
       tags: incomingProfile.tags ?? currentProfile.tags,
+    }    
+    // Sync tags to root level for AI Intelligence consistency
+    if (incomingProfile.tags && Array.isArray(incomingProfile.tags)) {
+      // Merge with existing root-level tags (deduplicate)
+      const existingTags = new Set(customer.tags || [])
+      incomingProfile.tags.forEach(tag => existingTags.add(tag.toLowerCase()))
+      customer.tags = Array.from(existingTags)
+    }    
+    // Sync tags to root level for AI Intelligence consistency
+    if (incomingProfile.tags && Array.isArray(incomingProfile.tags)) {
+      // Merge with existing root-level tags (deduplicate)
+      const existingTags = new Set(customer.tags || [])
+      incomingProfile.tags.forEach(tag => existingTags.add(tag.toLowerCase()))
+      customer.tags = Array.from(existingTags)
     }
   }
 

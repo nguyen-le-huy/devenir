@@ -19,6 +19,8 @@ import PaymentSuccessfulPreview from './pages/PaymentStatus/PaymentSuccessfulPre
 import AllCategories from './pages/AllCategories/AllCategories.jsx';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import Loading from './components/Loading/Loading';
+import { useTracking } from './hooks/useTracking';
+import { trackingService } from './services/trackingService';
 
 
 gsap.registerPlugin(ScrollTrigger);
@@ -45,6 +47,22 @@ function App() {
 
   const handleOpenChat = () => setIsChatOpen(true);
   const handleCloseChat = () => setIsChatOpen(false);
+
+  // Initialize tracking service on app mount
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    trackingService.init(userId);
+
+    // Update user ID when user logs in
+    const handleStorageChange = (e) => {
+      if (e.key === 'userId' && e.newValue) {
+        trackingService.setUserId(e.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -87,6 +105,7 @@ function App() {
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <BrowserRouter>
         <ScrollToTop />
+        <TrackingWrapper />
         <AuthProvider>
           <ErrorBoundary>
             <Suspense fallback={<Loading />}>
@@ -155,6 +174,12 @@ function App() {
       </BrowserRouter>
     </GoogleOAuthProvider>
   );
+}
+
+// Component để auto-track page views
+function TrackingWrapper() {
+  useTracking(); // Auto track page views on route change
+  return null;
 }
 
 export default App;

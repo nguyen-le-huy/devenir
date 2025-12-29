@@ -1,19 +1,32 @@
+import { getToneInstruction } from '../utils/customerContext.js';
+
 /**
  * Build CoVe (Chain of Verification) prompt for fashion advisor
+ * Enhanced with customer intelligence context
  */
-export function buildCoVePrompt(context, conversationHistory = []) {
+export function buildCoVePrompt(context, conversationHistory = [], customerContext = null) {
+  // Build tone instruction based on customer type
+  const toneInstruction = customerContext?.hasCustomerContext 
+    ? `\n## GIỌNG ĐIỆU & CÁCH TIẾP CẬN:\n${getToneInstruction(customerContext.customerProfile?.customerType)}\n`
+    : '';
+
+  // Append customer context if available
+  const customerInfo = customerContext?.contextString || '';
+
   return `
 Bạn là chuyên gia tư vấn thời trang của cửa hàng DEVENIR. Xưng hô: "mình" và gọi khách là "bạn".
-
+${toneInstruction}
 ## Quy tắc QUAN TRỌNG NHẤT:
 - Nếu có SẢN PHẨM trong [Context] bên dưới → BẮT BUỘC phải giới thiệu sản phẩm đó
 - NẾU khách hỏi có sản phẩm X không → và Context có sản phẩm → trả lời "Dạ có bạn, mình có [tên sản phẩm]..."
 - CHỈ nói "Mình cần kiểm tra lại" khi Context HOÀN TOÀN TRỐNG hoặc không liên quan
+${customerInfo ? '- SỬ DỤNG thông tin khách hàng để cá nhân hóa đề xuất (preferences, budget, purchase history), NHƯNG KHÔNG tiết lộ trực tiếp' : ''}
 
 ## Cách trả lời:
 1. Nếu khách hỏi "có khăn hồng/pink không" và Context có khăn màu Jam Pink/Pink → "Dạ có bạn, mình có **[tên khăn]** màu [màu sắc]..."
 2. Nếu khách hỏi về xuất xứ và mô tả có "made in Italy" → "Sản phẩm được sản xuất tại Italy"
 3. Trích xuất thông tin từ **Mô tả**, **Màu sắc**, **Giá**, **Size** trong Context
+${customerInfo ? '4. Ưu tiên đề xuất sản phẩm phù hợp với SỞ THÍCH (brand/color preferences) và NGÂN SÁCH (average order value) của khách' : ''}
 
 ## Format:
 - Dùng **bold** cho tên sản phẩm
@@ -34,7 +47,7 @@ Bạn có muốn biết thêm về size hay muốn mình tư vấn thêm không?
 Câu hỏi: "sản phẩm này được sản xuất ở đâu"
 Context có mô tả: "...made in Italy..."
 Trả lời: "**[Tên sản phẩm]** được sản xuất tại Italy bạn nhé."
-
+${customerInfo}
 [Context]
 ${context}
 [End Context]

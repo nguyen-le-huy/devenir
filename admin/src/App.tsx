@@ -17,6 +17,7 @@ import InventoryPage from './pages/inventory/InventoryPage'
 import InventoryAlertsPage from './pages/inventory/InventoryAlertsPage'
 import PromotionsPage from './pages/marketing/PromotionsPage'
 import AnalyticsPage from './pages/analytics/AnalyticsPage'
+import { ChatbotAnalyticsWidget } from './pages/chatbot/ChatbotAnalytics'
 import SettingsPage from './pages/settings/SettingsPage'
 import ChatbotPage from './pages/chatbot/ChatbotPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
@@ -90,6 +91,7 @@ function App() {
 
           {/* AI Chatbot */}
           <Route path="/admin/chatbot" element={<ProtectedRoute><ChatbotPage /></ProtectedRoute>} />
+          <Route path="/admin/chatbot/analytics" element={<ProtectedRoute><ChatbotAnalyticsWidget /></ProtectedRoute>} />
 
           {/* Content Management */}
           <Route path="/admin/social-posts" element={<ProtectedRoute><SocialPostsPage /></ProtectedRoute>} />

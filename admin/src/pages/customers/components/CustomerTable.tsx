@@ -66,14 +66,6 @@ const formatRelativeTime = (value?: string | null) => {
   return `${Math.floor(diffDays / 365)} năm trước`
 }
 
-const statusStyles: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-900 border-emerald-200',
-  vip: 'bg-purple-100 text-purple-900 border-purple-200',
-  'at-risk': 'bg-red-100 text-red-900 border-red-200',
-  inactive: 'bg-muted text-muted-foreground',
-  prospect: 'bg-blue-100 text-blue-900 border-blue-200',
-}
-
 const initialsOf = (customer: CustomerListItem) => {
   const first = customer.firstName?.[0] || customer.username?.[0] || customer.email[0]
   const last = customer.lastName?.[0] || customer.email.split('@')[0]?.[1]
@@ -85,6 +77,14 @@ const formatRange = (page: number, limit: number, total: number) => {
   const end = Math.min(total, page * limit)
   if (total === 0) return '0'
   return `${start}-${end}`
+}
+
+// Helper to merge tags from both root level and customerProfile
+const mergeTags = (customer: any): string[] => {
+  const rootTags = customer?.tags || []
+  const profileTags = customer?.customerProfile?.tags || []
+  // Merge and deduplicate
+  return Array.from(new Set([...rootTags, ...profileTags]))
 }
 
 export function CustomerTable({
@@ -178,21 +178,18 @@ export function CustomerTable({
                     <p className="font-semibold">{customer.totalOrders} đơn • {currencyFormatter.format(Math.round(customer.totalSpent || 0))}</p>
                     <p className="text-xs text-muted-foreground">AOV {currencyFormatter.format(Math.round(customer.averageOrderValue || 0))}</p>
                     <div className="flex flex-wrap gap-1 text-xs">
-                      {(customer.customerProfile?.tags || []).slice(0, 3).map(tag => (
+                      {mergeTags(customer).slice(0, 3).map((tag: string) => (
                         <Badge key={tag} variant="outline" className="capitalize">{tag}</Badge>
                       ))}
-                      {(customer.customerProfile?.tags?.length || 0) > 3 && (
-                        <Badge variant="outline">+{(customer.customerProfile?.tags?.length || 0) - 3}</Badge>
+                      {mergeTags(customer).length > 3 && (
+                        <Badge variant="outline">+{mergeTags(customer).length - 3}</Badge>
                       )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1.5 text-sm">
-                    <Badge variant="outline" className={cn('capitalize border', statusStyles[customer.customerProfile?.status || 'active'])}>
-                      {customer.customerProfile?.status || 'active'}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs font-semibold">
                       Khách từ {formatDate(customer.createdAt, locale)}
                     </p>
                     <p className="text-xs text-muted-foreground">

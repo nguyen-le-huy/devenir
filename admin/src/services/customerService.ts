@@ -229,4 +229,21 @@ export const customerService = {
     const response = await api.delete(`/customers/${id}`)
     return response.data
   },
+  // Customer Intelligence APIs
+  getIntelligence: async (id: string, days = 30) => {
+    const response = await api.get(`/customers/${id}/intelligence`, { params: { days } })
+    return response.data
+  },
+  getQuickInsights: async (id: string) => {
+    const response = await api.get(`/customers/${id}/quick-insights`)
+    return response.data
+  },
+  applyTags: async (id: string, tags: string[]) => {
+    const response = await api.post(`/customers/${id}/apply-tags`, { tags })
+    return response.data
+  },
+  applyNotes: async (id: string, notes: Array<{ type: string; content: string; priority?: string }>) => {
+    const response = await api.post(`/customers/${id}/apply-notes`, { notes })
+    return response.data
+  },
 }

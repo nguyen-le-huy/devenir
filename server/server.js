@@ -22,12 +22,16 @@ import inventoryRoutes from './routes/inventoryRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import chatAnalyticsRoutes from './routes/chatAnalyticsRoutes.js';
 import imageSearchRoutes from './routes/imageSearchRoutes.js';
 import socialRoutes from './routes/socialRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import userOrderRoutes from './routes/userOrderRoutes.js';
 import financialRoutes from './routes/financialRoutes.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
+import customerIntelligenceRoutes from './routes/customerIntelligenceRoutes.js';
+import EventLog from './models/EventLogModel.js';
 import { handlePayOSWebhook } from './controllers/PaymentController.js';
 import { initImageSearchServices } from './controllers/ImageSearchController.js';
 
@@ -176,13 +180,16 @@ app.use('/api/colors', colorRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', userOrderRoutes); // Customer order tracking
-app.use('/api/admin/inventory', inventoryRoutes);
+app.use('/api/events', eventRoutes); // Event tracking
 app.use('/api/customers', customerRoutes);
+app.use('/api/customers', customerIntelligenceRoutes); // Customer Intelligence API
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chat', chatRoutes); // RAG Chat API
+app.use('/api/analytics/chatbot', chatAnalyticsRoutes); // Chatbot Analytics
 app.use('/api/image-search', imageSearchRoutes); // Visual Search API
 app.use('/api/social', socialRoutes); // Social Media Posting Proxy
 app.use('/api/admin/orders', orderRoutes); // Admin Order Management
+app.use('/api/admin/inventory', inventoryRoutes); // Inventory Management
 app.use('/api/financial', financialRoutes); // Financial reporting
 app.use('/api/admin/shipments', shipmentRoutes); // Shipment management
 
@@ -233,6 +240,30 @@ io.on('connection', (socket) => {
   }
 
   logger.info('Socket connected', { socketId: socket.id, userId });
+
+  // Handle tracking events from client
+  socket.on('track_event', async (eventData) => {
+    try {
+      const { type, data, timestamp } = eventData;
+      
+      if (!type) return;
+
+      // Save to EventLog
+      await EventLog.create({
+        userId: userId || data?.userId || null,
+        type,
+        data: data || {},
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
+        sessionId: data?.sessionId || null,
+        userAgent: socket.handshake.headers['user-agent'],
+        ipAddress: socket.handshake.address,
+      });
+
+      logger.info(`✅ [Socket Event] ${type} - User: ${userId || 'anonymous'}`);
+    } catch (error) {
+      logger.error('Socket event tracking error:', error);
+    }
+  });
 
   socket.on('disconnect', (reason) => {
     logger.info('Socket disconnected', { socketId: socket.id, userId, reason });

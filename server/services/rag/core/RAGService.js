@@ -6,6 +6,8 @@ import { policyFAQ } from '../specialized/policy-faq.service.js';
 import { handleAddToCart } from '../specialized/add-to-cart.service.js';
 import { styleMatcher } from '../specialized/style-matcher.service.js';
 import { ConversationManager } from '../orchestrators/conversation-manager.js';
+import { buildCustomerContext } from '../utils/customerContext.js';
+import { logChatInteraction } from '../../chatbotAnalytics.js';
 
 export class RAGService {
     constructor() {
@@ -16,32 +18,44 @@ export class RAGService {
      * Main chat handler - routes to appropriate service
      */
     async chat(userId, message, conversationHistory = []) {
+        const startTime = Date.now();
+        
         try {
-            // 1. Parallel: Classify intent + Get conversation context
-            const [intentResult, context] = await Promise.all([
+            // 1. Parallel: Classify intent + Get conversation context + Build customer context
+            const [intentResult, context, customerContext] = await Promise.all([
                 hybridClassifyIntent(message, conversationHistory),
-                this.conversationManager.getContext(userId, conversationHistory)
+                this.conversationManager.getContext(userId, conversationHistory),
+                buildCustomerContext(userId)
             ]);
 
             const { intent, confidence, extracted_info } = intentResult;
 
             console.log(`🎯 Intent: ${intent}, Confidence: ${confidence}`);
             console.log(`💬 Recent messages: ${context.recent_messages?.length || 0}`);
+            console.log(`👤 Customer context: ${customerContext.hasContext ? 'Available' : 'None'} (${customerContext.userProfile?.customerType || 'Unknown'})`);
 
             let result;
+
+            // 2. Merge customer context into conversation context
+            const enrichedContext = {
+                ...context,
+                customerContext: customerContext.contextString,
+                customerProfile: customerContext.userProfile,
+                hasCustomerContext: customerContext.hasContext
+            };
 
             // 3. Route to appropriate service
             switch (intent) {
                 case 'product_advice':
-                    result = await productAdvice(message, context);
+                    result = await productAdvice(message, enrichedContext);
                     break;
 
                 case 'size_recommendation':
-                    result = await sizeRecommendation(message, extracted_info, context);
+                    result = await sizeRecommendation(message, extracted_info, enrichedContext);
                     break;
 
                 case 'style_matching':
-                    result = await styleMatcher(message, context);
+                    result = await styleMatcher(message, enrichedContext);
                     break;
 
                 case 'order_lookup':
@@ -76,6 +90,22 @@ export class RAGService {
                 content: result.answer,
                 metadata: result,
                 timestamp: new Date()
+            });
+
+            // 5. Log analytics
+            const responseTime = Date.now() - startTime;
+            await logChatInteraction({
+                userId,
+                sessionId: context.conversation_id,
+                intent,
+                hasPersonalization: customerContext.hasContext,
+                customerType: customerContext.userProfile?.customerType,
+                engagementScore: customerContext.intelligence?.engagementScore,
+                responseTime,
+                messageLength: message.length,
+                productsShown: result.suggested_products?.length || 0
+            }).catch(err => {
+                console.error('⚠️ Analytics logging failed (non-critical):', err.message);
             });
 
             return {

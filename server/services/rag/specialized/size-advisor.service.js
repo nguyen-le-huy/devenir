@@ -211,9 +211,15 @@ Hoặc bạn có thể hỏi về size của sản phẩm cụ thể nhé!`
         }
 
         // Build prompt for size recommendation with specific size chart
-        const prompt = `
-Tư vấn size cho sản phẩm thời trang dựa trên bảng size chuẩn.
+        // Build size recommendation prompt
+        const customerInfo = context.customerContext || '';
+        const toneNote = context.customerProfile?.customerType 
+            ? `\n(Khách hàng là ${context.customerProfile.customerType} - Điều chỉnh giọng điệu phù hợp)` 
+            : '';
 
+        const prompt = `
+Tư vấn size cho sản phẩm thời trang dựa trên bảng size chuẩn.${toneNote}
+${customerInfo}
 **Sản phẩm:** ${product.name}
 **Danh mục:** ${product.category?.name || 'N/A'}
 **Sizes có sẵn:** ${availableSizes.join(', ')}
@@ -237,6 +243,7 @@ ${query}
 1. Đề xuất size phù hợp nhất dựa trên bảng size (CHỈ từ sizes có sẵn: ${availableSizes.join(', ')})
 2. Nếu số đo nằm giữa 2 size, ưu tiên size lớn hơn cho thoải mái
 3. Giải thích ngắn gọn lý do
+${context.hasCustomerContext ? '4. Nếu khách hàng có lịch sử mua size cụ thể, tham khảo thông tin đó' : ''}
 
 Trả về JSON: 
 {

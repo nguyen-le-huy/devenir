@@ -2,41 +2,63 @@ import mongoose from 'mongoose';
 
 const chatLogSchema = new mongoose.Schema(
     {
-        user_id: {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            index: true,
+            sparse: true // Allow null for guest users
+        },
+        sessionId: {
             type: String,
             required: true,
             index: true
         },
-        role: {
-            type: String,
-            enum: ['user', 'assistant', 'system'],
-            required: true
+        messages: {
+            type: [{
+                role: {
+                    type: String,
+                    enum: ['user', 'assistant', 'system'],
+                    required: true
+                },
+                content: {
+                    type: String,
+                    required: true
+                },
+                timestamp: {
+                    type: Date,
+                    default: Date.now
+                }
+            }],
+            default: []
         },
-        content: {
-            type: String,
-            required: true
+        analytics: {
+            intent: String,
+            hasPersonalization: Boolean,
+            customerType: String,
+            engagementScore: Number,
+            responseTime: Number,
+            messageLength: Number,
+            productsShown: Number,
+            userSatisfaction: Number,
+            timestamp: Date
         },
-        intent: {
-            type: String,
-            enum: ['product_advice', 'size_recommendation', 'style_matching', 'order_lookup', 'return_exchange', 'general']
-        },
-        metadata: {
-            type: mongoose.Schema.Types.Mixed,
-            default: {}
-        },
-        created_at: {
+        createdAt: {
             type: Date,
             default: Date.now,
             index: true
         }
     },
     {
-        timestamps: false
+        timestamps: true
     }
 );
 
-// Index for efficient queries
-chatLogSchema.index({ user_id: 1, created_at: -1 });
+// Indexes for efficient queries
+chatLogSchema.index({ userId: 1, createdAt: -1 });
+chatLogSchema.index({ sessionId: 1 });
+chatLogSchema.index({ 'analytics.customerType': 1 });
+chatLogSchema.index({ 'analytics.intent': 1 });
+chatLogSchema.index({ createdAt: -1 });
 
 const ChatLog = mongoose.model('ChatLog', chatLogSchema);
 

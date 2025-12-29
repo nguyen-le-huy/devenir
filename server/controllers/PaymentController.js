@@ -8,6 +8,7 @@ import nowpaymentsClient from '../services/nowpayments/nowpaymentsClient.js';
 import crypto from 'crypto';
 import { sendOrderNotificationToTelegram } from '../services/telegram/telegramNotification.js';
 import { emitOrderUpdate } from '../utils/socketEmitter.js';
+import { eventProcessor } from './EventController.js';
 
 const DELIVERY_OPTIONS = ['standard', 'next', 'nominated'];
 const SHIPPING_METHODS = ['home'];
@@ -377,6 +378,25 @@ export const handlePayOSWebhook = asyncHandler(async (req, res) => {
     await order.save();
 
     emitOrderUpdate(req.app.get('io'), order);
+
+    // Track purchase event for customer intelligence
+    eventProcessor.emit('purchase', {
+      userId: order.user._id.toString(),
+      data: {
+        orderId: order._id.toString(),
+        totalAmount: order.totalPrice,
+        items: order.orderItems.map(item => ({
+          productId: item.product?._id || item.product,
+          name: item.name,
+          category: item.category || 'unknown',
+          brand: item.brand || 'unknown',
+          color: item.color,
+          size: item.size,
+          price: item.price,
+          quantity: item.quantity
+        }))
+      }
+    });
 
     // Send Telegram notification (non-blocking)
     sendOrderNotificationToTelegram(order).catch(err => {

@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../services/authService';
+import { trackingService } from '../services/trackingService';
 
 /**
  * AuthContext - Quản lý authentication state
@@ -46,6 +47,10 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('userId', user._id);
+    
+    // Initialize tracking with user ID
+    trackingService.setUserId(user._id);
   };
 
   // Logout handler
@@ -60,6 +65,10 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('userId');
+      
+      // Disconnect tracking
+      trackingService.disconnect();
     }
   };
 

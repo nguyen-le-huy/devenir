@@ -7,6 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { CustomerDetailResponse, CustomerListItem } from '@/services/customerService'
 import { cn } from '@/lib/utils'
+import { IntelligenceWidget } from './IntelligenceWidget'
+import { useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '@/lib/queryClient'
 
 interface CustomerDetailDrawerProps {
   open: boolean
@@ -38,6 +41,14 @@ const defaultProfile = {
   tags: [] as string[],
 }
 
+// Helper to merge tags from both root level and customerProfile
+const mergeTags = (customer: any): string[] => {
+  const rootTags = customer?.tags || []
+  const profileTags = customer?.customerProfile?.tags || []
+  // Merge and deduplicate
+  return Array.from(new Set([...rootTags, ...profileTags]))
+}
+
 const formatDateTime = (value?: string | null, locale = 'vi') => {
   if (!value) return '—'
   const formatter = new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
@@ -62,11 +73,19 @@ export function CustomerDetailDrawer({
   currencyFormatter,
   locale,
 }: CustomerDetailDrawerProps) {
+  const queryClient = useQueryClient()
+  
+  const handleCustomerUpdate = () => {
+    if (customer?._id) {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.customers.detail(customer._id) })
+    }
+  }
+  
   const profile = customer?.customerProfile
-    ? { ...defaultProfile, ...customer.customerProfile, tags: customer.customerProfile.tags ?? [] }
+    ? { ...defaultProfile, ...customer.customerProfile }
     : { ...defaultProfile }
   const recentOrders = (customer as any)?.recentOrders ?? []
-  const tags = profile.tags ?? []
+  const tags = mergeTags(customer) // Merge tags from both sources
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -162,8 +181,9 @@ export function CustomerDetailDrawer({
             </div>
 
             <Tabs defaultValue="overview" className="space-y-4">
-              <TabsList className="grid grid-cols-3">
+              <TabsList className="grid grid-cols-4">
                 <TabsTrigger value="overview">Tổng quan</TabsTrigger>
+                <TabsTrigger value="intelligence">AI Insights</TabsTrigger>
                 <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
                 <TabsTrigger value="addresses">Địa chỉ</TabsTrigger>
               </TabsList>
@@ -203,23 +223,87 @@ export function CustomerDetailDrawer({
                 </div>
 
                 <div className="rounded-lg border bg-card p-4">
-                  <h4 className="mb-3 font-semibold">Tags & Ghi chú</h4>
+                  <h4 className="mb-3 font-semibold flex items-center justify-between">
+                    <span>Tags & Ghi chú</span>
+                    {(tags.length > 3 || ((profile as any).notesList?.length || 0) > 3) && (
+                      <span className="text-xs text-muted-foreground font-normal">
+                        (Hiển thị 3 mới nhất)
+                      </span>
+                    )}
+                  </h4>
                   <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      {tags.length > 0 ? (
-                        tags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="capitalize">
-                            {tag}
-                          </Badge>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Chưa có tag</p>
-                      )}
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Tags từ AI Insights</p>
+                      <div className="flex flex-wrap gap-2">
+                        {tags.length > 0 ? (
+                          <>
+                            {tags.slice(0, 3).map((tag: string) => (
+                              <Badge key={tag} variant="secondary" className="capitalize">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {tags.length > 3 && (
+                              <Badge variant="outline" className="text-muted-foreground">
+                                +{tags.length - 3} thêm
+                              </Badge>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Chưa có tag</p>
+                        )}
+                      </div>
                     </div>
                     <Separator />
-                    <p className="rounded-md bg-muted/40 p-3 text-sm text-muted-foreground min-h-16">
-                      {profile.notes?.trim() || 'Chưa có ghi chú cho khách hàng này.'}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Ghi chú từ AI Insights</p>
+                      {(() => {
+                        const notesList = (profile as any).notesList || []
+                        const sortedNotes = [...notesList].sort((a: any, b: any) => {
+                          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+                          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+                          return dateB - dateA // Desc - mới nhất lên trước
+                        })
+                        const recentNotes = sortedNotes.slice(0, 3)
+                        
+                        return recentNotes.length > 0 ? (
+                          <>
+                            {recentNotes.map((note: any, index: number) => (
+                              <div key={index} className="rounded-md bg-muted/40 p-3">
+                                <div className="flex items-start gap-2">
+                                  {note.isPinned && (
+                                    <svg className="mt-0.5 h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M10 3l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z"/>
+                                    </svg>
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="text-sm">{note.content}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      {note.type && (
+                                        <Badge variant="outline" className="text-xs capitalize">{note.type}</Badge>
+                                      )}
+                                      {note.createdAt && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {new Date(note.createdAt).toLocaleDateString('vi-VN')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {notesList.length > 3 && (
+                              <p className="text-xs text-center text-muted-foreground pt-2">
+                                +{notesList.length - 3} ghi chú khác
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
+                            Chưa có ghi chú cho khách hàng này.
+                          </p>
+                        )
+                      })()}
+                    </div>
                   </div>
                 </div>
 
@@ -254,6 +338,10 @@ export function CustomerDetailDrawer({
                     </div>
                   </div>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="intelligence" className="space-y-4">
+                <IntelligenceWidget customerId={customer._id} onUpdate={handleCustomerUpdate} />
               </TabsContent>
 
               <TabsContent value="orders" className="space-y-4">

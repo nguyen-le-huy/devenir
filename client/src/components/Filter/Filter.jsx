@@ -3,6 +3,7 @@ import styles from './Filter.module.css';
 import { useLenisControl } from '../../hooks/useLenisControl';
 import { lenisInstance } from '../../App';
 import Backdrop from '../Backdrop';
+import { trackEvent } from '../../utils/eventTracker.js';
 
 const Filter = ({
     isOpen,
@@ -86,19 +87,33 @@ const Filter = ({
     // Handle sort option selection
     const handleSelectSort = (option) => {
         setSelectedSort(option);
+        
+        // Track filter apply event
+        trackEvent.filterApply({
+            filterType: 'sort',
+            sortBy: option,
+            selectedColors: selectedColors
+        });
+        
         // Scroll to top để xem kết quả filter
         scrollToTop();
     };
 
     // Handle colour selection (multi-select)
     const handleSelectColour = (colourName) => {
-        setSelectedColors(prev => {
-            if (prev.includes(colourName)) {
-                return prev.filter(c => c !== colourName);
-            } else {
-                return [...prev, colourName];
-            }
+        const newSelectedColors = selectedColors.includes(colourName)
+            ? selectedColors.filter(c => c !== colourName)
+            : [...selectedColors, colourName];
+        
+        setSelectedColors(newSelectedColors);
+        
+        // Track filter apply event
+        trackEvent.filterApply({
+            filterType: 'color',
+            selectedColors: newSelectedColors,
+            sortBy: selectedSort
         });
+        
         // Scroll to top để xem kết quả filter
         scrollToTop();
     };

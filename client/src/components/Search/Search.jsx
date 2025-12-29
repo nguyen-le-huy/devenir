@@ -7,6 +7,7 @@ import { useHeaderHeight } from '../../hooks/useHeaderHeight';
 import { useLenisControl } from '../../hooks/useLenisControl';
 import { getAllProducts, getProductVariants } from '../../services/productService';
 import VisualSearch from '../VisualSearch/VisualSearch';
+import { trackEvent } from '../../utils/eventTracker.js';
 
 const Search = ({ onClose }) => {
     const inputRef = useRef(null);
@@ -122,6 +123,12 @@ const Search = ({ onClose }) => {
 
                 if (response.success && response.data) {
                     setSearchResults(response.data);
+                    
+                    // Track search event
+                    trackEvent.search({
+                        query: searchQuery,
+                        resultsCount: response.data.length
+                    });
                 }
             } catch (error) {
                 // Ignore abort errors
