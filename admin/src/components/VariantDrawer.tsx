@@ -317,11 +317,21 @@ export default function VariantDrawer({ isOpen, variantId, variantData, isEdit =
         hoverImage: selectedHoverImage,
         images: allImages,
         lowStockThreshold: formData.lowStockThreshold,
+        syncColorGroup: true, // ✨ NEW: Enable auto-sync for same-color variants
       }
 
       if (isEdit) {
-        await axiosInstance.put(`/products/admin/variants/${formData.sku}`, payload)
-        toast.success('Variant updated successfully')
+        const response = await axiosInstance.put(`/products/admin/variants/${formData.sku}`, payload)
+        
+        // Display success message with sync count if available
+        const syncedCount = response.data?.syncedCount || 0
+        if (syncedCount > 0) {
+          toast.success(`Variant updated! ${syncedCount} same-color variant(s) also synced.`, {
+            duration: 5000,
+          })
+        } else {
+          toast.success('Variant updated successfully')
+        }
       } else {
         await axiosInstance.post(`/products/admin/${formData.product}/variants`, payload)
         toast.success('Variant created successfully')

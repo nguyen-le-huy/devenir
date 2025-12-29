@@ -467,6 +467,7 @@ export const updateVariant = asyncHandler(async (req, res) => {
       safetyStock,
       reserved,
       incoming,
+      syncColorGroup = false, // NEW: Flag to sync same-color variants
     } = req.body;
     const skuOrId = req.params.skuOrId;
 
@@ -489,6 +490,10 @@ export const updateVariant = asyncHandler(async (req, res) => {
     if (!variant) {
       return res.status(404).json({ success: false, message: 'Variant not found' });
     }
+
+    // Store original color for sync logic
+    const originalColor = variant.color;
+    const productId = variant.product_id;
 
     // Update fields
     if (sku !== undefined && sku !== null) variant.sku = sku.toUpperCase();
@@ -516,10 +521,61 @@ export const updateVariant = asyncHandler(async (req, res) => {
     variant = await variant.save();
     const variantObj = variant.toObject();
 
+    // ============ NEW: Sync same-color variants (exclude stock) ============
+    let syncedCount = 0;
+    if (syncColorGroup && originalColor) {
+      // Find all variants with same product_id and color, but different size
+      const sameColorVariants = await ProductVariant.find({
+        product_id: productId,
+        color: originalColor,
+        _id: { $ne: variant._id }, // Exclude current variant
+        isActive: true,
+      });
+
+      // Build update payload (EXCLUDE stock/quantity fields)
+      const syncPayload = {};
+      if (price !== undefined && price !== null) syncPayload.price = price;
+      if (images !== undefined && images !== null) syncPayload.images = images;
+      if (lowStockThreshold !== undefined && lowStockThreshold !== null) syncPayload.lowStockThreshold = lowStockThreshold;
+      if (mainImage !== undefined && mainImage !== null) syncPayload.mainImage = mainImage;
+      if (hoverImage !== undefined && hoverImage !== null) syncPayload.hoverImage = hoverImage;
+      if (weight !== undefined && weight !== null) syncPayload.weight = weight;
+      if (binLocation !== undefined && binLocation !== null) syncPayload.binLocation = binLocation;
+      if (reorderPoint !== undefined && reorderPoint !== null) syncPayload.reorderPoint = reorderPoint;
+      if (reorderQuantity !== undefined && reorderQuantity !== null) {
+        syncPayload.reorderQuantity = reorderQuantity;
+      } else if (reorderQty !== undefined && reorderQty !== null) {
+        syncPayload.reorderQuantity = reorderQty;
+      }
+      if (safetyStock !== undefined && safetyStock !== null) syncPayload.safetyStock = safetyStock;
+
+      // Batch update all same-color variants
+      if (Object.keys(syncPayload).length > 0) {
+        const updateResult = await ProductVariant.updateMany(
+          {
+            product_id: productId,
+            color: originalColor,
+            _id: { $ne: variant._id },
+            isActive: true,
+          },
+          { $set: syncPayload }
+        );
+        syncedCount = updateResult.modifiedCount;
+
+        // Trigger ingestion for all updated variants
+        if (syncedCount > 0) {
+          const variantIds = sameColorVariants.map(v => v._id.toString());
+          triggerProductIngestion(productId.toString(), variantIds);
+        }
+      }
+    }
+    // ============ END: Sync same-color variants ============
+
     emitRealtimeEvent(req, 'variant:updated', {
       productId: variant.product_id,
       variantId: variant._id,
       sku: variant.sku,
+      syncedCount, // Include synced count for frontend feedback
     });
 
     // Trigger ingestion for updated variant (Qdrant for image, Pinecone for product update)
@@ -527,12 +583,15 @@ export const updateVariant = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Variant updated successfully',
+      message: syncedCount > 0 
+        ? `Variant updated successfully. ${syncedCount} same-color variant(s) also synced.`
+        : 'Variant updated successfully',
       data: {
         ...variantObj,
         quantity: variantObj.quantity ?? 0,
         stock: variantObj.quantity ?? 0,
       },
+      syncedCount, // Return count for frontend display
     });
   } catch (error) {
     console.error('Update variant error:', error);

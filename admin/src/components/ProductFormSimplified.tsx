@@ -381,9 +381,10 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
       // Edit mode
       const originalVariant = formData.variants[editingVariantIndex]
       const originalSize = originalVariant.size
+      const originalColor = originalVariant.color
 
       if (selectedSizes.length === 1 && selectedSizes[0] === originalSize) {
-        // Case 1: Only editing the current variant (same size) - just update
+        // Case 1: Only editing the current variant (same size) - update it
         const updatedVariant = {
           ...newVariant,
           sku: generateSKU(newVariant.color, newVariant.size),
@@ -392,8 +393,40 @@ export function ProductFormSimplified({ onSave, onDraft, initialData }: ProductF
           images: variantImages.map((img) => img.url),
           colorId: newVariant.colorId,
         }
-        const updatedVariants = [...formData.variants]
+        
+        let updatedVariants = [...formData.variants]
         updatedVariants[editingVariantIndex] = updatedVariant
+
+        // ✨ NEW: Auto-sync same-color variants (exclude quantity)
+        // If color unchanged, update all same-color variants with new data (except quantity)
+        if (newVariant.color === originalColor) {
+          const sameColorIndices = formData.variants
+            .map((v, idx) => ({ variant: v, idx }))
+            .filter(({ variant, idx }) => 
+              variant.color === originalColor && 
+              idx !== editingVariantIndex
+            )
+            .map(({ idx }) => idx)
+
+          if (sameColorIndices.length > 0) {
+            sameColorIndices.forEach(idx => {
+              const variant = updatedVariants[idx]
+              updatedVariants[idx] = {
+                ...variant,
+                price: newVariant.price,
+                mainImage: selectedMainImage,
+                hoverImage: selectedHoverImage,
+                images: variantImages.map((img) => img.url),
+                // Keep original quantity for each size
+              }
+            })
+            setFormData((prev) => ({ ...prev, variants: updatedVariants }))
+            setEditingVariantIndex(null)
+            toast.success(`Variant updated! ${sameColorIndices.length} same-color variant(s) synced (prices, images).`)
+            return
+          }
+        }
+
         setFormData((prev) => ({ ...prev, variants: updatedVariants }))
         setEditingVariantIndex(null)
         toast.success("Variant updated successfully")
