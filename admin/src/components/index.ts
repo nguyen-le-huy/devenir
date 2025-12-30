@@ -1,18 +1,31 @@
-// Re-export all reusable components for easier imports
-export { MetricCard } from "./metric-card"
-export type { MetricCardProps } from "./metric-card"
+/**
+ * Admin Components Index
+ * Centralized re-exports for all admin components
+ * 
+ * Note: Individual modules should be imported directly to avoid
+ * naming conflicts (e.g., import { ProductForm } from '@/components/products')
+ */
 
-export { StatusBadge } from "./status-badge"
-export type { OrderStatus, InventoryStatus, ProductStatus } from "./status-badge"
+// =============================================================
+// COMMON REUSABLE COMPONENTS (Safe to re-export - no conflicts)
+// =============================================================
+export * from './common'
 
-export { ProductFormSimplified } from "./ProductFormSimplified"
-export type { ProductFormData } from "./ProductFormSimplified"
+// =============================================================
+// FEATURE MODULES (Import directly from subfolders to avoid conflicts)
+// =============================================================
+// Products: import from '@/components/products'
+// Variants: import from '@/components/variants'
+// Orders: import from '@/components/orders'
+// Customers: import from '@/components/customers'
+// Categories: import from '@/components/categories'
 
-export { VariantsMatrix } from "./VariantsMatrix"
-export type { Variant } from "./VariantsMatrix"
+// =============================================================
+// LAYOUT COMPONENTS
+// =============================================================
+export * from './layout'
 
-export { VariantDetailModal } from "./VariantDetailModal"
-
-// UI Components exports
-export { AppSidebar } from "./app-sidebar"
-export { SiteHeader } from "./site-header"
+// =============================================================
+// AUTH COMPONENTS
+// =============================================================
+export * from './auth'

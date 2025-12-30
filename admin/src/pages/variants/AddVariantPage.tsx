@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ProductFormSimplified } from '@/components/ProductFormSimplified'
+import { ProductForm } from '@/components/products/ProductForm'
 
 export default function AddVariantPage() {
   const { id } = useParams()
@@ -35,7 +35,7 @@ export default function AddVariantPage() {
             <CardTitle>{isEdit ? 'Edit Variant' : 'New Variant'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ProductFormSimplified />
+            <ProductForm />
           </CardContent>
         </Card>
       </div>

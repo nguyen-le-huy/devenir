@@ -196,6 +196,80 @@ Hệ thống sử dụng MongoDB làm cơ sở dữ liệu. Dưới đây là c�
 - createdAt (Date): Ngày tạo
 - updatedAt (Date): Ngày cập nhật
 
+### chatlogs
+
+- \_id (ObjectId): ID duy nhất
+- userId (ObjectId): Reference users.\_id, index: true, sparse: true (Cho phép null với khách vãng lai)
+- sessionId (String): ID phiên chat, required, index: true
+- messages (Array): Mảng các tin nhắn trong cuộc hội thoại:
+  - role (String): Vai trò người gửi, enum: ['user', 'assistant', 'system'], required
+  - content (String): Nội dung tin nhắn, required
+  - timestamp (Date): Thời gian gửi tin nhắn, default: Date.now
+- analytics (Object): Dữ liệu phân tích cuộc trò chuyện:
+  - intent (String): Ý định của người dùng
+  - hasPersonalization (Boolean): Có cá nhân hóa hay không
+  - customerType (String): Loại khách hàng
+  - engagementScore (Number): Điểm tương tác
+  - responseTime (Number): Thời gian phản hồi (ms)
+  - messageLength (Number): Độ dài tin nhắn
+  - productsShown (Number): Số sản phẩm đã hiển thị
+  - userSatisfaction (Number): Mức độ hài lòng của người dùng
+  - timestamp (Date): Thời điểm phân tích
+- createdAt (Date): Ngày tạo, index: true
+- updatedAt (Date): Ngày cập nhật
+- **Indexes:** userId + createdAt, sessionId, analytics.customerType, analytics.intent, createdAt
+
+### eventlogs
+
+- \_id (ObjectId): ID duy nhất
+- userId (String): ID người dùng, required, index: true
+- sessionId (String): ID phiên làm việc, index: true
+- type (String): Loại sự kiện, required, enum: ['product_view', 'product_click', 'add_to_cart', 'remove_from_cart', 'update_cart_quantity', 'variant_selected', 'cart_quantity_decreased', 'item_removed_from_cart', 'search', 'search_result_click', 'search_filter_applied', 'search_no_results', 'search_autocomplete', 'filter_apply', 'page_view', 'category_view', 'page_hidden', 'page_visible', 'session_start', 'session_end', 'wishlist_add', 'wishlist_remove', 'chat_start', 'chat_message', 'checkout', 'checkout_start', 'checkout_complete', 'purchase', 'cart_viewed', 'cart_opened', 'cart_closed', 'cart_abandoned', 'email_open', 'email_click', 'scroll_depth', 'time_on_page'], index: true
+- data (Mixed): Dữ liệu chi tiết sự kiện, default: {}
+- timestamp (Date): Thời gian sự kiện, default: Date.now, index: true, expires: 864000 (TTL index - tự động xóa sau 10 ngày)
+- page (String): Trang phát sinh sự kiện, trim
+- referrer (String): Nguồn giới thiệu, trim
+- **Indexes:** userId + timestamp, type + timestamp, sessionId + timestamp
+
+### financialrecords
+
+- \_id (ObjectId): ID duy nhất
+- orderId (ObjectId): Reference orders.\_id, required, index: true
+- type (String): Loại giao dịch, enum: ['order', 'refund', 'adjustment'], required
+- revenue (Number): Doanh thu, required, min: 0
+- costOfGoodsSold (Number): Giá vốn hàng bán, required, min: 0
+- shippingCost (Number): Chi phí vận chuyển, default: 0, min: 0
+- platformFee (Number): Phí nền tảng, default: 0, min: 0
+- netProfit (Number): Lợi nhuận ròng, required
+- date (Date): Ngày giao dịch, default: Date.now, index: true
+- status (String): Trạng thái, enum: ['pending', 'confirmed', 'cancelled'], default: 'pending'
+- metadata (Mixed): Dữ liệu bổ sung, default: {}
+- createdAt (Date): Ngày tạo
+- updatedAt (Date): Ngày cập nhật
+- **Indexes:** date, type + date, status + date
+
+### inventoryadjustments
+
+- \_id (ObjectId): ID duy nhất
+- variant (ObjectId): Reference productVariants.\_id, required
+- product (ObjectId): Reference products.\_id
+- sku (String): Mã SKU, required, uppercase, trim
+- delta (Number): Số lượng thay đổi (+/-), required
+- quantityBefore (Number): Số lượng trước khi thay đổi, required
+- quantityAfter (Number): Số lượng sau khi thay đổi, required
+- reason (String): Lý do thay đổi, enum: ['manual', 'cycle_count', 'damage', 'return', 'restock', 'order_fulfillment', 'order_cancellation', 'correction', 'other'], default: 'manual'
+- note (String): Ghi chú thêm, trim
+- costPerUnit (Number): Giá vốn mỗi đơn vị, min: 0
+- costImpact (Number): Ảnh hưởng chi phí
+- performedBy (ObjectId): Reference users.\_id (Người thực hiện)
+- performedByName (String): Tên người thực hiện, trim
+- sourceType (String): Nguồn gốc thay đổi, enum: ['manual', 'order', 'return', 'purchase_order', 'system', 'other'], default: 'manual'
+- sourceRef (String): Tham chiếu nguồn, trim
+- metadata (Mixed): Dữ liệu bổ sung
+- createdAt (Date): Ngày tạo
+- updatedAt (Date): Ngày cập nhật
+- **Indexes:** variant + createdAt, sku + createdAt, reason, sourceType, createdAt
+
 Tổng hợp các điểm cần cải thiện hệ thống MERN E-commerce
 
 1. Redis caching layer

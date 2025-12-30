@@ -62,7 +62,6 @@ export function CategoryFormModal({
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // Edit mode: populate with existing data
         setFormData({
           name: initialData.name || '',
           description: initialData.description || '',
@@ -74,7 +73,6 @@ export function CategoryFormModal({
         })
         setThumbnailPreview(initialData.thumbnailUrl || '')
       } else {
-        // Create mode: reset to empty form
         setFormData({
           name: '',
           description: '',
@@ -90,7 +88,6 @@ export function CategoryFormModal({
     }
   }, [isOpen, initialData, parentCategory])
 
-  // Auto-generate slug from name
   useEffect(() => {
     if (formData.name && !initialData) {
       const slug = formData.name
@@ -103,7 +100,6 @@ export function CategoryFormModal({
     }
   }, [formData.name, initialData])
 
-  // Image compression
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
       const LIMIT_10MB = 10 * 1024 * 1024
@@ -189,9 +185,10 @@ export function CategoryFormModal({
       } else {
         toast.error(response.data.message || 'Upload failed')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error)
-      const errorMsg = error?.response?.data?.message || error?.message || 'Error uploading image'
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
+      const errorMsg = err?.response?.data?.message || err?.message || 'Error uploading image'
       toast.error(errorMsg)
     } finally {
       setUploadingImage(false)
@@ -206,7 +203,6 @@ export function CategoryFormModal({
       return
     }
 
-    // Auto-generate slug if not provided (Vietnamese-friendly)
     const dataToSubmit = {
       ...formData,
       slug: formData.slug || formData.name
@@ -217,8 +213,6 @@ export function CategoryFormModal({
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, ''),
     }
-
-    console.log('📤 Submitting category data:', dataToSubmit)
 
     try {
       setIsSaving(true)
@@ -231,20 +225,19 @@ export function CategoryFormModal({
     }
   }
 
-  // Get available parent categories
   const availableParents = allCategories.filter((cat) => {
     if (!initialData?._id) return true
     const excludedIds = [initialData._id, ...getDescendantIds(initialData._id, allCategories)]
     return !excludedIds.includes(cat._id)
   })
 
-  // Count excluded categories for circular reference warning
   const excludedCount = initialData?._id 
     ? 1 + getDescendantIds(initialData._id, allCategories).length 
     : 0
 
-  // Build hierarchy tree
-  const buildParentTree = (cats: Category[], parentId: string | null = null, level = 0): any[] => {
+  type ParentTreeNode = { _id: string; name: string; level: number; children: ParentTreeNode[] }
+  
+  const buildParentTree = (cats: Category[], parentId: string | null = null, level = 0): ParentTreeNode[] => {
     return cats
       .filter((c) => c.parentCategory === parentId)
       .map((cat) => ({
@@ -256,10 +249,10 @@ export function CategoryFormModal({
 
   const parentTree = buildParentTree(availableParents)
 
-  const flattenParentTree = (tree: any[]): any[] => {
-    const flattened: any[] = []
-    tree.forEach((node) => {
-      flattened.push(node)
+  const flattenParentTree = (tree: ParentTreeNode[]): (Category & { level: number })[] => {
+    const flattened: (Category & { level: number })[] = []
+    tree.forEach((node: ParentTreeNode) => {
+      flattened.push(node as unknown as Category & { level: number })
       if (node.children.length > 0) {
         flattened.push(...flattenParentTree(node.children))
       }
@@ -269,28 +262,23 @@ export function CategoryFormModal({
 
   const flatParents = flattenParentTree(parentTree)
 
-  // Filter parents by search term
   const filteredParents = flatParents.filter((cat) =>
     cat.name.toLowerCase().includes(parentSearchTerm.toLowerCase())
   )
 
-  // Get hierarchy path preview with correct format
   const getHierarchyPreview = () => {
     const categoryName = formData.name || 'New Category'
     
     if (!formData.parentCategory) {
-      // Root category: 📍 [Category Name]
       return `📍 [${categoryName}]`
     }
     
-    // Child category: 📍 Parent > [Child Name]
     const path = getCategoryPath(formData.parentCategory, allCategories || [])
     return `📍 ${path.join(' > ')} > [${categoryName}]`
   }
 
   const getDepth = () => {
     if (!formData.parentCategory) return 0
-    // Get selected parent's level and add 1
     const parent = allCategories?.find(c => c._id === formData.parentCategory) as CategoryTreeNode | undefined
     return parent ? (parent.level ?? 0) + 1 : 0
   }
@@ -308,220 +296,216 @@ export function CategoryFormModal({
           <TabsTrigger value="seo">SEO &amp; Setting</TabsTrigger>
         </TabsList>
 
-        {/* TAB 1: BASIC INFORMATION */}
         <TabsContent value="basic" className="space-y-6 mt-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Category Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  placeholder='E.g., "Formal Shirts"'
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Category Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="name"
+              placeholder='E.g., "Formal Shirts"'
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Shop premium formal shirts for business occasions..."
-                  className="min-h-24"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  maxLength={500}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {formData.description?.length || 0}/500 characters
-                </p>
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              placeholder="Shop premium formal shirts for business occasions..."
+              className="min-h-24"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              maxLength={500}
+            />
+            <p className="text-xs text-muted-foreground">
+              {formData.description?.length || 0}/500 characters
+            </p>
+          </div>
 
+          <div className="space-y-3">
+            <Label>Thumbnail Image</Label>
+
+            {thumbnailPreview ? (
               <div className="space-y-3">
-                <Label>Thumbnail Image</Label>
-
-                {thumbnailPreview ? (
-                  <div className="space-y-3">
-                    <div className="relative group">
-                      <img
-                        src={thumbnailPreview}
-                        alt="Preview"
-                        className="w-full h-64 object-cover rounded-lg border"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('thumbnail-input')?.click()}
-                      >
-                        <IconUpload className="h-4 w-4 mr-2" />
-                        Change Image
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setFormData({ ...formData, thumbnailUrl: '' })
-                          setThumbnailPreview('')
-                        }}
-                      >
-                        <IconTrash className="h-4 w-4 mr-2" />
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={cn(
-                      'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:border-primary transition-colors',
-                      uploadingImage && 'opacity-50 pointer-events-none'
-                    )}
+                <div className="relative group">
+                  <img
+                    src={thumbnailPreview}
+                    alt="Preview"
+                    className="w-full h-64 object-cover rounded-lg border"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => document.getElementById('thumbnail-input')?.click()}
                   >
-                    <IconUpload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm font-medium mb-1">
-                      {uploadingImage ? 'Uploading...' : 'Drag & drop or click to upload'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Recommended: 400x400px • Max 2MB • JPG, PNG, WebP
-                    </p>
-                  </div>
+                    <IconUpload className="h-4 w-4 mr-2" />
+                    Change Image
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFormData({ ...formData, thumbnailUrl: '' })
+                      setThumbnailPreview('')
+                    }}
+                  >
+                    <IconTrash className="h-4 w-4 mr-2" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:border-primary transition-colors',
+                  uploadingImage && 'opacity-50 pointer-events-none'
                 )}
-
-                <input
-                  id="thumbnail-input"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) uploadThumbnail(file)
-                  }}
-                  disabled={uploadingImage}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug (Auto-generated)</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="font-mono text-sm"
-                />
+                onClick={() => document.getElementById('thumbnail-input')?.click()}
+              >
+                <IconUpload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-sm font-medium mb-1">
+                  {uploadingImage ? 'Uploading...' : 'Drag & drop or click to upload'}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  URL: <span className="font-mono">/categories/{formData.slug || 'example-slug'}</span>
+                  Recommended: 400x400px • Max 2MB • JPG, PNG, WebP
                 </p>
               </div>
-            </TabsContent>
+            )}
 
-        {/* TAB 2: HIERARCHY & RELATIONSHIPS */}
+            <input
+              id="thumbnail-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) uploadThumbnail(file)
+              }}
+              disabled={uploadingImage}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug (Auto-generated)</Label>
+            <Input
+              id="slug"
+              value={formData.slug}
+              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              URL: <span className="font-mono">/categories/{formData.slug || 'example-slug'}</span>
+            </p>
+          </div>
+        </TabsContent>
+
         <TabsContent value="hierarchy" className="space-y-6 mt-6">
-              <div className="space-y-3">
-                <Label htmlFor="parentCategory">Parent Category</Label>
-                
-                {/* Search Input */}
-                <Input
-                  placeholder="🔍 Search parent category..."
-                  value={parentSearchTerm}
-                  onChange={(e) => setParentSearchTerm(e.target.value)}
-                  className="mb-2"
-                />
-                
-                <select
-                  id="parentCategory"
-                  className="w-full border rounded-md p-2 text-sm bg-background"
-                  value={formData.parentCategory || 'none'}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      parentCategory: e.target.value === 'none' ? null : e.target.value,
-                    })
-                  }
-                >
-                  <option value="none">📁 None (Create as Root)</option>
-                  <option disabled>────────────────────</option>
-                  {filteredParents.map((cat) => (
-                    <option key={cat._id} value={cat._id}>
-                      {'  '.repeat(cat.level)}
-                      {cat.level === 0 ? '📁' : cat.level === 1 ? '📂' : '📄'} {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="space-y-3">
+            <Label htmlFor="parentCategory">Parent Category</Label>
+            
+            <Input
+              placeholder="🔍 Search parent category..."
+              value={parentSearchTerm}
+              onChange={(e) => setParentSearchTerm(e.target.value)}
+              className="mb-2"
+            />
+            
+            <select
+              id="parentCategory"
+              className="w-full border rounded-md p-2 text-sm bg-background"
+              value={formData.parentCategory || 'none'}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  parentCategory: e.target.value === 'none' ? null : e.target.value,
+                })
+              }
+            >
+              <option value="none">📁 None (Create as Root)</option>
+              <option disabled>────────────────────</option>
+              {filteredParents.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {'  '.repeat(cat.level)}
+                  {cat.level === 0 ? '📁' : cat.level === 1 ? '📂' : '📄'} {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              <div className="bg-muted p-4 rounded-lg space-y-2">
-                <h4 className="text-sm font-semibold">Preview Path</h4>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-mono">{getHierarchyPreview()}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Level: {depth} {depth === 0 ? '(Root)' : ''}
+          <div className="bg-muted p-4 rounded-lg space-y-2">
+            <h4 className="text-sm font-semibold">Preview Path</h4>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-mono">{getHierarchyPreview()}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Level: {depth} {depth === 0 ? '(Root)' : ''}
+            </p>
+          </div>
+
+          {initialData && excludedCount > 0 && (
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex gap-3">
+              <IconAlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-amber-900">
+                  ⚠️ Circular Reference Prevention
+                </h4>
+                <p className="text-xs text-amber-700 mt-1">
+                  {excludedCount} categor{excludedCount === 1 ? 'y' : 'ies'} excluded (this category and {excludedCount - 1} children)
                 </p>
               </div>
+            </div>
+          )}
+        </TabsContent>
 
-              {initialData && excludedCount > 0 && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex gap-3">
-                  <IconAlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-semibold text-amber-900">
-                      ⚠️ Circular Reference Prevention
-                    </h4>
-                    <p className="text-xs text-amber-700 mt-1">
-                      {excludedCount} categor{excludedCount === 1 ? 'y' : 'ies'} excluded (this category and {excludedCount - 1} children)
-                    </p>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-
-        {/* TAB 3: SEO & SETTINGS */}
         <TabsContent value="seo" className="space-y-6 mt-6">
-              <div className="space-y-3">
-                <Label>Status & Visibility</Label>
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={formData.isActive === true}
-                      onChange={() => setFormData({ ...formData, isActive: true })}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">● Active</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={formData.isActive === false}
-                      onChange={() => setFormData({ ...formData, isActive: false })}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">○ Inactive</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sortOrder">Sort Order</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) =>
-                    setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })
-                  }
-                  placeholder="10"
-                  className="w-32"
+          <div className="space-y-3">
+            <Label>Status & Visibility</Label>
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="isActive"
+                  checked={formData.isActive === true}
+                  onChange={() => setFormData({ ...formData, isActive: true })}
+                  className="w-4 h-4"
                 />
-                <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
-              </div>
-            </TabsContent>
+                <span className="text-sm">● Active</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="isActive"
+                  checked={formData.isActive === false}
+                  onChange={() => setFormData({ ...formData, isActive: false })}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">○ Inactive</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sortOrder">Sort Order</Label>
+            <Input
+              id="sortOrder"
+              type="number"
+              value={formData.sortOrder}
+              onChange={(e) =>
+                setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })
+              }
+              placeholder="10"
+              className="w-32"
+            />
+            <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
+          </div>
+        </TabsContent>
       </Tabs>
 
       <div className="flex items-center justify-between pt-6 border-t mt-6">

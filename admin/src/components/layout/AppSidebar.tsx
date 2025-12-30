@@ -32,7 +32,7 @@ import {
 } from "@tabler/icons-react"
 import { ChevronRight } from "lucide-react"
 
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from "./navigation/NavUser"
 import {
   Sidebar,
   SidebarContent,

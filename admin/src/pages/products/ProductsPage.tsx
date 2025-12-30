@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import ProductFormSimplified, { type ProductFormData } from "@/components/ProductFormSimplified"
+import { ProductForm, type ProductFormData } from "@/components/products/ProductForm"
 import { useProductsQuery, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/useProductsQuery"
 import { useVariantsQuery } from "@/hooks/useVariantsQuery"
 import { useCategoriesQuery } from "@/hooks/useCategoriesQuery"
@@ -31,12 +31,49 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { toast } from 'sonner'
 import type { Brand } from "@/services/brandService"
 
+// Populated reference type
+type PopulatedReference = string | { _id: string; name?: string }
+
+// Product type matching API response
+interface Product {
+  _id: string
+  name: string
+  description: string
+  category: PopulatedReference
+  brand?: PopulatedReference
+  status: 'draft' | 'published' | 'archived'
+  basePrice?: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+// Variant type for local use
+interface VariantItem {
+  _id: string
+  product_id?: string
+  product?: string
+  quantity?: number
+  stock?: number
+}
+
+// Category type
+interface Category {
+  _id: string
+  name: string
+  slug?: string
+  isActive?: boolean
+}
+
+// Status filter type
+type StatusFilter = 'all' | 'published' | 'draft' | 'archived'
+
 export default function ProductsPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   // Initialize page from URL search params (preserves state on navigation)
   const initialPage = parseInt(searchParams.get('page') || '1', 10)
@@ -60,8 +97,8 @@ export default function ProductsPage() {
   const deleteProductMutation = useDeleteProduct()
   useBrandsRealtimeSync()
 
-  const products = productsData?.data || []
-  const allVariants = variantsData?.data || []
+  const products = useMemo(() => (productsData?.data || []) as Product[], [productsData?.data])
+  const allVariants = useMemo(() => (variantsData?.data || []) as VariantItem[], [variantsData?.data])
   const brandsById = useMemo(() => {
     const map = new Map<string, Brand>()
       ; (brandsResponse?.data || []).forEach((brand: Brand) => {
@@ -73,9 +110,9 @@ export default function ProductsPage() {
 
   // Group variants by product_id for easy lookup
   const variantsMap = useMemo(() => {
-    const map: { [key: string]: any[] } = {}
-    allVariants.forEach((variant: any) => {
-      const productId = variant.product_id || variant.product
+    const map: { [key: string]: VariantItem[] } = {}
+    allVariants.forEach((variant: VariantItem) => {
+      const productId = variant.product_id || variant.product || ''
       if (!map[productId]) {
         map[productId] = []
       }
@@ -120,7 +157,7 @@ export default function ProductsPage() {
 
   const getTotalStock = useCallback((productId: string) => {
     const variants = variantsMap[productId] || []
-    return variants.reduce((total: number, variant: any) => total + (variant.quantity || variant.stock || 0), 0)
+    return variants.reduce((total: number, variant: VariantItem) => total + (variant.quantity || variant.stock || 0), 0)
   }, [variantsMap])
 
   // Memoize filtered products to avoid recalculating on every render
@@ -150,7 +187,7 @@ export default function ProductsPage() {
     setIsFormOpen(true)
   }, [])
 
-  const handleEditProduct = useCallback((product: any) => {
+  const handleEditProduct = useCallback((product: Product) => {
     // Set product from cache immediately - no loading!
     setEditingProduct(product)
     setIsFormOpen(true)
@@ -197,11 +234,11 @@ export default function ProductsPage() {
       let productId: string | null = null
 
       if (editingProduct) {
-        await updateProductMutation.mutateAsync({ id: editingProduct._id, data: productData as any })
+        await updateProductMutation.mutateAsync({ id: editingProduct._id, data: productData })
         productId = editingProduct._id
         toast.success('Product updated successfully')
       } else {
-        const result = await createProductMutation.mutateAsync(productData as any)
+        const result = await createProductMutation.mutateAsync(productData)
         productId = result?.data?._id || result?._id
         toast.success('Product created successfully')
       }
@@ -248,9 +285,10 @@ export default function ProductsPage() {
               } else {
                 toast.error(result.error || result.message || 'Failed to post to Facebook', { id: 'fb-post' })
               }
-            } catch (fbError: any) {
+            } catch (fbError) {
               console.error('Facebook post error:', fbError)
-              toast.error('Failed to post to Facebook: ' + fbError.message, { id: 'fb-post' })
+              const errorMessage = fbError instanceof Error ? fbError.message : 'Unknown error'
+              toast.error('Failed to post to Facebook: ' + errorMessage, { id: 'fb-post' })
             }
           } else {
             toast.warning('Facebook settings not configured. Go to Social Posts to configure.')
@@ -261,9 +299,10 @@ export default function ProductsPage() {
       }
 
       handleCloseForm()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving product:', error)
-      const errorMsg = error?.response?.data?.message || error?.message || 'Error saving product'
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
+      const errorMsg = err?.response?.data?.message || err?.message || 'Error saving product'
       toast.error(errorMsg)
     }
   }, [editingProduct, updateProductMutation, createProductMutation, handleCloseForm])
@@ -277,9 +316,10 @@ export default function ProductsPage() {
     try {
       await deleteProductMutation.mutateAsync(productId)
       toast.success('Product deleted successfully')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting product:', error)
-      const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting product'
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
+      const errorMsg = err?.response?.data?.message || err?.message || 'Error deleting product'
       toast.error(errorMsg)
     }
   }, [deleteProductMutation])
@@ -302,13 +342,14 @@ export default function ProductsPage() {
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
         urlSlug: data.urlSlug,
-      } as any)
+      })
 
       setIsFormOpen(false)
       toast.success('Product saved as draft')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving draft:', error)
-      const errorMsg = error?.response?.data?.message || error?.message || 'Error saving draft'
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
+      const errorMsg = err?.response?.data?.message || err?.message || 'Error saving draft'
       toast.error(errorMsg)
     }
   }, [createProductMutation])
@@ -325,8 +366,8 @@ export default function ProductsPage() {
             <IconChevronLeft className="mr-2 h-4 w-4" />
             Back to Products
           </Button>
-          <ProductFormSimplified
-            initialData={editingProduct}
+          <ProductForm
+            initialData={editingProduct as Parameters<typeof ProductForm>[0]['initialData']}
             onSave={handleSaveProduct}
             onDraft={handleDraftProduct}
           />
@@ -396,7 +437,7 @@ export default function ProductsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((cat: any) => (
+                    {categories.map((cat: Category) => (
                       <SelectItem key={cat._id} value={cat._id}>
                         {cat.name}
                       </SelectItem>
@@ -410,7 +451,7 @@ export default function ProductsPage() {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={statusFilter}
-                  onValueChange={(value: any) => {
+                  onValueChange={(value: StatusFilter) => {
                     setStatusFilter(value)
                     setPage(1)
                   }}
@@ -474,7 +515,7 @@ export default function ProductsPage() {
                               if (typeof product.category === 'object' && product.category) {
                                 return product.category.name || '—'
                               } else if (typeof product.category === 'string') {
-                                const cat = categories.find((c: any) => c._id === product.category)
+                                const cat = categories.find((c: Category) => c._id === product.category)
                                 return cat?.name || product.category
                               }
                               return '—'

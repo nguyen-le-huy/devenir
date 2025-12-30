@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom"
 import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { IconChevronLeft } from "@tabler/icons-react"
-import ProductFormSimplified, { type ProductFormData } from "@/components/ProductFormSimplified"
+import { ProductForm, type ProductFormData } from "@/components/products/ProductForm"
 import { useProducts } from "@/hooks/useProducts"
 import { api } from "@/services/api"
 import { toast } from "sonner"
@@ -132,7 +132,7 @@ export default function EditProductPage() {
           <IconChevronLeft className="mr-2 h-4 w-4" />
           Back to Products
         </Button>
-        <ProductFormSimplified
+        <ProductForm
           initialData={editingProduct}
           onSave={handleSaveProduct}
           onDraft={handleDraftProduct}

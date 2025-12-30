@@ -38,7 +38,8 @@ export function CategoryTree({
   const [levelFilter, setLevelFilter] = useState<number | 'all'>('all')
   const [sortBy, setSortBy] = useState<'name' | 'created' | 'updated' | 'products'>('name')
 
-  const tree = data || []
+  // Memoize tree data
+  const tree = useMemo(() => data || [], [data])
 
   // Filter tree based on search, status, and level
   const filteredTree = useMemo(() => {
@@ -225,7 +226,7 @@ export function CategoryTree({
               <select
                 className="w-full border rounded-md p-2 text-sm bg-background"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
               >
                 <option value="all">All</option>
                 <option value="active">Active Only</option>
@@ -257,7 +258,7 @@ export function CategoryTree({
               <select
                 className="w-full border rounded-md p-2 text-sm bg-background"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'created' | 'updated' | 'products')}
               >
                 <option value="name">Name (A-Z)</option>
                 <option value="created">Recently Created</option>

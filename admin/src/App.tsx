@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import Dashboard from './pages/Dashboard'
 import ProductsPage from './pages/products/ProductsPage'
 import EditProductPage from './pages/products/EditProductPage'
-import VariantsPage from './pages/products/VariantsPage'
+import VariantsPage from './pages/products/variants-page'
 import AddVariantPage from './pages/variants/AddVariantPage'
 import ViewVariantPage from './pages/variants/ViewVariantPage'
 import BrandsPage from './pages/brands/BrandsPage'

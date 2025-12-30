@@ -10,13 +10,15 @@ import {
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MetricCard } from '@/components/metric-card'
+import { MetricCard } from '@/components/common/Stats/MetricCard'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { CustomerListFilters } from '@/services/customerService'
 import { useCustomerList, useCustomerOverview, useCustomerDetail } from '@/hooks/useCustomers'
-import { CustomerFilters } from './components/CustomerFilters'
-import { CustomerTable } from './components/CustomerTable'
-import { CustomerDetailDrawer } from './components/CustomerDetailDrawer'
+import {
+  CustomerFilters,
+  CustomerTable,
+  CustomerDetailDrawer,
+} from '@/components/customers'
 
 const defaultFilters: CustomerListFilters = {
   page: 1,

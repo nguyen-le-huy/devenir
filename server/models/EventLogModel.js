@@ -71,7 +71,7 @@ const eventLogSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
       index: true,
-      expires: 7776000, // Auto-delete after 90 days (TTL index)
+      expires: 864000, // Auto-delete after 10 days (TTL index)
     },
     page: {
       type: String,

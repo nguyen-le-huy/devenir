@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MetricCard } from "@/components/metric-card"
+import { MetricCard } from "@/components/common/Stats/MetricCard"
 import type { InventoryOverviewResponse, InventoryAdjustment } from "@/hooks/useInventory"
 import { IconArrowDownRight, IconArrowUpRight, IconPackageExport } from "@tabler/icons-react"
 import { useLocale } from "@/contexts/LocaleContext"

@@ -39,7 +39,7 @@ export default function BrandsPage() {
   const isRefreshing = isFetching && !!data
   const isBusy = isLoading || isFetching
   useBrandsRealtimeSync()
-  const brands = data?.data || []
+  const brands = useMemo(() => data?.data || [], [data?.data])
   const stats = data?.meta
   const topBrands = data?.topBrands
 
@@ -96,8 +96,9 @@ export default function BrandsPage() {
       }
       setIsFormOpen(false)
       setEditingBrand(null)
-    } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Unable to save brand'
+    } catch (error: unknown) {
+      const err = error as Error & { response?: { data?: { message?: string } } }
+      const message = err?.response?.data?.message || err?.message || 'Unable to save brand'
       toast.error(message)
     }
   }
@@ -111,8 +112,9 @@ export default function BrandsPage() {
       if (selectedBrand?._id === brand._id) {
         setSelectedBrand(null)
       }
-    } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Unable to archive brand'
+    } catch (error: unknown) {
+      const err = error as Error & { response?: { data?: { message?: string } } }
+      const message = err?.response?.data?.message || err?.message || 'Unable to archive brand'
       toast.error(message)
     }
   }

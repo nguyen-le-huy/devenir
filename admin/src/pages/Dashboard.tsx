@@ -1,7 +1,7 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { MetricCard } from "@/components/metric-card"
-import { StatusBadge } from "@/components/status-badge"
+import { AppSidebar } from "@/components/layout/AppSidebar"
+import { SiteHeader } from "@/components/layout/SiteHeader"
+import { MetricCard } from "@/components/common/Stats/MetricCard"
+import { StatusBadge } from "@/components/common/StatusBadge"
 import {
   SidebarInset,
   SidebarProvider,

@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { GalleryVerticalEnd } from "lucide-react"
 import { useAdminAuth } from "@/contexts/AdminAuthContext"
-import { LoginForm } from "@/components/login-form"
+import { LoginForm } from "@/components/auth/LoginForm"
 
 export default function LoginPage() {
   const navigate = useNavigate()

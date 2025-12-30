@@ -140,13 +140,13 @@ export function CategoryForm({ initialData, categories = [], onSave, onCancel }:
                 const imageUrl = response.data.data.url
                 setFormData({ ...formData, thumbnailUrl: imageUrl })
                 setThumbnailPreview(imageUrl)
-                // toast.success('Image uploaded successfully!') // Intentionally omitted for smoother UX
             } else {
                 toast.error(response.data.message || 'Upload failed')
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Upload error:', error)
-            const errorMsg = error?.response?.data?.message || error?.message || 'Error uploading image'
+            const err = error as { response?: { data?: { message?: string } }; message?: string }
+            const errorMsg = err?.response?.data?.message || err?.message || 'Error uploading image'
             toast.error(errorMsg)
         } finally {
             setUploadingImage(false)

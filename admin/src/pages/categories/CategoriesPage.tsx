@@ -8,10 +8,10 @@ import { useState, useMemo } from 'react'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { Button } from '@/components/ui/button'
 import { IconPlus } from '@tabler/icons-react'
-import { CategoryTree } from '@/components/CategoryTree'
-import { CategoryTableView } from '@/components/CategoryTableView'
-import { CategoryDetailPanel } from '@/components/CategoryDetailPanel'
-import { CategoryFormModal } from '@/components/CategoryFormModal'
+import { CategoryTree } from '@/components/categories/CategoryTree'
+import { CategoryTableView } from '@/components/categories/CategoryTable'
+import { CategoryDetailPanel } from '@/components/categories/CategoryDetail'
+import { CategoryFormModal } from '@/components/categories/CategoryForm'
 import type { CategoryTreeNode } from '@/utils/categoryHelpers'
 import { categoryService, type CategoryFormData } from '@/services/categoryService'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -86,7 +86,7 @@ export default function CategoriesPage() {
         toast.error('Failed to create category')
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Error creating category:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error creating category'
       toast.error(errorMsg)
@@ -112,7 +112,7 @@ export default function CategoriesPage() {
         toast.error('Failed to update category')
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Error updating category:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error updating category'
       toast.error(errorMsg)
@@ -137,7 +137,7 @@ export default function CategoriesPage() {
         toast.error('Failed to delete category')
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       console.error('Error deleting category:', error)
       const errorMsg = error?.response?.data?.message || error?.message || 'Error deleting category'
       toast.error(errorMsg)

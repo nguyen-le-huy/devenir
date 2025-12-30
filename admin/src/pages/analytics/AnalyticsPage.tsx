@@ -2,7 +2,7 @@ import { AdminLayout } from "@/layouts/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MetricCard } from "@/components/metric-card"
+import { MetricCard } from "@/components/common/Stats/MetricCard"
 import { IconDownload } from "@tabler/icons-react"
 
 export default function AnalyticsPage() {

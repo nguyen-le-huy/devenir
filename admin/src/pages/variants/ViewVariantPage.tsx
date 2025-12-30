@@ -4,7 +4,7 @@ import { AdminLayout } from '@/layouts/AdminLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import VariantDrawer from '@/components/VariantDrawer'
+import VariantDrawer from '@/components/variants/VariantDrawer'
 import axiosInstance from '@/services/axiosConfig'
 import { toast } from 'sonner'
 
