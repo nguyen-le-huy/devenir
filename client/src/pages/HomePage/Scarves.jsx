@@ -11,7 +11,7 @@ const Scarves = () => {
     // Find Scarves category and its subcategories
     const { scarvesCategory, allCategoryIds } = useMemo(() => {
         let categories = [];
-        
+
         if (categoriesResponse?.data) {
             categories = categoriesResponse.data;
         } else if (Array.isArray(categoriesResponse)) {
@@ -33,8 +33,8 @@ const Scarves = () => {
         }
 
         // Find all subcategories of Scarves
-        const subcategories = categories.filter(cat => 
-            cat.parentCategory === parentCategory._id || 
+        const subcategories = categories.filter(cat =>
+            cat.parentCategory === parentCategory._id ||
             cat.parentCategory?._id === parentCategory._id ||
             String(cat.parentCategory) === String(parentCategory._id)
         );
@@ -42,63 +42,29 @@ const Scarves = () => {
         // Collect all category IDs (parent + children)
         const allIds = [parentCategory._id, ...subcategories.map(sub => sub._id)];
 
-        return { 
-            scarvesCategory: parentCategory, 
-            allCategoryIds: allIds 
+        return {
+            scarvesCategory: parentCategory,
+            allCategoryIds: allIds
         };
     }, [categoriesResponse]);
 
     // Fetch products from Scarves and all subcategories
     const { data: allVariants, isLoading: isVariantsLoading } = useQuery({
-        queryKey: ['scarves-all-variants', allCategoryIds],
+        queryKey: ['scarves-all-variants', scarvesCategory?._id, allCategoryIds.length],
         queryFn: async () => {
-            if (allCategoryIds.length === 0) return [];
-
-            const allVariants = [];
-
-            // Fetch products for each category (parent + subcategories)
-            for (const categoryId of allCategoryIds) {
-                try {
-                    const productsResponse = await getAllProducts({
-                        category: categoryId,
-                        limit: 100
-                    });
-                    
-                    const products = productsResponse?.data || [];
-
-                    // Fetch variants for each product
-                    for (const product of products) {
-                        try {
-                            const variantsResponse = await getProductVariants(product._id);
-                            const variants = variantsResponse?.data || [];
-                            
-                            // Add product info to each variant
-                            const enrichedVariants = variants.map(v => ({
-                                ...v,
-                                productInfo: {
-                                    _id: product._id,
-                                    name: product.name,
-                                }
-                            }));
-                            allVariants.push(...enrichedVariants);
-                        } catch (err) {
-                            // Silently handle error
-                        }
-                    }
-                } catch (err) {
-                    // Silently handle error
-                }
-            }
-            
-            return allVariants;
+            if (!scarvesCategory?._id) return [];
+            // Use the optimized service method from ProductByCategory
+            const { getVariantsByCategoryWithChildren } = await import('../../services/productService.js');
+            return await getVariantsByCategoryWithChildren(scarvesCategory._id, categoriesResponse?.data || []);
         },
-        enabled: allCategoryIds.length > 0,
+        enabled: !!scarvesCategory?._id,
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
 
     // Transform variants for carousel display
     const scarves = useMemo(() => {
         if (!allVariants || allVariants.length === 0) return [];
+
 
         return allVariants.slice(0, 12).map(variant => ({
             id: variant._id,
@@ -114,7 +80,7 @@ const Scarves = () => {
 
     // Show loading state
     const isLoading = isCategoriesLoading || isVariantsLoading;
-    
+
     if (isLoading) {
         return (
             <ProductCarousel

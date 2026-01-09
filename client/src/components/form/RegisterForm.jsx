@@ -104,7 +104,7 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, onBack, loading = false, error 
             title="Back to login"
           >
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         )}
@@ -191,7 +191,7 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, onBack, loading = false, error 
             onSuccess={(credentialResponse) => {
               onGoogleLogin(credentialResponse.credential);
             }}
-            onError={() => console.log('Login Failed')}
+            onError={() => { }}
             text="signup"
             locale="en_US"
             size="compact"

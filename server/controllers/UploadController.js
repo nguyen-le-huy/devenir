@@ -1,91 +1,29 @@
-import { v2 as cloudinary } from 'cloudinary';
 import asyncHandler from 'express-async-handler';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import r2Client from '../config/r2.js';
 
 /**
- * @desc    Upload image to Cloudinary
+ * @desc    Upload image to R2 (handled by middleware)
  * @route   POST /api/upload/image
  * @access  Private/Admin
  */
 export const uploadImage = asyncHandler(async (req, res) => {
-  console.log('=== UPLOAD IMAGE REQUEST ===');
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('File present:', !!req.file);
-  console.log('Body:', req.body);
-
   if (!req.file) {
-    console.log('ERROR: No file in request');
     return res.status(400).json({
       success: false,
       message: 'No file provided',
     });
   }
 
-  // Check Cloudinary config
-  const hasConfig = !!(process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET);
-
-  console.log('Cloudinary config present:', hasConfig);
-
-  if (!hasConfig) {
-    console.error('Cloudinary credentials missing!');
-    return res.status(500).json({
-      success: false,
-      message: 'Server configuration error: Cloudinary credentials not configured',
-    });
-  }
-
-  try {
-    console.log('Starting image upload...');
-    console.log('File:', req.file.originalname);
-    console.log('File size:', (req.file.buffer.length / 1024 / 1024).toFixed(2), 'MB');
-    console.log('MIME type:', req.file.mimetype);
-
-    // Convert buffer to base64 for upload
-    const base64String = req.file.buffer.toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${base64String}`;
-
-    console.log('Uploading to Cloudinary...');
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'devenir/products',
-      resource_type: 'image',
-      format: 'webp', // Convert to WebP for smaller file size
-      quality: 100, // Maximum quality - preserve original
-    });
-
-    console.log('Upload successful:', result.public_id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Image uploaded successfully',
-      data: {
-        id: result.public_id,
-        url: result.secure_url,
-        width: result.width,
-        height: result.height,
-      },
-    });
-  } catch (error) {
-    console.error('Upload error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      statusCode: error.statusCode,
-    });
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading image to Cloudinary',
-      error: error.message,
-      details: error.code || 'Unknown error',
-    });
-  }
+  res.status(200).json({
+    success: true,
+    message: 'Image uploaded successfully to R2',
+    data: {
+      id: req.file.filename, // R2 Key
+      url: req.file.path,    // Public URL
+      filename: req.file.filename,
+    },
+  });
 });
 
 /**
@@ -94,9 +32,6 @@ export const uploadImage = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const uploadImages = asyncHandler(async (req, res) => {
-  console.log('Upload images endpoint hit');
-  console.log('Files:', req.files ? `${req.files.length} files` : 'NO FILES');
-
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({
       success: false,
@@ -104,150 +39,74 @@ export const uploadImages = asyncHandler(async (req, res) => {
     });
   }
 
-  try {
-    console.log('Starting multiple image upload...');
-    const uploadedImages = [];
+  const uploadedImages = req.files.map(file => ({
+    id: file.filename,
+    url: file.path,
+    filename: file.filename,
+  }));
 
-    for (const file of req.files) {
-      console.log(`Uploading file: ${file.originalname}, size: ${file.buffer.length}`);
-
-      // Convert buffer to base64 for upload
-      const base64String = file.buffer.toString('base64');
-      const dataURI = `data:${file.mimetype};base64,${base64String}`;
-
-      const result = await cloudinary.uploader.upload(dataURI, {
-        folder: 'devenir/products',
-        resource_type: 'image',
-        format: 'webp', // Convert to WebP for smaller file size
-        quality: 100, // Maximum quality - preserve original
-      });
-
-      console.log(`Upload successful: ${result.public_id}`);
-
-      uploadedImages.push({
-        id: result.public_id,
-        url: result.secure_url,
-        width: result.width,
-        height: result.height,
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: `${uploadedImages.length} image(s) uploaded successfully`,
-      data: uploadedImages,
-    });
-  } catch (error) {
-    console.error('Upload error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading images to Cloudinary',
-      error: error.message,
-    });
-  }
+  res.status(200).json({
+    success: true,
+    message: `${uploadedImages.length} image(s) uploaded successfully`,
+    data: uploadedImages,
+  });
 });
 
 /**
- * @desc    Upload category image to Cloudinary (auto-convert to WebP)
+ * @desc    Upload category image
  * @route   POST /api/upload/category-image
  * @access  Private/Admin
  */
 export const uploadCategoryImage = asyncHandler(async (req, res) => {
-  console.log('=== UPLOAD CATEGORY IMAGE REQUEST ===');
-
   if (!req.file) {
-    console.log('ERROR: No file in request');
     return res.status(400).json({
       success: false,
       message: 'No file provided',
     });
   }
 
-  // Check Cloudinary config
-  const hasConfig = !!(process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET);
-
-  if (!hasConfig) {
-    console.error('Cloudinary credentials missing!');
-    return res.status(500).json({
-      success: false,
-      message: 'Server configuration error: Cloudinary credentials not configured',
-    });
-  }
-
-  try {
-    console.log('Starting category image upload...');
-    console.log('File:', req.file.originalname);
-    console.log('File size:', (req.file.buffer.length / 1024 / 1024).toFixed(2), 'MB');
-    console.log('MIME type:', req.file.mimetype);
-
-    // Convert buffer to base64 for upload
-    const base64String = req.file.buffer.toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${base64String}`;
-
-    console.log('Uploading to Cloudinary with WebP conversion...');
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'devenir/categories',
-      resource_type: 'image',
-      format: 'webp', // Convert to WebP
-      quality: 'auto:best', // Auto quality optimization
-      flags: 'lossy', // Use lossy compression for smaller file size
-    });
-
-    console.log('Upload successful:', result.public_id);
-    console.log('WebP URL:', result.secure_url);
-
-    res.status(200).json({
-      success: true,
-      message: 'Category image uploaded successfully (WebP format)',
-      data: {
-        id: result.public_id,
-        url: result.secure_url,
-        width: result.width,
-        height: result.height,
-        format: result.format,
-        bytes: result.bytes,
-      },
-    });
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading category image to Cloudinary',
-      error: error.message,
-    });
-  }
+  res.status(200).json({
+    success: true,
+    message: 'Category image uploaded successfully',
+    data: {
+      id: req.file.filename,
+      url: req.file.path,
+    },
+  });
 });
 
 /**
- * @desc    Delete image from Cloudinary
- * @route   DELETE /api/upload/:publicId
+ * @desc    Delete image from R2
+ * @route   DELETE /api/upload/:key
  * @access  Private/Admin
  */
 export const deleteImage = asyncHandler(async (req, res) => {
-  const { publicId } = req.params;
+  const { publicId: key } = req.params; // We use :publicId as param name in route, but treating it as R2 Key
 
-  if (!publicId) {
+  if (!key) {
     return res.status(400).json({
       success: false,
-      message: 'No publicId provided',
+      message: 'No image key provided',
     });
   }
 
   try {
-    const result = await cloudinary.uploader.destroy(publicId);
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME,
+      Key: key,
+    });
+
+    await r2Client.send(command);
 
     res.status(200).json({
       success: true,
       message: 'Image deleted successfully',
-      data: result,
     });
   } catch (error) {
-    console.error('Delete error:', error.message);
+    console.error('Delete error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting image from Cloudinary',
+      message: 'Error deleting image from R2',
       error: error.message,
     });
   }

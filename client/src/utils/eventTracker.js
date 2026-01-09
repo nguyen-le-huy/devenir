@@ -21,7 +21,7 @@ class EventTracker {
    */
   track(eventType, data = {}) {
     // Just log for debugging, don't queue
-    console.log('[EventTracker DEPRECATED] Event:', eventType, data);
+    // console.log('[EventTracker DEPRECATED] Event:', eventType, data);
     return; // Don't queue events anymore
     const event = {
       type: eventType,
@@ -133,6 +133,13 @@ class EventTracker {
    * Get auth token from localStorage
    */
   getAuthToken() {
+    try {
+      const authState = localStorage.getItem('devenir-auth');
+      if (authState) {
+        const parsed = JSON.parse(authState);
+        if (parsed?.state?.token) return parsed.state.token;
+      }
+    } catch (e) { }
     return localStorage.getItem('token');
   }
 }

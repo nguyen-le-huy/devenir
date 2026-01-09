@@ -15,9 +15,22 @@ const apiClient = axios.create({
 // Interceptor để thêm token vào request
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Read token from Zustand persisted state (devenir-auth)
+    try {
+      const authState = localStorage.getItem('devenir-auth');
+      if (authState) {
+        const parsed = JSON.parse(authState);
+        const token = parsed?.state?.token;
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, try legacy token key
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

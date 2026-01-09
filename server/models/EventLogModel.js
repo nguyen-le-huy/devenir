@@ -4,8 +4,9 @@ const eventLogSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
-      required: true,
+      required: false, // Allow anonymous tracking
       index: true,
+      default: null,
     },
     sessionId: {
       type: String,

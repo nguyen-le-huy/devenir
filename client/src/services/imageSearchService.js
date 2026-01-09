@@ -85,7 +85,7 @@ export const fileToBase64 = (file, maxSize = 1024, quality = 0.85) => {
 
                 // Convert to JPEG for better compression
                 const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-                console.log(`📸 Image compressed: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedBase64.length * 0.75 / 1024)}KB`);
+
                 resolve(compressedBase64);
             };
 

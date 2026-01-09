@@ -22,7 +22,7 @@ const ProductByCategory = () => {
     const headerHeight = useHeaderHeight();
 
     // Lấy categoryId và subcategory từ URL query params
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const categoryId = searchParams.get('category');
     const selectedSubcategory = searchParams.get('subcategory');
 
@@ -320,7 +320,7 @@ const ProductByCategory = () => {
                         onClick={() => {
                             const newParams = new URLSearchParams(searchParams);
                             newParams.delete('subcategory');
-                            window.location.search = newParams.toString();
+                            setSearchParams(newParams);
                         }}
                         style={{ cursor: 'pointer' }}
                     >
@@ -333,7 +333,7 @@ const ProductByCategory = () => {
                             onClick={() => {
                                 const newParams = new URLSearchParams(searchParams);
                                 newParams.set('subcategory', subcat._id);
-                                window.location.search = newParams.toString();
+                                setSearchParams(newParams);
                             }}
                             style={{ cursor: 'pointer' }}
                         >

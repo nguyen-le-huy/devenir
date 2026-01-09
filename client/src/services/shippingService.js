@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api.js';
+import apiClient from './api';
 
 /**
  * Save shipping address for the user
@@ -6,23 +6,12 @@ import { API_BASE_URL } from '../config/api.js';
  * @returns {Promise<Object>} Response from server
  */
 export const saveShippingAddress = async (addressData) => {
-    const token = localStorage.getItem('token');
-
-    const response = await fetch(`${API_BASE_URL}/auth/shipping-address`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(addressData),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to save shipping address');
+    try {
+        const response = await apiClient.post('/auth/shipping-address', addressData);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to save shipping address');
     }
-
-    return response.json();
 };
 
 /**
@@ -30,40 +19,31 @@ export const saveShippingAddress = async (addressData) => {
  * @returns {Promise<Object>} User's shipping address
  */
 export const getShippingAddress = async () => {
-    const token = localStorage.getItem('token');
+    try {
+        const response = await apiClient.get('/auth/shipping-address');
+        const result = response.data;
 
-    const response = await fetch(`${API_BASE_URL}/auth/shipping-address`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-        },
-    });
+        // Transform backend data to frontend format
+        if (result.data) {
+            const [firstName, ...lastNameParts] = result.data.fullName.split(' ');
+            return {
+                ...result,
+                data: {
+                    firstName: firstName || '',
+                    lastName: lastNameParts.join(' ') || '',
+                    phoneNumber: result.data.phone,
+                    address: result.data.street,
+                    city: result.data.city,
+                    district: result.data.district,
+                    zipCode: result.data.postalCode
+                }
+            };
+        }
 
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to get shipping address');
+        return result;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to get shipping address');
     }
-
-    const result = await response.json();
-
-    // Transform backend data to frontend format
-    if (result.data) {
-        const [firstName, ...lastNameParts] = result.data.fullName.split(' ');
-        return {
-            ...result,
-            data: {
-                firstName: firstName || '',
-                lastName: lastNameParts.join(' ') || '',
-                phoneNumber: result.data.phone,
-                address: result.data.street,
-                city: result.data.city,
-                district: result.data.district,
-                zipCode: result.data.postalCode
-            }
-        };
-    }
-
-    return result;
 };
 
 /**
@@ -72,21 +52,10 @@ export const getShippingAddress = async () => {
  * @returns {Promise<Object>} Response from server
  */
 export const updateShippingAddress = async (addressData) => {
-    const token = localStorage.getItem('token');
-
-    const response = await fetch(`${API_BASE_URL}/auth/shipping-address`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(addressData),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update shipping address');
+    try {
+        const response = await apiClient.put('/auth/shipping-address', addressData);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to update shipping address');
     }
-
-    return response.json();
 };

@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { io, Socket } from 'socket.io-client'
 
 interface TrackingEvent {
@@ -14,17 +15,31 @@ class TrackingService {
   private currentUserId: string | null = null
 
   /**
+   * Get auth token from storage (handles Zustand persistence)
+   */
+  private getAuthToken(): string | null {
+    try {
+      const authState = localStorage.getItem('devenir-auth')
+      if (authState) {
+        const parsed = JSON.parse(authState)
+        if (parsed?.state?.token) return parsed.state.token
+      }
+    } catch (e) { }
+    return localStorage.getItem('token')
+  }
+
+  /**
    * Initialize tracking service with user authentication
    */
   init(userId?: string) {
     if (this.isInitialized) return
 
     this.currentUserId = userId || null
-    const token = localStorage.getItem('token')
+    const token = this.getAuthToken()
 
     // Initialize Socket.IO connection
     try {
-      this.socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+      this.socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3111', {
         auth: { token },
         autoConnect: true,
         reconnection: true,
@@ -33,12 +48,12 @@ class TrackingService {
       })
 
       this.socket.on('connect', () => {
-        console.log('✅ Tracking socket connected')
+        if (import.meta.env.DEV) console.log('✅ Tracking socket connected')
         this.flushQueue()
       })
 
       this.socket.on('disconnect', () => {
-        console.log('❌ Tracking socket disconnected')
+        if (import.meta.env.DEV) console.log('❌ Tracking socket disconnected')
       })
 
       this.socket.on('error', (error) => {
@@ -46,7 +61,7 @@ class TrackingService {
       })
 
       this.isInitialized = true
-      
+
       // Track session start
       this.trackEvent('session_start', {
         timestamp: new Date().toISOString(),
@@ -78,11 +93,11 @@ class TrackingService {
     // Try Socket.IO first (realtime)
     if (this.socket?.connected) {
       this.socket.emit('track_event', event)
-      console.log(`📊 Tracked (Socket): ${type}`, data)
+      if (import.meta.env.DEV) console.log(`📊 Tracked (Socket): ${type}`, data)
     } else {
       // Queue for later if socket not connected
       this.eventQueue.push(event)
-      
+
       // Fallback to HTTP beacon immediately for critical events
       this.sendBeacon(event)
     }
@@ -186,12 +201,12 @@ class TrackingService {
   private flushQueue() {
     if (this.eventQueue.length === 0) return
 
-    console.log(`📤 Flushing ${this.eventQueue.length} queued events`)
-    
+    if (import.meta.env.DEV) console.log(`📤 Flushing ${this.eventQueue.length} queued events`)
+
     this.eventQueue.forEach(event => {
       this.socket?.emit('track_event', event)
     })
-    
+
     this.eventQueue = []
   }
 
@@ -200,7 +215,7 @@ class TrackingService {
    */
   private sendBeacon(event: TrackingEvent) {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3111/api'
-    const token = localStorage.getItem('token')
+    const token = this.getAuthToken()
 
     const data = JSON.stringify({
       ...event,
@@ -209,7 +224,7 @@ class TrackingService {
 
     // navigator.sendBeacon ensures data is sent even if page is closing
     const success = navigator.sendBeacon(`${apiUrl}/events`, data)
-    
+
     if (!success) {
       console.warn('Beacon failed, trying fetch with keepalive')
       fetch(`${apiUrl}/events`, {
@@ -222,7 +237,7 @@ class TrackingService {
         keepalive: true, // Ensures request completes even if page closes
       }).catch(err => console.error('Failed to send tracking event:', err))
     } else {
-      console.log(`📡 Tracked (Beacon): ${event.type}`)
+      if (import.meta.env.DEV) console.log(`📡 Tracked (Beacon): ${event.type}`)
     }
   }
 
@@ -232,7 +247,7 @@ class TrackingService {
   private setupSessionEndTracking() {
     const trackSessionEnd = () => {
       const sessionDuration = Date.now() - this.sessionStartTime
-      
+
       this.sendBeacon({
         type: 'session_end',
         data: {
@@ -246,7 +261,7 @@ class TrackingService {
 
     // Track on page unload
     window.addEventListener('beforeunload', trackSessionEnd)
-    
+
     // Track on visibility change (user switches tabs)
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -264,7 +279,7 @@ class TrackingService {
    */
   setUserId(userId: string) {
     this.currentUserId = userId
-    console.log('👤 Tracking user updated:', userId)
+    if (import.meta.env.DEV) console.log('👤 Tracking user updated:', userId)
   }
 
   /**

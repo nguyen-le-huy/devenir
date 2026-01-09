@@ -15,7 +15,7 @@ const VisualSearch = ({ isOpen, onClose }) => {
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
-    
+
     // Crop states
     const [isCropping, setIsCropping] = useState(false);
     const [crop, setCrop] = useState(null);
@@ -98,7 +98,7 @@ const VisualSearch = ({ isOpen, onClose }) => {
     // Handle image load - set default crop to full image
     const handleImageLoad = useCallback((e) => {
         const { width, height } = e.currentTarget;
-        
+
         // Set initial crop to center of image
         const cropSize = Math.min(width, height) * 0.8;
         const initialCrop = {
@@ -108,7 +108,7 @@ const VisualSearch = ({ isOpen, onClose }) => {
             width: cropSize,
             height: cropSize
         };
-        
+
         setCrop(initialCrop);
         setCompletedCrop(initialCrop);
     }, []);
@@ -122,7 +122,7 @@ const VisualSearch = ({ isOpen, onClose }) => {
         }
 
         setError(null);
-        
+
         try {
             const base64Image = await fileToBase64(file);
             setPreviewImage(base64Image);
@@ -145,12 +145,12 @@ const VisualSearch = ({ isOpen, onClose }) => {
         try {
             // Get the cropped image (or full image if no crop)
             const imageToSearch = getCroppedImage();
-            
-            console.log('🔍 Searching for similar products...');
+
+
             const result = await findSimilarProducts(imageToSearch, 12);
 
             if (result.success) {
-                console.log(`✅ Found ${result.count} similar products`);
+
 
                 // Navigate to VisuallySimilar page with results
                 navigate('/visually-similar', {
@@ -302,40 +302,40 @@ const VisualSearch = ({ isOpen, onClose }) => {
                                 />
                             </ReactCrop>
                         </div>
-                        
+
                         <div className={styles.cropInstructions}>
                             <p>Drag to select the area you want to search</p>
                         </div>
-                        
+
                         <div className={styles.cropActions}>
-                            <button 
+                            <button
                                 className={styles.backButton}
                                 onClick={handleBack}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
                                 </svg>
                                 Back
                             </button>
-                            <button 
+                            <button
                                 className={styles.reUploadButton}
                                 onClick={handleReUpload}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                    <polyline points="17 8 12 3 7 8"/>
-                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
                                 Change Image
                             </button>
-                            <button 
+                            <button
                                 className={styles.searchButton}
                                 onClick={handleSearch}
                                 disabled={!completedCrop}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="m21 21-4.35-4.35"/>
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.35-4.35" />
                                 </svg>
                                 Search
                             </button>

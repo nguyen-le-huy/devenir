@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore';
 import RegisterForm from '../components/form/RegisterForm';
@@ -22,13 +23,14 @@ export default function RegisterPage() {
     try {
       const response = await authService.register(data);
 
-      // Update AuthContext state
+      // Update Auth Store
       login(response.token, response.user);
 
       // Redirect to home
       navigate('/');
+      toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
     } catch (err) {
-      setError(err.message || 'Đăng ký thất bại');
+      toast.error(err.message || 'Registration failed');
       console.error('Register error:', err);
     } finally {
       setLoading(false);
@@ -42,13 +44,14 @@ export default function RegisterPage() {
     try {
       const response = await authService.googleLogin(credential);
 
-      // Update AuthContext state
+      // Update Auth Store
       login(response.token, response.user);
 
       // Redirect to home
       navigate('/');
+      toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
     } catch (err) {
-      setError(err.message || 'Google đăng ký thất bại');
+      toast.error(err.message || 'Google registration failed');
       console.error('Google login error:', err);
     } finally {
       setLoading(false);

@@ -122,7 +122,7 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
             onSuccess={(credentialResponse) => {
               onGoogleLogin(credentialResponse.credential);
             }}
-            onError={() => console.log('Login Failed')}
+            onError={() => { }}
             text="signin"
             locale="en_US"
             size="compact"

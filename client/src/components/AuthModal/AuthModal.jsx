@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import LoginForm from '../form/LoginForm';
@@ -30,13 +31,14 @@ export default function AuthModal({ isOpen, onClose }) {
     try {
       const response = await authService.login(data);
 
-      // Update AuthContext state
+      // Update Auth Store
       login(response.token, response.user);
 
       // Close modal after successful login
       onClose();
+      toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
     } catch (err) {
-      setError(err.message || 'Đăng nhập thất bại');
+      toast.error(err.message || 'Login failed');
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -51,13 +53,14 @@ export default function AuthModal({ isOpen, onClose }) {
     try {
       const response = await authService.googleLogin(credential);
 
-      // Update AuthContext state
+      // Update Auth Store
       login(response.token, response.user);
 
       // Close modal after successful Google login
       onClose();
+      toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
     } catch (err) {
-      setError(err.message || 'Google đăng nhập thất bại');
+      toast.error(err.message || 'Google login failed');
       console.error('Google login error:', err);
     } finally {
       setLoading(false);
@@ -72,8 +75,9 @@ export default function AuthModal({ isOpen, onClose }) {
     try {
       await authService.forgotPassword(data);
       setForgotPasswordSubmitted(true);
+      toast.success('Reset email sent! Please check your inbox.');
     } catch (err) {
-      setError(err.message || 'Gửi email thất bại');
+      toast.error(err.message || 'Failed to send reset email');
       console.error('Forgot password error:', err);
     } finally {
       setLoading(false);

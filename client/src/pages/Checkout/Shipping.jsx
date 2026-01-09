@@ -131,7 +131,7 @@ const Shipping = () => {
             setShowAddressForm(false);
             setPaymentError("");
 
-            console.log("Address saved:", formData);
+
         } catch (error) {
             console.error("Error saving address:", error);
             alert(error.message || "Failed to save address. Please try again.");

@@ -3,6 +3,8 @@ import * as cartService from '../services/cartService.js';
 import { trackEvent } from '../utils/eventTracker.js';
 import { trackingService } from '../services/trackingService';
 
+import { useAuthStore } from '../stores/useAuthStore';
+
 // Query keys for cart
 export const cartKeys = {
     all: ['cart'],
@@ -11,16 +13,17 @@ export const cartKeys = {
 
 /**
  * Hook to fetch current user's cart
- * Only enabled when user is authenticated (check token in localStorage)
+ * Only enabled when user is authenticated
  */
 export const useCart = () => {
-    const token = localStorage.getItem('token');
-    
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const token = useAuthStore((state) => state.token);
+
     return useQuery({
         queryKey: cartKeys.detail(),
         queryFn: cartService.getCart,
-        enabled: !!token, // Only fetch if user is logged in
-        staleTime: 30 * 1000, // 30 seconds - cart changes frequently
+        enabled: isAuthenticated && !!token,
+        staleTime: 30 * 1000,
     });
 };
 
@@ -30,9 +33,9 @@ export const useCart = () => {
  */
 export const useAddToCart = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
-        mutationFn: ({ variantId, quantity = 1 }) => 
+        mutationFn: ({ variantId, quantity = 1 }) =>
             cartService.addToCart(variantId, quantity),
         onSuccess: (data, variables) => {
             // Track add to cart event
@@ -63,7 +66,7 @@ export const useAddToCart = () => {
                     });
                 }
             }
-            
+
             // Invalidate and refetch cart
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
         },
@@ -78,9 +81,9 @@ export const useAddToCart = () => {
  */
 export const useUpdateCartItem = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
-        mutationFn: ({ variantId, quantity }) => 
+        mutationFn: ({ variantId, quantity }) =>
             cartService.updateCartItem(variantId, quantity),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
@@ -96,7 +99,7 @@ export const useUpdateCartItem = () => {
  */
 export const useRemoveFromCart = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: (variantId) => cartService.removeFromCart(variantId),
         onSuccess: (data, variantId) => {
@@ -105,7 +108,7 @@ export const useRemoveFromCart = () => {
                 variantId,
                 timestamp: new Date().toISOString()
             });
-            
+
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
         },
         onError: (error) => {
@@ -119,7 +122,7 @@ export const useRemoveFromCart = () => {
  */
 export const useClearCart = () => {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: cartService.clearCart,
         onSuccess: () => {

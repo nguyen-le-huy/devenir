@@ -2,24 +2,9 @@ import express from 'express';
 import multer from 'multer';
 import { uploadImage, uploadImages, deleteImage, uploadCategoryImage } from '../controllers/UploadController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
+import { upload, uploadToR2 } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
-
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max for large images
-  fileFilter: (req, file, cb) => {
-    console.log(`Multer fileFilter: ${file.originalname} (${file.mimetype})`);
-    // Accept image files only
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
-});
 
 // Debug middleware
 router.use((req, res, next) => {
@@ -29,25 +14,25 @@ router.use((req, res, next) => {
 
 /**
  * POST /api/upload/image
- * Upload single image
+ * Upload single image to R2
  */
-router.post('/image', authenticate, isAdmin, upload.single('image'), uploadImage);
+router.post('/image', authenticate, isAdmin, upload.single('image'), uploadToR2, uploadImage);
 
 /**
  * POST /api/upload/images
- * Upload multiple images
+ * Upload multiple images to R2
  */
-router.post('/images', authenticate, isAdmin, upload.array('images', 10), uploadImages);
+router.post('/images', authenticate, isAdmin, upload.array('images', 10), uploadToR2, uploadImages);
 
 /**
  * POST /api/upload/category-image
- * Upload category image (auto-convert to WebP)
+ * Upload category image to R2
  */
-router.post('/category-image', authenticate, isAdmin, upload.single('image'), uploadCategoryImage);
+router.post('/category-image', authenticate, isAdmin, upload.single('image'), uploadToR2, uploadCategoryImage);
 
 /**
  * DELETE /api/upload/:publicId
- * Delete image
+ * Delete image from R2
  */
 router.delete('/:publicId', authenticate, isAdmin, deleteImage);
 

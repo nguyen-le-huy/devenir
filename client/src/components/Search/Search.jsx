@@ -123,7 +123,7 @@ const Search = ({ onClose }) => {
 
                 if (response.success && response.data) {
                     setSearchResults(response.data);
-                    
+
                     // Track search event
                     trackEvent.search({
                         query: searchQuery,
@@ -210,13 +210,11 @@ const Search = ({ onClose }) => {
             // Lấy variants của product này
             const variantsData = await getProductVariants(product._id);
 
-            console.log('Product clicked:', product);
-            console.log('Variants data:', variantsData);
+
 
             if (variantsData.success && variantsData.data && variantsData.data.length > 0) {
                 // Navigate đến variant đầu tiên của product
                 const firstVariantId = variantsData.data[0]._id;
-                console.log('Navigating to variant:', firstVariantId);
                 navigate(`/product-detail?variant=${firstVariantId}`);
             } else {
                 // Nếu không có variant, hiển thị thông báo lỗi

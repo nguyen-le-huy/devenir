@@ -220,7 +220,9 @@ io.use((socket, next) => {
     || socket.handshake.query?.token;
 
   if (!authToken) {
-    return next(new Error('AUTH_REQUIRED'));
+    // Allow anonymous connection for tracking
+    socket.userId = null;
+    return next();
   }
 
   try {
@@ -228,6 +230,13 @@ io.use((socket, next) => {
     socket.userId = decoded.userId;
     return next();
   } catch (err) {
+    // If token is provided but invalid, we can either reject or treat as anonymous
+    // For now, let's treat expired/invalid tokens as anonymous (or logging out)
+    // to prevent tracking data loss, OR reject to force re-login.
+    // Given it's tracking, let's reject to signal auth failure to client?
+    // Actually, client logs say "AUTH_FAILED" if we error here.
+    // Let's keep strict rejection for INVALID tokens to help debug auth issues,
+    // but ALLOW missing tokens.
     return next(new Error('AUTH_FAILED'));
   }
 });
@@ -245,7 +254,7 @@ io.on('connection', (socket) => {
   socket.on('track_event', async (eventData) => {
     try {
       const { type, data, timestamp } = eventData;
-      
+
       if (!type) return;
 
       // Save to EventLog

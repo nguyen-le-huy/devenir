@@ -5,9 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
 import ProductCarousel from '../../components/ProductCarousel/ProductCarousel.jsx';
 import { scarves } from '../../data/scarvesData.js';
-import { getVariantById, getVariantsByCategoryWithChildren } from '../../services/productService.js';
-import { getAllColors, createColorMap } from '../../services/colorService.js';
+import { getVariantsByCategoryWithChildren } from '../../services/productService.js';
+import { createColorMap } from '../../services/colorService.js';
 import { useCategories } from '../../hooks/useCategories.js';
+import { useVariantById } from '../../hooks/useProducts.js';
+import { useColors } from '../../hooks/useColors.js';
 import { useAddToCart } from '../../hooks/useCart.js';
 import Loading from '../../components/Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -37,12 +39,44 @@ export default function ProductDetail() {
     const [isAddToBagHovered, setIsAddToBagHovered] = useState(false);
 
     // Product data states
-    const [loading, setLoading] = useState(true);
     const [imagesLoaded, setImagesLoaded] = useState(false);
-    const [variant, setVariant] = useState(null);
-    const [product, setProduct] = useState(null);
-    const [siblingVariants, setSiblingVariants] = useState([]);
-    const [colorMap, setColorMap] = useState({});
+
+    // Fetch colors using React Query
+    const { data: colorsData } = useColors();
+    const colorMap = useMemo(() => {
+        const colors = colorsData?.data || colorsData || [];
+        return createColorMap(colors);
+    }, [colorsData]);
+
+    // Fetch product data using React Query
+    const {
+        data: productData,
+        isLoading: productLoading,
+        error: productError
+    } = useVariantById(variantId);
+
+    const variant = productData?.variant;
+    const product = productData?.product;
+    const siblingVariants = productData?.siblingVariants || [];
+    const loading = productLoading;
+
+    // Track product view with variant details
+    useEffect(() => {
+        if (productData?.variant && productData?.product) {
+            const { variant, product } = productData;
+            trackEvent.productView({
+                productId: product._id,
+                productName: product.name,
+                variantId: variant._id,
+                category: product.category?.name || 'Unknown',
+                brand: product.brand?.name || 'Unknown',
+                color: variant.color?.name || 'Unknown',
+                size: variant.size || 'Free Size',
+                price: variant.salePrice || variant.basePrice,
+                sku: variant.sku
+            });
+        }
+    }, [productData]);
 
     // Ref to capture initial height of .right panel
     const rightRef = useRef(null);
@@ -64,59 +98,7 @@ export default function ProductDetail() {
         setOpenItem(openItem === itemName ? null : itemName);
     };
 
-    // Fetch colors
-    useEffect(() => {
-        const fetchColors = async () => {
-            try {
-                const response = await getAllColors();
-                const colorsData = response.data || response;
-                setColorMap(createColorMap(colorsData));
-            } catch (error) {
-                console.error('Error fetching colors:', error);
-            }
-        };
 
-        fetchColors();
-    }, []);
-
-    // Fetch product data
-    useEffect(() => {
-        const fetchProductData = async () => {
-            if (!variantId) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                const data = await getVariantById(variantId);
-                setVariant(data.variant);
-                setProduct(data.product);
-                setSiblingVariants(data.siblingVariants);
-                
-                // Track product view event
-                if (data.variant && data.product) {
-                    trackEvent.productView({
-                        productId: data.product._id,
-                        productName: data.product.name,
-                        variantId: data.variant._id,
-                        category: data.product.category?.name || 'Unknown',
-                        brand: data.product.brand?.name || 'Unknown',
-                        color: data.variant.color?.name || 'Unknown',
-                        size: data.variant.size || 'Free Size',
-                        price: data.variant.salePrice || data.variant.basePrice,
-                        sku: data.variant.sku
-                    });
-                }
-            } catch (error) {
-                console.error('Error fetching product data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProductData();
-    }, [variantId]);
 
     useEffect(() => {
         const checkMobile = () => {

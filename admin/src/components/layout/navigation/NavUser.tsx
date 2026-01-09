@@ -27,6 +27,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
+import { useNavigate } from "react-router-dom"
+import { useAdminAuth } from "@/contexts/AdminAuthContext"
+
 export function NavUser({
   user,
 }: {
@@ -37,12 +40,19 @@ export function NavUser({
   } | null
 }) {
   const { isMobile } = useSidebar()
+  const { logout } = useAdminAuth()
+  const navigate = useNavigate()
 
   // Provide default user data if user is null or incomplete
   const userData = user || {
     name: "Admin User",
     email: "admin@devenir.shop",
     avatar: "/avatars/admin.jpg",
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
   }
 
   return (
@@ -103,7 +113,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <IconLogout />
               Log out
             </DropdownMenuItem>

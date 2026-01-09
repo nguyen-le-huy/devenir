@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as shippingService from '../services/shippingService.js';
 
+import { useAuthStore } from '../stores/useAuthStore';
+
 // Query keys for shipping
 export const shippingKeys = {
     all: ['shipping'],
@@ -11,12 +13,13 @@ export const shippingKeys = {
  * Hook to fetch user's shipping address
  */
 export const useShippingAddress = () => {
-    const token = localStorage.getItem('token');
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const token = useAuthStore((state) => state.token);
 
     return useQuery({
         queryKey: shippingKeys.address(),
         queryFn: shippingService.getShippingAddress,
-        enabled: !!token,
+        enabled: isAuthenticated && !!token,
         retry: false,
         staleTime: 5 * 60 * 1000, // 5 minutes
     });

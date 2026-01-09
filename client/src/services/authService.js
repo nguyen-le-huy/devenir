@@ -181,6 +181,13 @@ const authService = {
    * @returns {String}
    */
   getToken: () => {
+    try {
+      const authState = localStorage.getItem('devenir-auth');
+      if (authState) {
+        const parsed = JSON.parse(authState);
+        if (parsed?.state?.token) return parsed.state.token;
+      }
+    } catch (e) { }
     return localStorage.getItem('token');
   },
 
@@ -189,7 +196,8 @@ const authService = {
    * @returns {Boolean}
    */
   isAuthenticated: () => {
-    return !!localStorage.getItem('token');
+    const token = authService.getToken();
+    return !!token;
   },
 
   /**
