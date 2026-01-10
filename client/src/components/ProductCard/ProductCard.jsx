@@ -3,6 +3,17 @@ import styles from './ProductCard.module.css';
 import PropTypes from 'prop-types';
 import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
+const getTagClassName = (tagValue) => {
+    if (!tagValue) return '';
+
+    const tagLower = tagValue.toLowerCase();
+    if (tagLower === 'new') return styles.newTag;
+    if (tagLower === 'limited edition') return styles.limitedTag;
+    if (tagLower === 'hot') return styles.hotTag;
+
+    return styles.tag;
+};
+
 const ProductCard = memo(({ product }) => {
     const { name, price, images, colors, tag } = product;
     const [mainImage, hoverImage] = images;
@@ -11,24 +22,16 @@ const ProductCard = memo(({ product }) => {
     const optimizedMainImage = getOptimizedImageUrl(mainImage);
     const optimizedHoverImage = getOptimizedImageUrl(hoverImage);
 
-    const getTagClassName = (tagValue) => {
-        if (!tagValue) return '';
-
-        const tagLower = tagValue.toLowerCase();
-        if (tagLower === 'new') return styles.newTag;
-        if (tagLower === 'limited edition') return styles.limitedTag;
-        if (tagLower === 'hot') return styles.hotTag;
-
-        return styles.tag;
-    }
-
     return (
         <div className={styles.productCard}>
-            <div className={styles.imageContainer} style={{
-                backgroundImage: `url(${optimizedHoverImage})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-            }}>
+            <div 
+                className={styles.imageContainer} 
+                style={{
+                    backgroundImage: `url(${optimizedHoverImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                }}
+            >
                 <img src={optimizedMainImage} alt={name} loading="lazy" />
                 <div className={styles.showNowButton}>Shop now</div>
             </div>
@@ -40,5 +43,17 @@ const ProductCard = memo(({ product }) => {
         </div>
     );
 });
+
+ProductCard.propTypes = {
+    product: PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        price: PropTypes.number.isRequired,
+        images: PropTypes.arrayOf(PropTypes.string).isRequired,
+        colors: PropTypes.array,
+        tag: PropTypes.string,
+    }).isRequired,
+};
+
+ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;

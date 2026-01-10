@@ -1,6 +1,6 @@
 import styles from './Introduction.module.css';
 import gsap from 'gsap';
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Draggable } from "gsap/Draggable";
@@ -17,7 +17,7 @@ const introCards = [
     { src: "images/introCard6.webp", alt: "Intro card 6" },
 ];
 
-const Introduction = () => {
+const Introduction = memo(() => {
     const cardsContainerRef = useRef(null);
     const introContainerRef = useRef(null);
     const introTextRef = useRef(null);
@@ -314,5 +314,9 @@ const Introduction = () => {
         </div>
     );
 }
+
+);
+
+Introduction.displayName = 'Introduction';
 
 export default Introduction;

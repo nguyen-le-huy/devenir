@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -7,7 +7,7 @@ import Backdrop from '../Backdrop';
 import { useLenisControl } from '../../hooks/useLenisControl';
 import { findSimilarProducts } from '../../services/imageSearchService';
 
-const VisualSearch = ({ isOpen, onClose }) => {
+const VisualSearch = memo(({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
     const imgRef = useRef(null);
@@ -388,6 +388,15 @@ const VisualSearch = ({ isOpen, onClose }) => {
             </div>
         </>
     );
+});
+
+import PropTypes from 'prop-types';
+
+VisualSearch.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
 };
+
+VisualSearch.displayName = 'VisualSearch';
 
 export default VisualSearch;

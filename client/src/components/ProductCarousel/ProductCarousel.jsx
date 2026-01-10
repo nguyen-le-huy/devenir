@@ -3,16 +3,17 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, memo } from 'react';
 import ScarfCard from '../ProductCard/ScarfCard.jsx';
 import Loading from '../Loading/Loading.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import PropTypes from 'prop-types';
 
 import 'swiper/css';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText);
 
-const ProductCarousel = ({
+const ProductCarousel = memo(({
     title = "Scarves Collection",
     viewAllLink = "#",
     products = [],
@@ -182,6 +183,15 @@ const ProductCarousel = ({
             </div>
         </div>
     );
+});
+
+ProductCarousel.propTypes = {
+    title: PropTypes.string,
+    viewAllLink: PropTypes.string,
+    products: PropTypes.array,
+    showViewAll: PropTypes.bool,
 };
+
+ProductCarousel.displayName = 'ProductCarousel';
 
 export default ProductCarousel;

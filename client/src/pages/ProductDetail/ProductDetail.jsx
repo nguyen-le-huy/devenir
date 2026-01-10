@@ -1,5 +1,5 @@
 import styles from './ProductDetail.module.css';
-import { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useLayoutEffect, useCallback, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
@@ -23,7 +23,7 @@ import { getOptimizedImageUrl } from '../../utils/imageOptimization.js';
 import { trackEvent } from '../../utils/eventTracker.js';
 import { useProductTracking } from '../../hooks/useTracking';
 
-export default function ProductDetail() {
+const ProductDetail = memo(() => {
     const [searchParams] = useSearchParams();
     const variantId = searchParams.get('variant');
 
@@ -560,4 +560,8 @@ export default function ProductDetail() {
             />
         </div>
     );
-};
+});
+
+ProductDetail.displayName = 'ProductDetail';
+
+export default ProductDetail;

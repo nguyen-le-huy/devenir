@@ -1,6 +1,8 @@
 import styles from "./Checkout.module.css";
+import { memo } from "react";
+import PropTypes from "prop-types";
 
-const PaymentOptions = ({ paymentMethod, setPaymentMethod }) => {
+const PaymentOptions = memo(({ paymentMethod, setPaymentMethod }) => {
     return (
         <div className={styles.paymentMethod}>
             <div className={styles.shippingTitleHeader}>
@@ -49,6 +51,13 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod }) => {
             </div>
         </div>
     );
+});
+
+PaymentOptions.propTypes = {
+    paymentMethod: PropTypes.string.isRequired,
+    setPaymentMethod: PropTypes.func.isRequired,
 };
+
+PaymentOptions.displayName = "PaymentOptions";
 
 export default PaymentOptions;

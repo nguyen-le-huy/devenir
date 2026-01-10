@@ -1,5 +1,5 @@
 import styles from './OurPartners.module.css';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, memo } from 'react';
 import { gsap } from 'gsap';
 import { SplitText } from 'gsap/SplitText';
 import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
@@ -8,20 +8,23 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(SplitText, ScrambleTextPlugin, Draggable, useGSAP);
 
-const OurPartners = () => {
+const partners = [
+    { id: 1, src: '/images/partner1.svg', alt: 'Partner 1' },
+    { id: 2, src: '/images/partner2.svg', alt: 'Partner 2' },
+    { id: 3, src: '/images/partner3.svg', alt: 'Partner 3' },
+    { id: 4, src: '/images/partner4.svg', alt: 'Partner 4' },
+    { id: 5, src: '/images/partner5.svg', alt: 'Partner 5' },
+    { id: 6, src: '/images/partner6.svg', alt: 'Partner 6' },
+];
+
+const OurPartners = memo(() => {
     const titleRef = useRef(null);
     const containerRef = useRef(null);
     const logosContainerRef = useRef(null);
     const loopRef = useRef(null);
 
-    const partners = [
-        { id: 1, src: '/images/partner1.svg', alt: 'Partner 1' },
-        { id: 2, src: '/images/partner2.svg', alt: 'Partner 2' },
-        { id: 3, src: '/images/partner3.svg', alt: 'Partner 3' },
-        { id: 4, src: '/images/partner4.svg', alt: 'Partner 4' },
-        { id: 5, src: '/images/partner5.svg', alt: 'Partner 5' },
-        { id: 6, src: '/images/partner6.svg', alt: 'Partner 6' },
-    ];
+
+
 
     // GSAP Horizontal Loop with Drag
     useGSAP(() => {
@@ -335,5 +338,9 @@ const OurPartners = () => {
         </div>
     );
 }
+
+);
+
+OurPartners.displayName = 'OurPartners';
 
 export default OurPartners;

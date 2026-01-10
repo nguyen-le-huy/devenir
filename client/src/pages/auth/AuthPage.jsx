@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useAuthStore } from '../../stores/useAuthStore';
 import LoginForm from '../../components/form/LoginForm';
 import RegisterForm from '../../components/form/RegisterForm';
@@ -12,7 +12,7 @@ import styles from './AuthPage.module.css';
  * Left: Login Form
  * Right: Benefits (default) or Register Form or Forgot Password or Phone Verification
  */
-export default function AuthPage() {
+const AuthPage = memo(() => {
   const login = useAuthStore((state) => state.login);
 
   // Form state: 'benefits', 'register', 'forgot', 'phone'
@@ -299,3 +299,8 @@ export default function AuthPage() {
     </div>
   );
 }
+);
+
+AuthPage.displayName = 'AuthPage';
+
+export default AuthPage;

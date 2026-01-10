@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import styles from "./Checkout.module.css";
 import { useShippingAddress, useSaveShippingAddress, useUpdateShippingAddress } from "../../hooks/useShipping.js";
 import { useCart } from "../../hooks/useCart.js";
@@ -8,7 +8,7 @@ import { createNowPaymentsSession } from "../../features/nowpayments";
 import PaymentOptions from "./PaymentOptions";
 import GiftCodeSection from "./GiftCodeSection";
 
-const Shipping = () => {
+const Shipping = memo(() => {
     const navigate = useNavigate();
 
     // Fetch cart data
@@ -578,6 +578,10 @@ const Shipping = () => {
             )}
         </>
     );
-};
+}
+
+);
+
+Shipping.displayName = 'Shipping';
 
 export default Shipping;

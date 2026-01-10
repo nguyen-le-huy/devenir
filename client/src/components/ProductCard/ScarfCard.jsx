@@ -147,4 +147,26 @@ const ScarfCard = memo(({ scarf, colorVariants = [] }) => {
     );
 });
 
+import PropTypes from 'prop-types';
+
+ScarfCard.propTypes = {
+    scarf: PropTypes.shape({
+        productId: PropTypes.string,
+        product_id: PropTypes.string,
+        productInfo: PropTypes.shape({
+            _id: PropTypes.string,
+            name: PropTypes.string,
+        }),
+        color: PropTypes.string,
+        name: PropTypes.string,
+        price: PropTypes.number,
+        image: PropTypes.string,
+        imageHover: PropTypes.string,
+        id: PropTypes.string,
+    }).isRequired,
+    colorVariants: PropTypes.array,
+};
+
+ScarfCard.displayName = 'ScarfCard';
+
 export default ScarfCard;

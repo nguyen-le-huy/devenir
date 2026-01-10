@@ -1,5 +1,5 @@
 import styles from "./Header.module.css";
-import { useState, useRef, useEffect, lazy, Suspense, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, lazy, Suspense, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../stores/useAuthStore";
 import UserMenu from "../../UserMenu/UserMenu";
@@ -13,7 +13,7 @@ import Loading from "../../Loading/Loading.jsx";
 const Search = lazy(() => import("../../Search/Search"));
 const Bag = lazy(() => import("../../Bag/Bag"));
 
-const Header = () => {
+const Header = memo(() => {
     const navigate = useNavigate();
     // Atomic selectors - only re-render when these specific values change
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -127,8 +127,8 @@ const Header = () => {
                 <Snowfall
                     snowflakeCount={80}
                     speed={0.5}
-                    minSize={1}
-                    maxSize={2}
+                    minSize={6}
+                    maxSize={12}
                     wind={true}
                     windSpeed={0.3}
                 />
@@ -287,6 +287,8 @@ const Header = () => {
             }
         </>
     );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header;

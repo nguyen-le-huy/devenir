@@ -3,11 +3,11 @@ import ProductCheckout from "../../components/ProductCard/ProductCheckout";
 import ProductCarousel from "../../components/ProductCarousel/ProductCarousel";
 import { useCart, useRemoveFromCart } from "../../hooks/useCart.js";
 import { useLatestVariants } from "../../hooks/useProducts.js";
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import EditItem from "../../components/EditItem/EditItem";
 import { useNavigate } from "react-router-dom";
 
-const Checkout = () => {
+const Checkout = memo(() => {
     const navigate = useNavigate();
 
     // State for EditItem modal
@@ -180,6 +180,10 @@ const Checkout = () => {
             )}
         </>
     );
-};
+}
+
+);
+
+Checkout.displayName = 'Checkout';
 
 export default Checkout;

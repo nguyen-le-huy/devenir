@@ -1,5 +1,5 @@
 import styles from './Preloader.module.css';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, memo } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
@@ -7,7 +7,7 @@ import { lenisInstance } from '../../lib/lenis';
 
 gsap.registerPlugin(useGSAP, DrawSVGPlugin);
 
-const Preloader = () => {
+const Preloader = memo(() => {
     const [shouldShowPreloader, setShouldShowPreloader] = useState(false);
     const [isResourcesLoaded, setIsResourcesLoaded] = useState(false);
 
@@ -276,6 +276,8 @@ const Preloader = () => {
             <div className={styles.loaderCircle} ref={circleLoaderRef}></div>
         </div>
     );
-}
+});
+
+Preloader.displayName = 'Preloader';
 
 export default Preloader;

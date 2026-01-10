@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,14 @@ import styles from './UserProfile.module.css';
  * Desktop: Sidebar navigation left + Content right
  * Mobile: Horizontal tabs navigation + Content
  */
-export default function UserProfile() {
+const navItems = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'personal', label: 'Personal Details' },
+  { id: 'orders', label: 'Orders' },
+  { id: 'preferences', label: 'Marketing Preferences' },
+];
+
+const UserProfile = memo(() => {
   // Atomic selectors
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
@@ -54,12 +61,7 @@ export default function UserProfile() {
     window.open('http://localhost:5173', '_blank');
   };
 
-  const navItems = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'personal', label: 'Personal Details' },
-    { id: 'orders', label: 'Orders' },
-    { id: 'preferences', label: 'Marketing Preferences' },
-  ];
+
 
   const handleTabChange = (id) => {
     setActiveTab(id);
@@ -202,3 +204,8 @@ export default function UserProfile() {
     </div>
   );
 }
+);
+
+UserProfile.displayName = 'UserProfile';
+
+export default UserProfile;

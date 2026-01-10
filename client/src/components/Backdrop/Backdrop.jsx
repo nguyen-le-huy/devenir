@@ -1,4 +1,6 @@
+import { memo, useMemo } from 'react';
 import styles from './Backdrop.module.css';
+import PropTypes from 'prop-types';
 
 /**
  * Reusable Backdrop Component
@@ -13,7 +15,7 @@ import styles from './Backdrop.module.css';
  * @param {boolean} props.preventLenis - Add data-lenis-prevent to prevent scroll
  * @param {React.CSSProperties} props.style - Inline styles
  */
-const Backdrop = ({
+const Backdrop = memo(({
     onClick,
     visible = true,
     isOpen,
@@ -28,11 +30,11 @@ const Backdrop = ({
         return null;
     }
 
-    const backdropStyle = {
+    const backdropStyle = useMemo(() => ({
         '--backdrop-z-index': zIndex,
         '--backdrop-opacity': opacity,
         ...style,
-    };
+    }), [zIndex, opacity, style]);
 
     return (
         <div
@@ -42,6 +44,19 @@ const Backdrop = ({
             {...(preventLenis && { 'data-lenis-prevent': true })}
         />
     );
+});
+
+Backdrop.propTypes = {
+    onClick: PropTypes.func,
+    visible: PropTypes.bool,
+    isOpen: PropTypes.bool,
+    zIndex: PropTypes.number,
+    opacity: PropTypes.number,
+    className: PropTypes.string,
+    preventLenis: PropTypes.bool,
+    style: PropTypes.object,
 };
+
+Backdrop.displayName = 'Backdrop';
 
 export default Backdrop;

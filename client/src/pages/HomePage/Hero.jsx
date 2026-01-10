@@ -2,12 +2,12 @@ import styles from './Hero.module.css';
 import gsap from 'gsap';
 import SplitText from 'gsap/src/SplitText';
 import { useGSAP } from '@gsap/react';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, memo } from 'react';
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 
 gsap.registerPlugin(useGSAP, SplitText, DrawSVGPlugin);
 
-const Hero = () => {
+const Hero = memo(() => {
     const heroRef = useRef(null);
     const hasAnimated = useRef(false);
     const svgPathRef = useRef(null);
@@ -173,6 +173,8 @@ const Hero = () => {
             </div>
         </div>
     );
-}
+});
+
+Hero.displayName = 'Hero';
 
 export default Hero;
