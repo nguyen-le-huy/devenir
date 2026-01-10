@@ -141,7 +141,6 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
 
         setIsUploading(true);
         setIsCropping(false);
-        setError(null);
 
         try {
             // Get the cropped image (or full image if no crop)

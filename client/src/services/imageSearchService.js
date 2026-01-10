@@ -8,6 +8,9 @@ import api from './api';
  */
 export const findSimilarProducts = async (base64Image, topK = 12) => {
     try {
+        console.log('🌐 API Base URL:', api.defaults.baseURL);
+        console.log('📤 Sending image search request...');
+
         // Use longer timeout for image search (60s) - large images need more time
         const data = await api.post('/image-search/find-similar', {
             image: base64Image,
@@ -15,9 +18,16 @@ export const findSimilarProducts = async (base64Image, topK = 12) => {
         }, {
             timeout: 60000 // 60 seconds for large image uploads
         });
+
+        console.log('📥 Response received:', data);
         return data;
     } catch (error) {
-        console.error('Image search error:', error);
+        console.error('❌ Image search error:', error);
+        console.error('📊 Error details:', {
+            message: error.message,
+            status: error.status,
+            response: error.data
+        });
 
         // Check if error might be due to adblocker
         if (error.message === 'Network Error' || error.plugin === 'blocked') {
