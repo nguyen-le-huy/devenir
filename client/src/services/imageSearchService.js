@@ -18,6 +18,12 @@ export const findSimilarProducts = async (base64Image, topK = 12) => {
         return data;
     } catch (error) {
         console.error('Image search error:', error);
+
+        // Check if error might be due to adblocker
+        if (error.message === 'Network Error' || error.plugin === 'blocked') {
+            console.warn('⚠️ Visual Search request might be blocked by an AdBlocker. Please try disabling it.');
+        }
+
         throw error;
     }
 };

@@ -180,7 +180,7 @@ app.use('/api/colors', colorRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', userOrderRoutes); // Customer order tracking
-app.use('/api/events', eventRoutes); // Event tracking
+app.use('/api/activities', eventRoutes); // Event tracking (renamed to avoid adblockers)
 app.use('/api/customers', customerRoutes);
 app.use('/api/customers', customerIntelligenceRoutes); // Customer Intelligence API
 app.use('/api/payments', paymentRoutes);
