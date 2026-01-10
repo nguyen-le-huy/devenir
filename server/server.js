@@ -98,8 +98,17 @@ app.use(helmet({
   contentSecurityPolicy: false, // Tắt CSP để tránh conflict với CORS
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  // Đổi sang unsafe-none để Google OAuth popup có thể postMessage về trang chính
+  // same-origin-allow-popups block postMessage từ cross-origin popups
+  crossOriginOpenerPolicy: { policy: "unsafe-none" },
 }));
+
+// Thêm middleware để đảm bảo COOP header được set đúng
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  next();
+});
 
 // Trust proxy - Required for Tailscale Funnel / reverse proxy
 // This allows express-rate-limit to correctly identify clients via X-Forwarded-For
@@ -208,8 +217,15 @@ const io = new SocketIOServer(server, {
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
+    methods: ['GET', 'POST'],
   },
   transports: ['websocket', 'polling'],
+  path: '/socket.io', // Explicitly set path
+  allowEIO3: true, // Support older clients
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
+  maxHttpBufferSize: 1e6, // 1MB
 });
 
 app.set('io', io);

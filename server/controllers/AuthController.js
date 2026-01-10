@@ -40,10 +40,11 @@ const generateRandomUsername = async () => {
   return username;
 }
 
+// Khởi tạo Google OAuth2 Client KHÔNG có redirect URI
+// Vì sử dụng Google Identity Services (gsi) client-side flow
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  "https://developers.google.com/oauthplayground"
+  process.env.GOOGLE_CLIENT_SECRET
 );
 
 /**
@@ -235,7 +236,18 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     });
 
     const payload = ticket.getPayload();
-    const { email, name, sub: googleId, picture } = payload;
+    const { email, name, sub: googleId, picture, aud, iss, azp } = payload;
+    
+    // Log để debug (chỉ trong development)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Google token verified:', {
+        email,
+        aud,
+        iss,
+        azp,
+        expectedAudience: process.env.GOOGLE_CLIENT_ID
+      });
+    }
 
     // 2️⃣ Kiểm tra user theo googleId
     let user = await User.findOne({ googleId });
@@ -334,10 +346,31 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     });
 
   } catch (error) {
-    console.error('Google verification error:', error);
+    console.error('❌ Google verification error:', {
+      message: error.message,
+      name: error.name,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+      clientId: process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET',
+      credentialLength: credential ? credential.length : 0,
+      credentialPrefix: credential ? credential.substring(0, 50) : 'none'
+    });
+    
+    // Trả về thông tin lỗi chi tiết hơn để debug
+    let errorMessage = 'Google authentication thất bại';
+    if (error.message?.includes('Token used too late') || error.message?.includes('expired')) {
+      errorMessage = 'Token đã hết hạn, vui lòng thử lại';
+    } else if (error.message?.includes('Invalid token signature')) {
+      errorMessage = 'Token không hợp lệ';
+    } else if (error.message?.includes('audience') || error.message?.includes('aud')) {
+      errorMessage = 'Cấu hình Google Client ID không khớp với domain';
+    } else if (error.message?.includes('azp')) {
+      errorMessage = 'Authorized party (azp) mismatch - kiểm tra OAuth client setup';
+    }
+    
     return res.status(401).json({
       success: false,
-      message: 'Google authentication thất bại'
+      message: errorMessage,
+      debug: process.env.NODE_ENV !== 'production' ? error.message : undefined
     });
   }
 });

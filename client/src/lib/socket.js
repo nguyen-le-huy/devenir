@@ -20,10 +20,30 @@ export const getSocket = (token) => {
 
   currentToken = token
   socketInstance = io(SOCKET_URL, {
-    transports: ['websocket'],
+    transports: ['websocket', 'polling'], // Cho phép fallback sang polling nếu websocket fail
     autoConnect: true,
     auth: { token },
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 5,
+    timeout: 20000, // Tăng timeout cho connection chậm
   })
+
+  // Debug logging cho development
+  if (import.meta.env.DEV) {
+    socketInstance.on('connect', () => {
+      console.log('✅ Socket connected:', socketInstance.id)
+    })
+
+    socketInstance.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message)
+    })
+
+    socketInstance.on('disconnect', (reason) => {
+      console.warn('🔌 Socket disconnected:', reason)
+    })
+  }
 
   return socketInstance
 }
