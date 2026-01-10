@@ -61,13 +61,17 @@ const allowedOrigins = [
   'https://devenir-admin.vercel.app',
   'https://devenir.shop', // Domain chính
   'https://www.devenir.shop', // Subdomain www
-  'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net' // Thêm Tailscale domain
+  'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net', // Tailscale domain
+  /\.vercel\.app$/ // Allow ALL Vercel subdomains (preview & production)
 ];
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
   return allowedOrigins.some(allowedOrigin => {
-    if (allowedOrigin.includes('*')) {
+    if (allowedOrigin instanceof RegExp) {
+      return allowedOrigin.test(origin);
+    }
+    if (typeof allowedOrigin === 'string' && allowedOrigin.includes('*')) {
       const pattern = new RegExp('^' + allowedOrigin.replace(/\*/g, '.*') + '$');
       return pattern.test(origin);
     }
