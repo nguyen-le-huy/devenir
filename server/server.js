@@ -98,15 +98,16 @@ app.use(helmet({
   contentSecurityPolicy: false, // Tắt CSP để tránh conflict với CORS
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  // Đổi sang unsafe-none để Google OAuth popup có thể postMessage về trang chính
-  // same-origin-allow-popups block postMessage từ cross-origin popups
-  crossOriginOpenerPolicy: { policy: "unsafe-none" },
+  // Dùng same-origin-allow-popups để cho phép Google OAuth popup postMessage
+  // Đây là giá trị chuẩn cho OAuth popup flow
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 }));
 
 // Thêm middleware để đảm bảo COOP header được set đúng
+// same-origin-allow-popups cho phép popup OAuth (accounts.google.com) communicate
+// với opener window mà vẫn giữ security cho same-origin contexts
 app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   next();
 });
 
