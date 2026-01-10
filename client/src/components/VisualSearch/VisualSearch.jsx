@@ -141,17 +141,20 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
 
         setIsUploading(true);
         setIsCropping(false);
+        setError(null);
 
         try {
             // Get the cropped image (or full image if no crop)
             const imageToSearch = getCroppedImage();
 
+            console.log('🔍 Starting Visual Search...');
+            console.log('📊 Image size:', Math.round(imageToSearch.length / 1024), 'KB');
 
             const result = await findSimilarProducts(imageToSearch, 12);
 
+            console.log('✅ Search result:', result);
+
             if (result.success) {
-
-
                 // Navigate to VisuallySimilar page with results
                 navigate('/visually-similar', {
                     state: {
@@ -164,12 +167,29 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
                 // Close modal after navigation
                 onClose();
             } else {
+                console.warn('⚠️ No results found');
                 setError('No similar products found. Try another image or crop area.');
                 setIsCropping(true);
             }
         } catch (err) {
             console.error('❌ Image search failed:', err);
-            setError('Search failed. Please try again.');
+            console.error('Error details:', {
+                message: err.message,
+                status: err.status,
+                data: err.data,
+                name: err.name
+            });
+
+            // More specific error messages
+            if (err.message === 'Network Error') {
+                setError('Network error. Please check your connection or disable ad-blocker.');
+            } else if (err.status === 503) {
+                setError('Visual search service is temporarily unavailable.');
+            } else if (err.status === 413) {
+                setError('Image is too large. Please try a smaller image.');
+            } else {
+                setError('Search failed. Please try again.');
+            }
             setIsCropping(true);
         } finally {
             setIsUploading(false);
