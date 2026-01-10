@@ -223,11 +223,11 @@ class TrackingService {
     })
 
     // navigator.sendBeacon ensures data is sent even if page is closing
-    const success = navigator.sendBeacon(`${apiUrl}/activities`, data)
+    const success = navigator.sendBeacon(`${apiUrl}/telemetry`, data)
 
     if (!success) {
       console.warn('Beacon failed, trying fetch with keepalive')
-      fetch(`${apiUrl}/activities`, {
+      fetch(`${apiUrl}/telemetry`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

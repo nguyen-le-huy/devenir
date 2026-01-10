@@ -180,7 +180,7 @@ app.use('/api/colors', colorRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', userOrderRoutes); // Customer order tracking
-app.use('/api/activities', eventRoutes); // Event tracking (renamed to avoid adblockers)
+app.use('/api/telemetry', eventRoutes); // Event tracking (renamed from 'activities' to avoid ad-blockers)
 app.use('/api/customers', customerRoutes);
 app.use('/api/customers', customerIntelligenceRoutes); // Customer Intelligence API
 app.use('/api/payments', paymentRoutes);
@@ -230,14 +230,10 @@ io.use((socket, next) => {
     socket.userId = decoded.userId;
     return next();
   } catch (err) {
-    // If token is provided but invalid, we can either reject or treat as anonymous
-    // For now, let's treat expired/invalid tokens as anonymous (or logging out)
-    // to prevent tracking data loss, OR reject to force re-login.
-    // Given it's tracking, let's reject to signal auth failure to client?
-    // Actually, client logs say "AUTH_FAILED" if we error here.
-    // Let's keep strict rejection for INVALID tokens to help debug auth issues,
-    // but ALLOW missing tokens.
-    return next(new Error('AUTH_FAILED'));
+    // If token is invalid, treat as anonymous to prevent reconnection loops
+    logger.warn('Socket auth failed (invalid token), proceeding as anonymous', { error: err.message });
+    socket.userId = null;
+    return next();
   }
 });
 
