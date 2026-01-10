@@ -276,6 +276,9 @@ REDIS_URL=redis://localhost:6379
 - `cd server && node scripts/ingestion/ingest-to-qdrant.js --force`
 
 ### CLIP service chậm
-- FashionCLIP encode ~200ms (on CPU)
 - Cached requests chỉ ~1ms
 - Có thể dùng GPU để tăng tốc (modify Dockerfile)
+
+### Lỗi mạng / Console Errors
+- **ERR_BLOCKED_BY_CLIENT**: Thường do adblocker chặn requests. Đã đổi endpoint từ `/api/activities` sang `/api/telemetry`.
+- **WebSocket connection failed**: Do token auth lỗi gây loop reconnection. Đã fix server để fallback về anonymous mode khi token invalid.

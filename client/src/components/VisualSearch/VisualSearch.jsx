@@ -169,7 +169,7 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
             }
         } catch (err) {
             console.error('❌ Image search failed:', err);
-            setError(err.response?.data?.message || 'Search failed. Please try again.');
+            setError('Search failed. Please try again.');
             setIsCropping(true);
         } finally {
             setIsUploading(false);
