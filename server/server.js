@@ -103,14 +103,6 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 }));
 
-// Thêm middleware để đảm bảo COOP header được set đúng
-// same-origin-allow-popups cho phép popup OAuth (accounts.google.com) communicate
-// với opener window mà vẫn giữ security cho same-origin contexts
-app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  next();
-});
-
 // Trust proxy - Required for Tailscale Funnel / reverse proxy
 // This allows express-rate-limit to correctly identify clients via X-Forwarded-For
 app.set('trust proxy', 1);
