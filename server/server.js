@@ -105,10 +105,6 @@ app.use(helmet({
   // Dùng same-origin-allow-popups để cho phép Google OAuth popup postMessage
   // Đây là giá trị chuẩn cho OAuth popup flow
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-
-  referrerPolicy: {
-    policy: "no-referrer-when-downrage",
-    }
 }));
 // Trust proxy - Required for Tailscale Funnel / reverse proxy
 // This allows express-rate-limit to correctly identify clients via X-Forwarded-For
