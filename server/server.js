@@ -104,7 +104,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   // Dùng same-origin-allow-popups để cho phép Google OAuth popup postMessage
   // Đây là giá trị chuẩn cho OAuth popup flow
-  crossOriginOpenerPolicy: false,
+  crossOriginOpenerPolicy: { policy: "unsafe-none" },
   referrerPolicy: { policy: "no-referrer-when-downgrade" },
 }));
 // Trust proxy - Required for Tailscale Funnel / reverse proxy
