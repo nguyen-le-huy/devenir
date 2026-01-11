@@ -105,7 +105,7 @@ app.use(helmet({
   // CRITICAL FIX: Disable Helmet's COOP - let Vercel/Nginx handle it
   // Helmet's COOP conflicts with vercel.json headers causing OAuth popup to fail
   // Vercel.json already sets: "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
-  crossOriginOpenerPolicy: false,
+  crossOriginOpenerPolicy: { policy: "unsafe-none" },
   referrerPolicy: { policy: "no-referrer-when-downgrade" },
 }));
 // Trust proxy - Required for Tailscale Funnel / reverse proxy
