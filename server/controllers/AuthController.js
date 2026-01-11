@@ -422,10 +422,20 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
       errorMessage = 'Authorized party (azp) mismatch - kiểm tra OAuth client setup';
     }
 
+    // 🔍 TEMPORARY DEBUG: Always return debug info to browser
     return res.status(401).json({
       success: false,
       message: errorMessage,
-      debug: process.env.NODE_ENV !== 'production' ? error.message : undefined
+      // Always include debug info for troubleshooting
+      debugInfo: {
+        errorType: error.name,
+        errorMessage: error.message,
+        serverClientId: process.env.GOOGLE_CLIENT_ID || 'NOT SET',
+        tokenAud: decodedPayload?.aud || 'COULD NOT DECODE',
+        tokenAzp: decodedPayload?.azp || 'COULD NOT DECODE',
+        tokenEmail: decodedPayload?.email || 'COULD NOT DECODE',
+        mismatch: decodedPayload?.aud !== process.env.GOOGLE_CLIENT_ID
+      }
     });
   }
 });
