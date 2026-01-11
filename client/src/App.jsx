@@ -29,7 +29,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const Layout = lazy(() => import('./components/layout/Layout'));
 const HomePage = lazy(() => import('./pages/HomePage/HomePage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const RegisterPage = lazy(() => import('./pages/Register/RegisterPage'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 const AuthPage = lazy(() => import('./pages/auth/AuthPage'));
 const EmailVerificationPage = lazy(() => import('./pages/auth/EmailVerificationPage'));

@@ -141,6 +141,7 @@ const Hero = memo(() => {
                 loop
                 muted
                 playsInline
+                preload="auto"
             >
                 <source src="/videos/newBack.webm" type="video/webm" />
             </video>

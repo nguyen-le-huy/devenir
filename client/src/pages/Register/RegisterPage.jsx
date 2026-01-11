@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/useAuthStore';
-import RegisterForm from '../components/form/RegisterForm';
-import authService from '../services/authService';
+import { useAuthStore } from '../../stores/useAuthStore';
+import RegisterForm from '../../components/form/RegisterForm';
+import authService from '../../services/authService';
 import styles from './RegisterPage.module.css';
 
 /**

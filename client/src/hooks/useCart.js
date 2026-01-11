@@ -42,20 +42,7 @@ export const useAddToCart = () => {
             if (data?.cart) {
                 const addedItem = data.cart.items?.find(item => item.variant?._id === variables.variantId);
                 if (addedItem) {
-                    // Legacy tracking
-                    trackEvent.addToCart({
-                        productId: addedItem.variant?.product?._id || addedItem.product?._id,
-                        productName: addedItem.variant?.product?.name || addedItem.product?.name || 'Unknown',
-                        variantId: addedItem.variant?._id,
-                        category: addedItem.variant?.product?.category?.name || addedItem.product?.category?.name,
-                        brand: addedItem.variant?.product?.brand?.name || addedItem.product?.brand?.name,
-                        color: addedItem.variant?.color?.name,
-                        size: addedItem.variant?.size || 'Free Size',
-                        price: addedItem.variant?.salePrice || addedItem.variant?.basePrice,
-                        quantity: variables.quantity
-                    });
 
-                    // New tracking service
                     trackingService.trackCartAction('add', {
                         productId: addedItem.variant?.product?._id || addedItem.product?._id,
                         productName: addedItem.variant?.product?.name || addedItem.product?.name || 'Unknown',
@@ -103,11 +90,7 @@ export const useRemoveFromCart = () => {
     return useMutation({
         mutationFn: (variantId) => cartService.removeFromCart(variantId),
         onSuccess: (data, variantId) => {
-            // Track remove from cart event
-            trackEvent.removeFromCart({
-                variantId,
-                timestamp: new Date().toISOString()
-            });
+
 
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
         },
