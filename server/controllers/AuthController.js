@@ -237,7 +237,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
 
     const payload = ticket.getPayload();
     const { email, name, sub: googleId, picture, aud, iss, azp } = payload;
-    
+
     // Log để debug (chỉ trong development)
     if (process.env.NODE_ENV !== 'production') {
       console.log('✅ Google token verified:', {
@@ -346,15 +346,37 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     });
 
   } catch (error) {
+    // 🔍 Enhanced debug logging to identify audience mismatch
+    let decodedPayload = null;
+    try {
+      // Decode token payload without verification to see what's inside
+      if (credential) {
+        const payloadBase64 = credential.split('.')[1];
+        decodedPayload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString());
+      }
+    } catch (decodeError) {
+      // Ignore decode errors
+    }
+
     console.error('❌ Google verification error:', {
       message: error.message,
       name: error.name,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
-      clientId: process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET',
+      serverClientId: process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET',
+      serverClientIdValue: process.env.GOOGLE_CLIENT_ID || 'MISSING',
       credentialLength: credential ? credential.length : 0,
-      credentialPrefix: credential ? credential.substring(0, 50) : 'none'
+      credentialPrefix: credential ? credential.substring(0, 50) : 'none',
+      // Show token payload to compare aud/azp with server's GOOGLE_CLIENT_ID
+      tokenPayload: decodedPayload ? {
+        aud: decodedPayload.aud,
+        azp: decodedPayload.azp,
+        iss: decodedPayload.iss,
+        email: decodedPayload.email
+      } : null,
+      mismatchDetected: decodedPayload && process.env.GOOGLE_CLIENT_ID &&
+        (decodedPayload.aud !== process.env.GOOGLE_CLIENT_ID)
     });
-    
+
     // Trả về thông tin lỗi chi tiết hơn để debug
     let errorMessage = 'Google authentication thất bại';
     if (error.message?.includes('Token used too late') || error.message?.includes('expired')) {
@@ -366,7 +388,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     } else if (error.message?.includes('azp')) {
       errorMessage = 'Authorized party (azp) mismatch - kiểm tra OAuth client setup';
     }
-    
+
     return res.status(401).json({
       success: false,
       message: errorMessage,
