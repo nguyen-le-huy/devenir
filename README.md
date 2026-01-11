@@ -522,7 +522,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ---
 
 <div align="center">
-  <strong>Built by Devenir Team</strong>
+  <strong>Built by Hystudio</strong>
   
   [Website](https://devenir.shop) · [Documentation](https://docs.devenir.shop) · [Support](mailto:support@devenir.shop)
 </div>
