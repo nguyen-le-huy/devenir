@@ -417,7 +417,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     } else if (error.message?.includes('Invalid token signature')) {
       errorMessage = 'Token không hợp lệ';
     } else if (error.message?.includes('audience') || error.message?.includes('aud')) {
-      errorMessage = 'Cấu hình Google Client ID không khớp với domain';
+      errorMessage = 'Cấu hình Google Client ID không khớp với domainss';
     } else if (error.message?.includes('azp')) {
       errorMessage = 'Authorized party (azp) mismatch - kiểm tra OAuth client setup';
     }
