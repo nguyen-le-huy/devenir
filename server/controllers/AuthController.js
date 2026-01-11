@@ -229,6 +229,39 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
   }
 
   try {
+    // 🔍 DEBUG: Log the credential and expected audience BEFORE verification
+    console.log('🔍 Google OAuth Debug - BEFORE verification:', {
+      serverClientId: process.env.GOOGLE_CLIENT_ID,
+      credentialLength: credential?.length,
+      credentialStart: credential?.substring(0, 100)
+    });
+
+    // Decode token first to see its contents (without verification)
+    let tokenPayload = null;
+    try {
+      const payloadBase64 = credential.split('.')[1];
+      tokenPayload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString());
+      console.log('🔍 Token payload (decoded):', {
+        aud: tokenPayload.aud,
+        azp: tokenPayload.azp,
+        iss: tokenPayload.iss,
+        email: tokenPayload.email,
+        exp: new Date(tokenPayload.exp * 1000).toISOString()
+      });
+
+      // Check if aud matches BEFORE verification
+      const audMatches = tokenPayload.aud === process.env.GOOGLE_CLIENT_ID;
+      console.log('🔍 Audience match check:', {
+        tokenAud: tokenPayload.aud,
+        serverClientId: process.env.GOOGLE_CLIENT_ID,
+        audMatches: audMatches,
+        audLengthToken: tokenPayload.aud?.length,
+        audLengthServer: process.env.GOOGLE_CLIENT_ID?.length
+      });
+    } catch (decodeError) {
+      console.error('❌ Failed to decode token:', decodeError.message);
+    }
+
     // 1️⃣ Verify credential với Google
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
