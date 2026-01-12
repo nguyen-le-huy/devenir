@@ -173,7 +173,7 @@
     }
 
     .hero {
-        background-image: url('/images/hero.png');
+        background-image: url('/images/hero.webp');
         background-size: cover;
         background-position: center;
     }

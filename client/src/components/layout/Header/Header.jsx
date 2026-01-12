@@ -122,7 +122,7 @@ const Header = memo(() => {
                     containerRef={topBarRef}
                     imageCount={11}
                     imageBasePath="/trailer/trailer"
-                    imageExtension=".png"
+                    imageExtension=".webp"
                 />
                 <Snowfall
                     snowflakeCount={80}

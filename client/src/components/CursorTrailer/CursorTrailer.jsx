@@ -13,7 +13,7 @@ const CursorTrailer = ({
     containerRef,
     imageCount = 11,
     imageBasePath = '/trailer/trailer',
-    imageExtension = '.png'
+    imageExtension = '.webp'
 }) => {
     const trailerRef = useRef(null);
     const currentImageIndexRef = useRef(0);

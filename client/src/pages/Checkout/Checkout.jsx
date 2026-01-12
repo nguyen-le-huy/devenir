@@ -137,14 +137,14 @@ const Checkout = memo(() => {
                         </div>
                         <div className={styles.instructions}>
                             <div className={styles.instructionsItem}>
-                                <img src="/images/instruction1.png" alt="instruction" />
+                                <img src="/images/instruction1.webp" alt="instruction" />
                                 <div className={styles.content}>
                                     <h3>Expert Aftercare</h3>
                                     <p>We offer a selection of services to help ensure your Burberry pieces are enjoyed for years to come.</p>
                                 </div>
                             </div>
                             <div className={styles.instructionsItem}>
-                                <img src="/images/instruction2.png" alt="instruction" />
+                                <img src="/images/instruction2.webp" alt="instruction" />
                                 <div className={styles.content}>
                                     <h3>Is this a gift?</h3>
                                     <p>Select our complimentary, recyclable and reusable gift packaging at checkout.</p>
