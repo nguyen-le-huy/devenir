@@ -102,10 +102,7 @@ app.use(helmet({
   contentSecurityPolicy: false, // Tắt CSP để tránh conflict với CORS
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  // CRITICAL FIX: Disable Helmet's COOP - let Vercel/Nginx handle it
-  // Helmet's COOP conflicts with vercel.json headers causing OAuth popup to fail
-  // Vercel.json already sets: "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
-  crossOriginOpenerPolicy: { policy: "unsafe-none" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
   referrerPolicy: { policy: "no-referrer-when-downgrade" },
 }));
 // Trust proxy - Required for Tailscale Funnel / reverse proxy
