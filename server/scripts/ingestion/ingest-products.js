@@ -32,6 +32,7 @@ import ProductVariant from '../../models/ProductVariantModel.js';
 import Category from '../../models/CategoryModel.js'; // Required for populate
 import { initializePinecone, getPineconeIndex } from '../../config/pinecone.js';
 import { getEmbedding } from '../../services/rag/embeddings/embedding.service.js';
+import { openai, MODELS } from '../../config/openai.js';
 
 // IMPORTANT: Must match your Pinecone index dimension
 const EMBEDDING_DIMENSIONS = 1536;
@@ -191,9 +192,70 @@ async function ingestAllProducts() {
                     isActive: true
                 }).lean();
 
-                // Create optimized propositions
-                const propositions = createOptimizedPropositions(product, variants);
-                console.log(`  └─ Generated ${propositions.length} propositions`);
+                /**
+                 * Generate rich, context-aware propositions using LLM
+                 * Focuses on style, usage, and fashion advice
+                 */
+                async function generateAIPropositions(product, variants) {
+                    try {
+                        const colors = [...new Set(variants.map(v => v.color).filter(Boolean))].join(', ');
+                        const materials = product.details?.material || product.description; // Simple fallback
+
+                        const prompt = `
+        Bạn là chuyên gia thời trang AI. Hãy tạo danh sách 3 mệnh đề (propositions) ngắn gọn (dưới 30 từ/câu) bằng Tiếng Việt để mô tả sản phẩm này cho hệ thống tìm kiếm (RAG).
+        
+        Thông tin sản phẩm:
+        - Tên: ${product.name}
+        - Danh mục: ${product.category?.name}
+        - Thương hiệu: ${typeof product.brand === 'object' ? product.brand?.name : product.brand}
+        - Màu sắc: ${colors}
+        - Mô tả gốc: ${product.description?.substring(0, 300)}...
+
+        Yêu cầu:
+        1. Tập trung vào phong cách (style), dịp phù hợp để mặc (casual, party, work), và cảm giác chất liệu.
+        2. Viết tự nhiên như một lời khuyên của stylist.
+        3. KHÔNG bịa đặt thông tin không có.
+        4. Trả về format JSON Array thuần túy: ["câu 1", "câu 2", "câu 3"]
+        `;
+
+                        const completion = await openai.chat.completions.create({
+                            model: MODELS.CHAT,
+                            messages: [
+                                { role: "system", content: "You are a helpful fashion data assistant. Output JSON only." },
+                                { role: "user", content: prompt }
+                            ],
+                            response_format: { type: "json_object" },
+                            temperature: 0.7,
+                        });
+
+                        const content = completion.choices[0].message.content;
+                        const parsed = JSON.parse(content);
+
+                        // Handle formats like { "propositions": [...] } or just array
+                        const result = Array.isArray(parsed) ? parsed : (parsed.propositions || parsed.data || []);
+
+                        console.log(`     ✨ AI generated ${result.length} style propositions`);
+                        return result;
+
+                    } catch (error) {
+                        console.error(`     ⚠️ Failed to generate AI propositions: ${error.message}`);
+                        return []; // Fallback gracefully, don't stop ingestion
+                    }
+                }
+
+                // ... inside ingestion function ...
+
+                // Create optimized propositions (Rule-based)
+                const ruleBasedPropositions = createOptimizedPropositions(product, variants);
+
+                // Generate AI propositions (LLM-based)
+                // Note: Using AI adds time/cost, but improves RAG quality significantly
+                const aiPropositions = await generateAIPropositions(product, variants);
+
+                // Combine both
+                const propositions = [...ruleBasedPropositions, ...aiPropositions];
+
+                console.log(`  └─ Generated ${propositions.length} total propositions (${ruleBasedPropositions.length} rules + ${aiPropositions.length} AI)`);
 
                 // Prepare vectors with rich metadata
                 const vectors = [];
@@ -204,6 +266,9 @@ async function ingestAllProducts() {
 
                 for (let i = 0; i < propositions.length; i++) {
                     const propText = propositions[i];
+                    // Skip empty propositions
+                    if (!propText) continue;
+
                     const embedding = await getEmbedding(propText, EMBEDDING_DIMENSIONS);
 
                     vectors.push({
@@ -225,6 +290,7 @@ async function ingestAllProducts() {
                             average_rating: product.averageRating || 0,
                             proposition_text: propText,
                             proposition_index: i,
+                            is_ai_generated: i >= ruleBasedPropositions.length, // Flag to identify AI props
                             url_slug: product.urlSlug || '',
                             in_stock: inStockVariants.length > 0,
                             total_stock: inStockVariants.reduce((sum, v) => sum + v.quantity, 0)

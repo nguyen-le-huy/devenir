@@ -27,6 +27,6 @@ export const openai = {
 
 export const MODELS = {
     EMBEDDING: 'text-embedding-3-small',
-    CHAT: 'gpt-4o-mini-2024-07-18',
-    CHAT_FAST: 'gpt-3.5-turbo',
+    CHAT: 'gpt-4.1-mini-2025-04-14',
+    CHAT_FAST: 'gpt-4.1-mini-2025-04-14',
 };
