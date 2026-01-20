@@ -2,7 +2,6 @@ import styles from './AllCategories.module.css';
 import { useQuery } from '@tanstack/react-query';
 import { getMainCategories } from '../../services/categoryService';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
 import Header from '../../components/layout/Header/Header';
 import Footer from '../../components/layout/Footer/Footer';
 import PageWrapper from '../../components/PageWrapper/PageWrapper';
@@ -10,7 +9,6 @@ import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
 const AllCategories = () => {
     const navigate = useNavigate();
-    const [imagesLoaded, setImagesLoaded] = useState(false);
 
     // Fetch all categories
     const { data: categoriesData, isLoading } = useQuery({
@@ -20,53 +18,14 @@ const AllCategories = () => {
 
     const categories = categoriesData?.data || [];
 
-    // Preload all category images
-    const preloadImages = useCallback(async (imageUrls) => {
-        const promises = imageUrls.map((url) => {
-            return new Promise((resolve) => {
-                if (!url) {
-                    resolve();
-                    return;
-                }
-                const img = new Image();
-                img.onload = resolve;
-                img.onerror = resolve; // Still resolve on error to continue
-                img.src = url;
-            });
-        });
-
-        await Promise.all(promises);
-        setImagesLoaded(true);
-    }, []);
-
-    // Start preloading when categories are fetched
-    useEffect(() => {
-        if (categories.length > 0) {
-            // Preload the OPTIMIZED URLs (same as what will be displayed)
-            const imageUrls = categories
-                .map((cat) => cat.thumbnailUrl ? getOptimizedImageUrl(cat.thumbnailUrl) : null)
-                .filter(Boolean);
-
-            if (imageUrls.length > 0) {
-                preloadImages(imageUrls);
-            } else {
-                // No images to load
-                setImagesLoaded(true);
-            }
-        }
-    }, [categories, preloadImages]);
-
     const handleCategoryClick = (categoryId) => {
         navigate(`/products?category=${categoryId}`);
     };
 
-    // Determine if page is ready (data loaded AND images preloaded)
-    const isPageReady = !isLoading && imagesLoaded;
-
     return (
         <>
             <Header />
-            <PageWrapper isReady={isPageReady} trackImages={false}>
+            <PageWrapper isLoading={isLoading}>
                 <main className={styles.allCategories}>
                     <div className={styles.categoryGrid}>
                         {categories.map((category) => (

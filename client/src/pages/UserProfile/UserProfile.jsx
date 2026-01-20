@@ -118,7 +118,7 @@ const UserProfile = memo(() => {
   }
 
   return (
-    <PageWrapper trackImages={false}>
+    <PageWrapper>
       <div className={styles.profileContainer}>
         <div className={styles.profileContent}>
         {/* SIDEBAR / MOBILE TABS NAVIGATION */}

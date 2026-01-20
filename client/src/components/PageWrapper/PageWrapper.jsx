@@ -1,63 +1,54 @@
 import { memo } from 'react';
-import usePageReady from '../../hooks/usePageReady';
 import Loading from '../Loading/Loading';
 import styles from './PageWrapper.module.css';
 import PropTypes from 'prop-types';
 
 /**
- * PageWrapper Component
- * Wraps page content and shows a loader until all images and data are ready
+ * PageWrapper Component - Enterprise-grade page wrapper
+ * 
+ * Follows industry standard patterns:
+ * - Shows loader ONLY during initial data fetch
+ * - Content appears immediately once data is ready
+ * - Images lazy load naturally (no blocking)
+ * - Cached data = instant display (no loader flicker)
  * 
  * @param {Object} props
  * @param {React.ReactNode} props.children - Page content
- * @param {boolean} props.isDataLoading - Whether data is still loading (from React Query)
- * @param {boolean} props.isReady - External ready state (overrides internal tracking if provided)
- * @param {boolean} props.trackImages - Whether to track image loading, default true
- * @param {string} props.loaderSize - Loader size: 'sm', 'md', 'lg', default 'lg'
- * @param {string} props.className - Additional className for the content wrapper
+ * @param {boolean} props.isLoading - Whether data is loading (from React Query)
+ * @param {string} props.loaderSize - Loader size: 'sm', 'md', 'lg'
+ * @param {string} props.className - Additional className
  */
 const PageWrapper = memo(({
     children,
-    isDataLoading = false,
-    isReady: externalIsReady,
-    trackImages = true,
+    isLoading = false,
+    isDataLoading, // Legacy prop support
     loaderSize = 'lg',
     className = '',
 }) => {
-    const { isPageReady: internalIsReady, containerRef } = usePageReady({
-        trackImages,
-        isDataReady: !isDataLoading,
-    });
+    // Support both isLoading (new) and isDataLoading (legacy)
+    const showLoader = isLoading || isDataLoading;
 
-    // If external isReady is provided, use it; otherwise use internal tracking
-    const isPageReady = externalIsReady !== undefined ? externalIsReady : internalIsReady;
-
-    return (
-        <>
-            {/* Loader overlay */}
-            <div 
-                className={`${styles.loaderOverlay} ${isPageReady ? styles.hidden : ''}`}
-                aria-hidden={isPageReady}
-            >
-                <Loading size={loaderSize} />
-            </div>
-
-            {/* Page content - always rendered but hidden until ready */}
-            <div 
-                ref={containerRef}
-                className={`${styles.pageContent} ${isPageReady ? styles.visible : styles.loading} ${className}`}
-            >
+    // If not loading, show content immediately
+    if (!showLoader) {
+        return (
+            <div className={className}>
                 {children}
             </div>
-        </>
+        );
+    }
+
+    // Only show loader during actual data loading
+    return (
+        <div className={styles.loaderOverlay}>
+            <Loading size={loaderSize} />
+        </div>
     );
 });
 
 PageWrapper.propTypes = {
     children: PropTypes.node.isRequired,
+    isLoading: PropTypes.bool,
     isDataLoading: PropTypes.bool,
-    isReady: PropTypes.bool,
-    trackImages: PropTypes.bool,
     loaderSize: PropTypes.oneOf(['sm', 'md', 'lg']),
     className: PropTypes.string,
 };

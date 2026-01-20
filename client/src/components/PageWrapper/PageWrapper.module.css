@@ -10,15 +10,3 @@
     justify-content: center;
     z-index: 9999;
 }
-
-.loaderOverlay.hidden {
-    display: none;
-}
-
-.pageContent.loading {
-    opacity: 0;
-}
-
-.pageContent.visible {
-    opacity: 1;
-}

@@ -38,9 +38,6 @@ const ProductDetail = memo(() => {
     const [isAddToBagNotiOpen, setIsAddToBagNotiOpen] = useState(false);
     const [isAddToBagHovered, setIsAddToBagHovered] = useState(false);
 
-    // Product data states
-    const [imagesLoaded, setImagesLoaded] = useState(false);
-
     // Fetch colors using React Query
     const { data: colorsData } = useColors();
     const colorMap = useMemo(() => {
@@ -137,8 +134,8 @@ const ProductDetail = memo(() => {
     }, [variant?._id]);
 
     useLayoutEffect(() => {
-        // Only calculate after images are loaded and we don't have a height yet
-        if (rightRef.current && !initialRightHeight && !loading && imagesLoaded) {
+        // Only calculate after data is loaded and we don't have a height yet
+        if (rightRef.current && !initialRightHeight && !loading) {
             // Wait for next frame to ensure layout is complete
             requestAnimationFrame(() => {
                 const height = rightRef.current.offsetHeight;
@@ -147,7 +144,7 @@ const ProductDetail = memo(() => {
                 }
             });
         }
-    }, [loading, initialRightHeight, imagesLoaded]);
+    }, [loading, initialRightHeight]);
 
     // Gallery images: Get mainImage and images array from variant
     const rawMainImage = variant?.mainImage || './images/product/1.png';
@@ -172,33 +169,6 @@ const ProductDetail = memo(() => {
     const mainImage = getOptimizedImageUrl(rawMainImage);
     const otherImages = rawOtherImages.map(img => getOptimizedImageUrl(img));
     const allGalleryImages = [mainImage, ...otherImages];
-
-    // Preload all gallery images (with optimized URLs)
-    const preloadImages = useCallback(async (imageUrls) => {
-        const promises = imageUrls.map((url) => {
-            return new Promise((resolve) => {
-                if (!url) {
-                    resolve();
-                    return;
-                }
-                const img = new Image();
-                img.onload = resolve;
-                img.onerror = resolve; // Still resolve on error to continue
-                img.src = url;
-            });
-        });
-
-        await Promise.all(promises);
-        setImagesLoaded(true);
-    }, []);
-
-    // Start preloading when variant images are ready
-    useEffect(() => {
-        if (!loading && variant && allGalleryImages.length > 0) {
-            setImagesLoaded(false);
-            preloadImages(allGalleryImages);
-        }
-    }, [loading, variant?._id, allGalleryImages.length, preloadImages]);
 
     // Check image count for layout adjustments
     const imageCount = allGalleryImages.length;
@@ -316,30 +286,26 @@ const ProductDetail = memo(() => {
         }));
     }, [variantsData, product?._id, parentCategoryId, allCategories.length]);
 
-    // Determine if page is ready
-    const isPageReady = !loading && imagesLoaded;
+    // Show loader while loading
+    if (loading) {
+        return <PageWrapper isLoading={true}><div className={styles.productDetail} /></PageWrapper>;
+    }
 
-    // While loading, render PageWrapper with loading state (it will show the loader)
-    // This prevents accessing undefined product/variant properties
-    if (loading || !variant || !product) {
-        // If finished loading but no data, show not found
-        if (!loading && (!variant || !product)) {
-            return (
-                <div className={styles.productDetail}>
-                    <div style={{ padding: '2rem', textAlign: 'center' }}>
-                        <h3>Product not found</h3>
-                        <p>The product you are looking for does not exist.</p>
-                    </div>
+    // Show not found after loading completes with no data
+    if (!variant || !product) {
+        return (
+            <div className={styles.productDetail}>
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    <h3>Product not found</h3>
+                    <p>The product you are looking for does not exist.</p>
                 </div>
-            );
-        }
-        // Still loading - render empty PageWrapper (shows loader)
-        return <PageWrapper isReady={false} trackImages={false}><div className={styles.productDetail} /></PageWrapper>;
+            </div>
+        );
     }
 
 
     return (
-        <PageWrapper isReady={isPageReady} trackImages={false}>
+        <PageWrapper>
             <div className={styles.productDetail}>
             <div className={`${styles.product} ${isFewImages ? styles.fewImages : ''}`}>
                 <div
