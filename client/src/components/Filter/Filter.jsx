@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import styles from './Filter.module.css';
 import { useLenisControl } from '../../hooks/useLenisControl';
 import { lenisInstance } from '../../lib/lenis';
 import Backdrop from '../Backdrop';
 import { trackEvent } from '../../utils/eventTracker.js';
 
-const Filter = ({
+const Filter = memo(({
     isOpen,
     onClose,
     availableColors = [],
@@ -21,14 +21,15 @@ const Filter = ({
     const [isSortByOpen, setIsSortByOpen] = useState(false);
     const [isColourOpen, setIsColourOpen] = useState(false);
 
-    const sortOptions = ['Default', 'Price High', 'Price Low', 'New In'];
+    // Memoize sort options since they're static
+    const sortOptions = useMemo(() => ['Default', 'Price High', 'Price Low', 'New In'], []);
 
-    // Generate color options từ availableColors + colorMap từ DB
-    const colourOptions = availableColors.map(colorName => ({
+    // Memoize color options to prevent recalculation on every render
+    const colourOptions = useMemo(() => availableColors.map(colorName => ({
         name: colorName,
         code: colorMap[colorName] || '#CCCCCC', // Lấy hex từ DB hoặc default
         count: colorCounts[colorName] || 0, // Số lượng sản phẩm
-    }));
+    })), [availableColors, colorMap, colorCounts]);
 
     // Handle click outside to close filter
     useEffect(() => {
@@ -68,66 +69,8 @@ const Filter = ({
     // Lock scroll when modal is open using useLenisControl instead of useScrollLock
     useLenisControl(isOpen);
 
-    // Toggle Sort By dropdown (close Colour dropdown if open)
-    const handleToggleSortBy = () => {
-        setIsSortByOpen(!isSortByOpen);
-        if (!isSortByOpen) {
-            setIsColourOpen(false);
-        }
-    };
-
-    // Toggle Colour dropdown (close Sort By dropdown if open)
-    const handleToggleColourDropdown = () => {
-        setIsColourOpen(!isColourOpen);
-        if (!isColourOpen) {
-            setIsSortByOpen(false);
-        }
-    };
-
-    // Handle sort option selection
-    const handleSelectSort = (option) => {
-        setSelectedSort(option);
-        
-        // Track filter apply event
-        trackEvent.filterApply({
-            filterType: 'sort',
-            sortBy: option,
-            selectedColors: selectedColors
-        });
-        
-        // Scroll to top để xem kết quả filter
-        scrollToTop();
-    };
-
-    // Handle colour selection (multi-select)
-    const handleSelectColour = (colourName) => {
-        const newSelectedColors = selectedColors.includes(colourName)
-            ? selectedColors.filter(c => c !== colourName)
-            : [...selectedColors, colourName];
-        
-        setSelectedColors(newSelectedColors);
-        
-        // Track filter apply event
-        trackEvent.filterApply({
-            filterType: 'color',
-            selectedColors: newSelectedColors,
-            sortBy: selectedSort
-        });
-        
-        // Scroll to top để xem kết quả filter
-        scrollToTop();
-    };
-
-    // Handle clear all filters
-    const handleClearAll = () => {
-        setSelectedSort('Default');
-        setSelectedColors([]);
-        // Scroll to top khi clear
-        scrollToTop();
-    };
-
     // Scroll to top helper
-    const scrollToTop = () => {
+    const scrollToTop = useCallback(() => {
         // Use Lenis if available, otherwise fallback to window.scrollTo
         if (lenisInstance) {
             lenisInstance.scrollTo(0, { immediate: true, force: true });
@@ -143,7 +86,61 @@ const Filter = ({
             document.documentElement.scrollTop = 0;
             document.body.scrollTop = 0;
         }, 0);
-    };
+    }, []);
+
+    // Toggle Sort By dropdown (close Colour dropdown if open)
+    const handleToggleSortBy = useCallback(() => {
+        setIsSortByOpen(prev => !prev);
+        setIsColourOpen(false);
+    }, []);
+
+    // Toggle Colour dropdown (close Sort By dropdown if open)
+    const handleToggleColourDropdown = useCallback(() => {
+        setIsColourOpen(prev => !prev);
+        setIsSortByOpen(false);
+    }, []);
+
+    // Handle sort option selection
+    const handleSelectSort = useCallback((option) => {
+        setSelectedSort(option);
+        
+        // Track filter apply event
+        trackEvent.filterApply({
+            filterType: 'sort',
+            sortBy: option,
+            selectedColors: selectedColors
+        });
+        
+        // Scroll to top để xem kết quả filter
+        scrollToTop();
+    }, [setSelectedSort, selectedColors, scrollToTop]);
+
+    // Handle colour selection (multi-select)
+    const handleSelectColour = useCallback((colourName) => {
+        const newSelectedColors = selectedColors.includes(colourName)
+            ? selectedColors.filter(c => c !== colourName)
+            : [...selectedColors, colourName];
+        
+        setSelectedColors(newSelectedColors);
+        
+        // Track filter apply event
+        trackEvent.filterApply({
+            filterType: 'color',
+            selectedColors: newSelectedColors,
+            sortBy: selectedSort
+        });
+        
+        // Scroll to top để xem kết quả filter
+        scrollToTop();
+    }, [selectedColors, setSelectedColors, selectedSort, scrollToTop]);
+
+    // Handle clear all filters
+    const handleClearAll = useCallback(() => {
+        setSelectedSort('Default');
+        setSelectedColors([]);
+        // Scroll to top khi clear
+        scrollToTop();
+    }, [setSelectedSort, setSelectedColors, scrollToTop]);
 
     if (!isOpen) return null;
 
@@ -268,6 +265,8 @@ const Filter = ({
             </div>
         </>
     );
-};
+});
+
+Filter.displayName = 'Filter';
 
 export default Filter;

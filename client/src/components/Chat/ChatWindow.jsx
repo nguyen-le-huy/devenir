@@ -96,20 +96,6 @@ const ChatWindow = ({ onClose }) => {
         }
     }, []);
 
-    // Handle click outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (chatWindowRef.current && !chatWindowRef.current.contains(event.target)) {
-                onClose();
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [onClose]);
-
     // Prevent main page scroll when mouse is over chat window
     useEffect(() => {
         const chatWindow = chatWindowRef.current;

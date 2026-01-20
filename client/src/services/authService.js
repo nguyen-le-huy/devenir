@@ -2,6 +2,7 @@ import apiClient from './api';
 
 /**
  * Auth Service - API calls for authentication
+ * All methods return Promises and let errors propagate to callers
  */
 const authService = {
   /**
@@ -9,56 +10,28 @@ const authService = {
    * @param {Object} data - {username, email, password}
    * @returns {Promise}
    */
-  register: async (data) => {
-    try {
-      const response = await apiClient.post('/auth/register', data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  register: (data) => apiClient.post('/auth/register', data),
 
   /**
    * Login - Đăng nhập truyền thống
    * @param {Object} data - {email, password}
    * @returns {Promise}
    */
-  login: async (data) => {
-    try {
-      const response = await apiClient.post('/auth/login', data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  login: (data) => apiClient.post('/auth/login', data),
 
   /**
    * Google Login - Đăng nhập với Google OAuth
    * @param {String} credential - Google credential token
    * @returns {Promise}
    */
-  googleLogin: async (credential) => {
-    try {
-      const response = await apiClient.post('/auth/google', { credential });
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  googleLogin: (credential) => apiClient.post('/auth/google', { credential }),
 
   /**
    * Forgot Password - Yêu cầu reset password
    * @param {Object} data - {email}
    * @returns {Promise}
    */
-  forgotPassword: async (data) => {
-    try {
-      const response = await apiClient.post('/auth/forgot-password', data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  forgotPassword: (data) => apiClient.post('/auth/forgot-password', data),
 
   /**
    * Reset Password - Reset mật khẩu với token
@@ -66,84 +39,42 @@ const authService = {
    * @param {Object} data - {newPassword}
    * @returns {Promise}
    */
-  resetPassword: async (token, data) => {
-    try {
-      const response = await apiClient.post(`/auth/reset-password/${token}`, data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  resetPassword: (token, data) => apiClient.post(`/auth/reset-password/${token}`, data),
 
   /**
    * Verify Email - Xác nhận email
    * @param {String} token - Verification token từ email
    * @returns {Promise}
    */
-  verifyEmail: async (token) => {
-    try {
-      const response = await apiClient.post(`/auth/verify-email/${token}`, {});
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  verifyEmail: (token) => apiClient.post(`/auth/verify-email/${token}`, {}),
 
   /**
    * Add Phone - Thêm số điện thoại
    * @param {Object} data - {phone, googleToken}
    * @returns {Promise}
    */
-  addPhone: async (data) => {
-    try {
-      const response = await apiClient.post('/auth/add-phone', data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  addPhone: (data) => apiClient.post('/auth/add-phone', data),
 
   /**
    * Update Profile - Cập nhật thông tin cá nhân
    * @param {Object} data - {username, phone, firstName, lastName, birthday}
    * @returns {Promise}
    */
-  updateProfile: async (data) => {
-    try {
-      const response = await apiClient.put('/auth/profile', data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  updateProfile: (data) => apiClient.put('/auth/profile', data),
 
   /**
    * Change Password - Đổi mật khẩu
    * @param {Object} data - {currentPassword, newPassword}
    * @returns {Promise}
    */
-  changePassword: async (data) => {
-    try {
-      const response = await apiClient.post('/auth/change-password', data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  changePassword: (data) => apiClient.post('/auth/change-password', data),
 
   /**
    * Update Preferences - Cập nhật sở thích nhận thông báo
    * @param {Object} data - {channels, interests}
    * @returns {Promise}
    */
-  updatePreferences: async (data) => {
-    try {
-      const response = await apiClient.put('/auth/preferences', data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
+  updatePreferences: (data) => apiClient.put('/auth/preferences', data),
 
   /**
    * Logout - Đăng xuất

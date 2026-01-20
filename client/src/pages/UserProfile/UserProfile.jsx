@@ -6,6 +6,7 @@ import ProfileOverview from '../../components/profile/ProfileOverview';
 import PersonalDetails from '../../components/profile/PersonalDetails';
 import MarketingPreferences from '../../components/profile/MarketingPreferences';
 import ProfileOrders from '../../components/profile/ProfileOrders';
+import PageWrapper from '../../components/PageWrapper/PageWrapper';
 import styles from './UserProfile.module.css';
 
 /**
@@ -117,8 +118,9 @@ const UserProfile = memo(() => {
   }
 
   return (
-    <div className={styles.profileContainer}>
-      <div className={styles.profileContent}>
+    <PageWrapper trackImages={false}>
+      <div className={styles.profileContainer}>
+        <div className={styles.profileContent}>
         {/* SIDEBAR / MOBILE TABS NAVIGATION */}
         {isMobile ? (
           // Mobile: Horizontal Tabs
@@ -202,6 +204,7 @@ const UserProfile = memo(() => {
         </main>
       </div>
     </div>
+    </PageWrapper>
   );
 }
 );

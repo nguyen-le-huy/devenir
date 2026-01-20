@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import styles from './ChatIcon.module.css';
 
-const ChatIcon = ({ onClick }) => {
+const ChatIcon = memo(({ onClick }) => {
     return (
         <div className={styles.chatIcon} onClick={onClick}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 46 45" fill="none">
@@ -8,6 +9,8 @@ const ChatIcon = ({ onClick }) => {
             </svg>
         </div>
     );
-};
+});
+
+ChatIcon.displayName = 'ChatIcon';
 
 export default ChatIcon;

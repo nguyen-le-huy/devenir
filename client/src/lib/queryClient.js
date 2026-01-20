@@ -10,8 +10,8 @@ export const queryClient = new QueryClient({
       // Stale time: Data considered fresh for 5 minutes
       staleTime: 5 * 60 * 1000, // 5 minutes
 
-      // Cache time: Data stays in cache for 10 minutes after becoming unused
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      // Garbage collection time: Data stays in cache for 10 minutes after becoming unused
+      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in v5)
 
       // Retry failed requests 1 time only
       retry: 1,
@@ -24,9 +24,6 @@ export const queryClient = new QueryClient({
 
       // Don't refetch on mount if data is fresh
       refetchOnMount: false,
-
-      // Use cached data while refetching in background
-      keepPreviousData: true,
     },
     mutations: {
       // Retry mutations once on failure

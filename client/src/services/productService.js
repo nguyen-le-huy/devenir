@@ -1,64 +1,42 @@
 import apiClient from './api';
 
 /**
+ * Product Service - API calls for product operations
+ * Simple functions delegate directly to apiClient
+ * Complex functions with data transformation handle errors appropriately
+ */
+
+/**
  * Lấy tất cả products với pagination và filtering
  * @param {Object} params - Query parameters (page, limit, category, brand, status, search)
  * @returns {Promise} Response data from API
  */
-export const getAllProducts = async (params = {}) => {
-    try {
-        const response = await apiClient.get('/products', { params });
-        return response;
-    } catch (error) {
-        console.error('Error fetching products:', error);
-        throw error;
-    }
-};
+export const getAllProducts = (params = {}) => 
+    apiClient.get('/products', { params });
 
 /**
  * Lấy product theo ID kèm variants
  * @param {string} id - Product ID
  * @returns {Promise} Response data from API
  */
-export const getProductById = async (id) => {
-    try {
-        const response = await apiClient.get(`/products/${id}`);
-        return response;
-    } catch (error) {
-        console.error('Error fetching product:', error);
-        throw error;
-    }
-};
+export const getProductById = (id) => 
+    apiClient.get(`/products/${id}`);
 
 /**
  * Lấy variants của một product
  * @param {string} productId - Product ID
  * @returns {Promise} Response data from API
  */
-export const getProductVariants = async (productId) => {
-    try {
-        const response = await apiClient.get(`/products/${productId}/variants`);
-        return response;
-    } catch (error) {
-        console.error('Error fetching product variants:', error);
-        throw error;
-    }
-};
+export const getProductVariants = (productId) => 
+    apiClient.get(`/products/${productId}/variants`);
 
 /**
  * Lấy tất cả variants (có thể filter theo product, size, color)
  * @param {Object} params - Query parameters
  * @returns {Promise} Response data from API
  */
-export const getAllVariants = async (params = {}) => {
-    try {
-        const response = await apiClient.get('/variants', { params });
-        return response;
-    } catch (error) {
-        console.error('Error fetching variants:', error);
-        throw error;
-    }
-};
+export const getAllVariants = (params = {}) => 
+    apiClient.get('/variants', { params });
 
 /**
  * Lấy tất cả variants của một category

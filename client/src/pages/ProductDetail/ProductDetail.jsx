@@ -11,7 +11,7 @@ import { useCategories } from '../../hooks/useCategories.js';
 import { useVariantById } from '../../hooks/useProducts.js';
 import { useColors } from '../../hooks/useColors.js';
 import { useAddToCart } from '../../hooks/useCart.js';
-import Loading from '../../components/Loading/Loading.jsx';
+import PageWrapper from '../../components/PageWrapper/PageWrapper.jsx';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import ColourVarients from '../../components/ColourVarients/ColourVarients.jsx';
@@ -316,29 +316,31 @@ const ProductDetail = memo(() => {
         }));
     }, [variantsData, product?._id, parentCategoryId, allCategories.length]);
 
-    // Show loading if data is loading OR images are not ready
-    if (loading || (variant && !imagesLoaded)) {
-        return (
-            <div className={styles.productDetail}>
-                <Loading />
-            </div>
-        );
-    }
+    // Determine if page is ready
+    const isPageReady = !loading && imagesLoaded;
 
-    if (!variant || !product) {
-        return (
-            <div className={styles.productDetail}>
-                <div style={{ padding: '2rem', textAlign: 'center' }}>
-                    <h3>Product not found</h3>
-                    <p>The product you are looking for does not exist.</p>
+    // While loading, render PageWrapper with loading state (it will show the loader)
+    // This prevents accessing undefined product/variant properties
+    if (loading || !variant || !product) {
+        // If finished loading but no data, show not found
+        if (!loading && (!variant || !product)) {
+            return (
+                <div className={styles.productDetail}>
+                    <div style={{ padding: '2rem', textAlign: 'center' }}>
+                        <h3>Product not found</h3>
+                        <p>The product you are looking for does not exist.</p>
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        }
+        // Still loading - render empty PageWrapper (shows loader)
+        return <PageWrapper isReady={false} trackImages={false}><div className={styles.productDetail} /></PageWrapper>;
     }
 
 
     return (
-        <div className={styles.productDetail}>
+        <PageWrapper isReady={isPageReady} trackImages={false}>
+            <div className={styles.productDetail}>
             <div className={`${styles.product} ${isFewImages ? styles.fewImages : ''}`}>
                 <div
                     className={`${styles.leftCenterContainer} ${isSingleImage ? styles.singleImage : ''} ${isFewImages ? styles.fewImagesContainer : ''}`}
@@ -558,7 +560,8 @@ const ProductDetail = memo(() => {
                 isOpen={isAddToBagNotiOpen}
                 onClose={() => setIsAddToBagNotiOpen(false)}
             />
-        </div>
+            </div>
+        </PageWrapper>
     );
 });
 

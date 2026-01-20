@@ -1,6 +1,7 @@
 import styles from "./Checkout.module.css";
 import ProductCheckout from "../../components/ProductCard/ProductCheckout";
 import ProductCarousel from "../../components/ProductCarousel/ProductCarousel";
+import PageWrapper from "../../components/PageWrapper/PageWrapper";
 import { useCart, useRemoveFromCart } from "../../hooks/useCart.js";
 import { useLatestVariants } from "../../hooks/useProducts.js";
 import { useMemo, useState, memo } from "react";
@@ -77,7 +78,7 @@ const Checkout = memo(() => {
     };
 
     return (
-        <>
+        <PageWrapper isDataLoading={isLoading}>
             <div className={styles.checkout}>
                 <div className={styles.header}>
                     <h3>Your Bag Total Is USD {cart.totalPrice.toFixed(2)}</h3>
@@ -178,7 +179,7 @@ const Checkout = memo(() => {
             {showEditItem && editingItem && (
                 <EditItem item={editingItem} onClose={handleCloseEditItem} />
             )}
-        </>
+        </PageWrapper>
     );
 }
 

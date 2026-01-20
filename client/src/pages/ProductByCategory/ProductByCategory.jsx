@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import styles from './ProductByCategory.module.css';
 import Filter from '../../components/Filter/Filter.jsx';
 import ScarfCard from '../../components/ProductCard/ScarfCard.jsx';
-import Loading from '../../components/Loading/Loading.jsx';
+import PageWrapper from '../../components/PageWrapper/PageWrapper.jsx';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight.js';
 import { useCategoryById, useCategories } from '../../hooks/useCategories.js';
 import { useColors } from '../../hooks/useColors.js';
@@ -12,7 +12,7 @@ import { createColorMap } from '../../services/colorService.js';
 import { getVariantsByCategory, getVariantsByCategoryWithChildren } from '../../services/productService.js';
 import { getOptimizedImageUrl } from '../../utils/imageOptimization.js';
 
-const ProductByCategory = () => {
+const ProductByCategory = memo(() => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     // Filter states
@@ -58,6 +58,7 @@ const ProductByCategory = () => {
         },
         enabled: !!categoryId && allCategories.length > 0,
         staleTime: 3 * 60 * 1000, // 3 minutes
+        placeholderData: keepPreviousData, // Keep previous data while fetching (v5 syntax)
     });
 
     const { data: colorsData } = useColors();
@@ -132,13 +133,14 @@ const ProductByCategory = () => {
         setSelectedColors([]);
     }, [categoryId, selectedSubcategory]);
 
-    const handleOpenFilter = () => {
+    // Memoize handlers with useCallback
+    const handleOpenFilter = useCallback(() => {
         setIsFilterOpen(true);
-    };
+    }, []);
 
-    const handleCloseFilter = () => {
+    const handleCloseFilter = useCallback(() => {
         setIsFilterOpen(false);
-    };
+    }, []);
 
     // Create a map of productId -> all variants with different colors
     // This is used to show color swatches on each card
@@ -280,14 +282,8 @@ const ProductByCategory = () => {
         return category?.children || [];
     }, [category]);
 
-    // Show loading if data is loading OR images are not ready
-    if (loading || !imagesLoaded) {
-        return (
-            <div className={styles.productByCategory}>
-                <Loading />
-            </div>
-        );
-    }
+    // Determine if page is ready (data loaded AND images preloaded)
+    const isPageReady = !loading && imagesLoaded;
 
     if (error) {
         return (
@@ -309,8 +305,9 @@ const ProductByCategory = () => {
     }
 
     return (
-        <div className={styles.productByCategory}>
-            <h1 className={styles.title}>{category?.name || 'Products'}</h1>
+        <PageWrapper isReady={isPageReady} trackImages={false}>
+            <div className={styles.productByCategory}>
+                <h1 className={styles.title}>{category?.name || 'Products'}</h1>
 
             {/* Only show subcategories if they exist */}
             {subcategories.length > 0 && (
@@ -443,8 +440,11 @@ const ProductByCategory = () => {
                     </div>
                 )}
             </div>
-        </div>
+            </div>
+        </PageWrapper>
     );
-};
+});
+
+ProductByCategory.displayName = 'ProductByCategory';
 
 export default ProductByCategory;

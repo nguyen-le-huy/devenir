@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient.js';
 import * as productService from '../services/productService.js';
 
@@ -10,7 +10,7 @@ export const useProducts = (params = {}) => {
   return useQuery({
     queryKey: queryKeys.products.list(params),
     queryFn: () => productService.getAllProducts(params),
-    keepPreviousData: true, // Keep previous data while fetching new page
+    placeholderData: keepPreviousData, // Keep previous data while fetching new page (v5 syntax)
   });
 };
 

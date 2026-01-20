@@ -1,13 +1,16 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import styles from './VisuallySimilar.module.css';
 import ScarfCard from '../../components/ProductCard/ScarfCard';
+import PageWrapper from '../../components/PageWrapper/PageWrapper';
 import { useHeaderHeight } from '../../hooks/useHeaderHeight';
+import { getOptimizedImageUrl } from '../../utils/imageOptimization';
 
 const VisuallySimilar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const headerHeight = useHeaderHeight();
+    const [imagesLoaded, setImagesLoaded] = useState(false);
 
     // Get data from navigation state
     const { uploadedImage, results = [], count = 0 } = location.state || {};
@@ -38,6 +41,50 @@ const VisuallySimilar = () => {
         }));
     }, [results]);
 
+    // Preload images
+    const preloadImages = useCallback(async (imageUrls) => {
+        const promises = imageUrls.map((url) => {
+            return new Promise((resolve) => {
+                if (!url) {
+                    resolve();
+                    return;
+                }
+                const img = new Image();
+                img.onload = resolve;
+                img.onerror = resolve;
+                img.src = url;
+            });
+        });
+        await Promise.all(promises);
+        setImagesLoaded(true);
+    }, []);
+
+    // Start preloading when products are ready
+    useEffect(() => {
+        if (products.length > 0) {
+            const imagesToPreload = [];
+            
+            // Add uploaded image
+            if (uploadedImage) {
+                imagesToPreload.push(uploadedImage);
+            }
+            
+            // Add product images
+            products.forEach(product => {
+                if (product.image) {
+                    imagesToPreload.push(getOptimizedImageUrl(product.image));
+                }
+                if (product.imageHover && product.imageHover !== product.image) {
+                    imagesToPreload.push(getOptimizedImageUrl(product.imageHover));
+                }
+            });
+            
+            preloadImages([...new Set(imagesToPreload)]);
+        } else {
+            setImagesLoaded(true);
+        }
+    }, [products, uploadedImage, preloadImages]);
+
     // Scroll to top when new results are loaded
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -64,31 +111,33 @@ const VisuallySimilar = () => {
     }
 
     return (
-        <div className={styles.visuallySimilar}>
+        <PageWrapper isReady={imagesLoaded} trackImages={false}>
+            <div className={styles.visuallySimilar}>
 
-            <div className={styles.yourImage}>
-                <p className={styles.title}>Your Image:</p>
-                <div className={styles.imageContainer}>
-                    <img src={uploadedImage} alt="Your uploaded image" />
+                <div className={styles.yourImage}>
+                    <p className={styles.title}>Your Image:</p>
+                    <div className={styles.imageContainer}>
+                        <img src={uploadedImage} alt="Your uploaded image" />
+                    </div>
+                </div>
+
+                <div className={styles.similarProducts}>
+                    <div className={styles.header} style={{ top: `${headerHeight}px` }}>
+                        <p className={styles.title}>Visually Similar Products</p>
+                        <span className={styles.count}>{products.length} items found</span>
+                    </div>
+
+                    <div className={styles.productList}>
+                        {products.map((product) => (
+                            <ScarfCard
+                                key={product.id}
+                                scarf={product}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
-
-            <div className={styles.similarProducts}>
-                <div className={styles.header} style={{ top: `${headerHeight}px` }}>
-                    <p className={styles.title}>Visually Similar Products</p>
-                    <span className={styles.count}>{products.length} items found</span>
-                </div>
-
-                <div className={styles.productList}>
-                    {products.map((product) => (
-                        <ScarfCard
-                            key={product.id}
-                            scarf={product}
-                        />
-                    ))}
-                </div>
-            </div>
-        </div>
+        </PageWrapper>
     );
 };
 

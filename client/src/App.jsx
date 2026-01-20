@@ -1,14 +1,10 @@
 import './global.css'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
-import Lenis from 'lenis';
 import { Toaster } from 'sonner';
-import { useEffect, useState, lazy, Suspense } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/all';
+import { useEffect, useState, lazy, Suspense, useCallback } from 'react';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 
-import { setLenisInstance } from './lib/lenis';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop.jsx';
 import ChatIcon from './components/Chat/ChatIcon';
 import ChatWindow from './components/Chat/ChatWindow';
@@ -24,9 +20,7 @@ import Loading from './components/Loading/Loading';
 import Preloader from './components/Preloader/Preloader';
 import { useTracking } from './hooks/useTracking';
 import { trackingService } from './services/trackingService';
-
-
-gsap.registerPlugin(ScrollTrigger);
+import useLenis from './hooks/useLenis';
 
 const Layout = lazy(() => import('./components/layout/Layout'));
 const HomePage = lazy(() => import('./pages/HomePage/HomePage'));
@@ -46,8 +40,12 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  const handleOpenChat = () => setIsChatOpen(true);
-  const handleCloseChat = () => setIsChatOpen(false);
+  // Memoize chat handlers to prevent unnecessary re-renders
+  const handleOpenChat = useCallback(() => setIsChatOpen(true), []);
+  const handleCloseChat = useCallback(() => setIsChatOpen(false), []);
+
+  // Initialize Lenis smooth scroll
+  useLenis();
 
   // Initialize tracking service on app mount
   useEffect(() => {
@@ -63,40 +61,6 @@ function App() {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      smoothTouch: false,
-      touchMultiplier: 2,
-      infinite: false,
-    });
-
-    setLenisInstance(lenis);
-
-    // Đồng bộ Lenis với GSAP ScrollTrigger
-    lenis.on('scroll', ScrollTrigger.update)
-
-    // Store callback reference for proper cleanup
-    const tickerCallback = (time) => {
-      lenis.raf(time * 1000)
-    }
-    gsap.ticker.add(tickerCallback)
-
-    gsap.ticker.lagSmoothing(0)
-
-    // Cleanup
-    return () => {
-      setLenisInstance(null);
-      lenis.destroy();
-      gsap.ticker.remove(tickerCallback);
-    }
   }, []);
 
   // Validate Google Client ID

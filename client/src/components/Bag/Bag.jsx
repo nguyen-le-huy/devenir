@@ -1,6 +1,6 @@
+import { memo, useEffect, useState, useMemo, useCallback } from "react";
 import styles from "./Bag.module.css";
 import { useHeaderHeight } from "../../hooks/useHeaderHeight";
-import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLenisControl } from "../../hooks/useLenisControl";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../hooks/useCart.js";
@@ -8,7 +8,7 @@ import Backdrop from "../Backdrop";
 import Loading from "../Loading/Loading";
 import { getOptimizedImageUrl } from "../../utils/imageOptimization";
 
-export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
+const Bag = memo(({ onMouseEnter, onMouseLeave, onClose }) => {
     const navigate = useNavigate();
     const headerHeight = useHeaderHeight();
     const [isVisible, setIsVisible] = useState(false);
@@ -46,16 +46,17 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
             const price = variant?.price || 0;
             const size = variant?.size || '';
             const color = variant?.color || '';
+            const variantId = variant?._id;
 
             return (
                 <div
-                    key={variant?._id || index}
+                    key={variantId || index}
                     className={styles.product}
                 >
                     <img
                         src={getOptimizedImageUrl(image)}
                         alt={productName}
-                        onClick={() => handleProductClick(variant?._id)}
+                        onClick={() => handleProductClick(variantId)}
                         style={{ cursor: 'pointer' }}
                         loading="lazy"
                     />
@@ -63,7 +64,7 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                         <div className={styles.nameAndQuanity}>
                             <p
                                 className={styles.productName}
-                                onClick={() => handleProductClick(variant?._id)}
+                                onClick={() => handleProductClick(variantId)}
                                 style={{ cursor: 'pointer' }}
                             >{productName}</p>
                             <p className={styles.productQuantity}>
@@ -78,8 +79,9 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                 </div>
             );
         });
-    }, [cart.items]);
+    }, [cart.items, handleProductClick]);
 
+    // Show loading while fetching data
     // Show loading while fetching data
     const showLoading = isLoading;
 
@@ -120,5 +122,9 @@ export default function Bag({ onMouseEnter, onMouseLeave, onClose }) {
                 )}
             </div>
         </>
-    )
-}
+    );
+});
+
+Bag.displayName = 'Bag';
+
+export default Bag;

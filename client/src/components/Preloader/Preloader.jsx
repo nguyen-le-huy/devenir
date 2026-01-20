@@ -1,5 +1,5 @@
 import styles from './Preloader.module.css';
-import { useRef, useEffect, useState, memo } from 'react';
+import { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
@@ -8,9 +8,31 @@ import { setPreloaderComplete } from '../../lib/preloader';
 
 gsap.registerPlugin(useGSAP, DrawSVGPlugin);
 
+// Critical images that must be loaded before animation starts
+// These are static images used in HomePage sections
+const CRITICAL_IMAGES = [
+    // Introduction section
+    '/images/introCard1.webp',
+    '/images/introCard2.webp',
+    '/images/introCard3.webp',
+    '/images/introCard4.webp',
+    '/images/introCard5.webp',
+    '/images/introCard6.webp',
+    // CategoryBox section
+    '/images/category2.webp',
+    '/images/category5.webp',
+    '/images/prd1.png',
+    '/images/prd2.png',
+    '/images/prd3.png',
+    // SmallTreasures section
+    '/images/treasure1.webp',
+    '/images/treasure2.webp',
+    '/images/treasure3.webp',
+];
+
 const Preloader = memo(() => {
     const [shouldShowPreloader, setShouldShowPreloader] = useState(false);
-    const [isReady, setIsReady] = useState(false);
+    const [isResourcesLoaded, setIsResourcesLoaded] = useState(false);
 
     const containerRef = useRef(null);
     const firstNumberRef = useRef(null);
@@ -19,6 +41,21 @@ const Preloader = memo(() => {
     const pathsRef = useRef([]);
     const circleLoaderRef = useRef(null);
     const timelineRef = useRef(null);
+
+    // Preload all critical images
+    const preloadImages = useCallback(async () => {
+        const promises = CRITICAL_IMAGES.map((src) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = resolve;
+                img.onerror = resolve; // Continue even if error
+                img.src = src;
+            });
+        });
+
+        await Promise.all(promises);
+        setIsResourcesLoaded(true);
+    }, []);
 
     // ✅ Chỉ show preloader khi truy cập trực tiếp qua URL (không phải client-side navigation)
     useEffect(() => {
@@ -29,35 +66,15 @@ const Preloader = memo(() => {
             setShouldShowPreloader(true);
             // Đánh dấu là đã vào app
             sessionStorage.setItem('hasNavigated', 'true');
+            // Start preloading images immediately
+            preloadImages();
         } else {
             // Đã navigate trong app rồi → Skip preloader
             setShouldShowPreloader(false);
             // ✅ Mark preloader as complete ngay lập tức
             setPreloaderComplete();
         }
-    }, []);
-
-    // ✅ Bắt đầu animation ngay lập tức khi component mount
-    // Preload critical resources TRONG KHI animation đang chạy (không block)
-    useEffect(() => {
-        if (!shouldShowPreloader) return;
-
-        // Animation bắt đầu ngay lập tức - không chờ resources
-        setIsReady(true);
-
-        // Preload critical images trong background (không block animation)
-        const criticalImages = [
-            '/images/introCard1.webp',
-            '/images/introCard2.webp',
-            '/images/introCard3.webp',
-            '/images/introCard4.webp',
-        ];
-        
-        criticalImages.forEach(src => {
-            const img = new Image();
-            img.src = src;
-        });
-    }, [shouldShowPreloader]);
+    }, [preloadImages]);
 
     // Lock scroll khi preloader hiển thị
     useEffect(() => {
@@ -79,9 +96,9 @@ const Preloader = memo(() => {
         };
     }, [shouldShowPreloader]);
 
-    // ✅ Animation chạy ngay khi component ready
+    // ✅ Animation chạy SAU KHI resources đã load xong
     useGSAP(() => {
-        if (!shouldShowPreloader || !isReady) return;
+        if (!shouldShowPreloader || !isResourcesLoaded) return;
 
         if (lenisInstance) {
             lenisInstance.stop();
@@ -201,7 +218,7 @@ const Preloader = memo(() => {
         tl.set(container, {
             display: 'none',
         });
-    }, { scope: containerRef, dependencies: [shouldShowPreloader, isReady] });
+    }, { scope: containerRef, dependencies: [shouldShowPreloader, isResourcesLoaded] });
 
     if (!shouldShowPreloader) return null;
 

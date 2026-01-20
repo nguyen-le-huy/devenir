@@ -1,3 +1,4 @@
+import { memo, useRef, useMemo } from 'react';
 import styles from './NewArrivals.module.css';
 import ScarfCard from '../../components/ProductCard/ScarfCard.jsx';
 import Loading from '../../components/Loading/Loading.jsx';
@@ -5,14 +6,13 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { useRef, useMemo } from 'react';
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { MotionPathHelper } from "gsap/MotionPathHelper";
 import { useLatestVariants } from '../../hooks/useProducts.js';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, MotionPathPlugin, MotionPathHelper);
 
-const NewArrivals = () => {
+const NewArrivals = memo(() => {
     const newArrContainerRef = useRef(null);
     const titleRef = useRef(null);
     const linkRef = useRef(null);
@@ -141,6 +141,8 @@ const NewArrivals = () => {
             </div>
         </div>
     );
-};
+});
+
+NewArrivals.displayName = 'NewArrivals';
 
 export default NewArrivals;
