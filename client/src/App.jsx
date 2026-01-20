@@ -1,5 +1,5 @@
 import './global.css'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import Lenis from 'lenis';
 import { Toaster } from 'sonner';
@@ -21,6 +21,7 @@ import PaymentSuccessfulPreview from './pages/PaymentStatus/PaymentSuccessfulPre
 import AllCategories from './pages/AllCategories/AllCategories.jsx';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import Loading from './components/Loading/Loading';
+import Preloader from './components/Preloader/Preloader';
 import { useTracking } from './hooks/useTracking';
 import { trackingService } from './services/trackingService';
 
@@ -109,6 +110,9 @@ function App() {
         <ScrollToTop />
         <TrackingWrapper />
         <Toaster position="top-center" richColors />
+        
+        {/* ✅ Preloader hiển thị ngay lập tức - TRƯỚC Suspense */}
+        <HomePreloader />
 
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>
@@ -183,6 +187,18 @@ function App() {
 function TrackingWrapper() {
   useTracking(); // Auto track page views on route change
   return null;
+}
+
+// ✅ Component render Preloader chỉ khi ở trang chủ
+function HomePreloader() {
+  const location = useLocation();
+  
+  // Chỉ hiển thị Preloader trên trang chủ
+  if (location.pathname !== '/') {
+    return null;
+  }
+  
+  return <Preloader />;
 }
 
 export default App;

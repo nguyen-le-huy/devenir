@@ -4,12 +4,13 @@ import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
 import { lenisInstance } from '../../lib/lenis';
+import { setPreloaderComplete } from '../../lib/preloader';
 
 gsap.registerPlugin(useGSAP, DrawSVGPlugin);
 
 const Preloader = memo(() => {
     const [shouldShowPreloader, setShouldShowPreloader] = useState(false);
-    const [isResourcesLoaded, setIsResourcesLoaded] = useState(false);
+    const [isReady, setIsReady] = useState(false);
 
     const containerRef = useRef(null);
     const firstNumberRef = useRef(null);
@@ -31,90 +32,31 @@ const Preloader = memo(() => {
         } else {
             // Đã navigate trong app rồi → Skip preloader
             setShouldShowPreloader(false);
-            // ✅ Dispatch event ngay lập tức để Hero animation chạy
-            setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('preloaderComplete'));
-            }, 0);
+            // ✅ Mark preloader as complete ngay lập tức
+            setPreloaderComplete();
         }
     }, []);
 
-    // ✅ Detect khi tất cả resources đã load xong (images, videos, fonts)
+    // ✅ Bắt đầu animation ngay lập tức khi component mount
+    // Preload critical resources TRONG KHI animation đang chạy (không block)
     useEffect(() => {
         if (!shouldShowPreloader) return;
 
-        const checkResourcesLoaded = async () => {
-            try {
-                // 1. Đợi fonts load
-                if (document.fonts && document.fonts.ready) {
-                    await document.fonts.ready;
-                }
+        // Animation bắt đầu ngay lập tức - không chờ resources
+        setIsReady(true);
 
-                // 2. Đợi tất cả images load
-                const images = Array.from(document.querySelectorAll('img'));
-                const imagePromises = images.map(img => {
-                    if (img.complete) return Promise.resolve();
-                    return new Promise((resolve) => {
-                        img.onload = resolve;
-                        img.onerror = resolve; // Don't block on failed images
-                    });
-                });
-
-                // 3. Đợi video có thể play (Hero video)
-                const videos = Array.from(document.querySelectorAll('video'));
-                const videoPromises = videos.map(video => {
-                    if (video.readyState >= 3) return Promise.resolve(); // HAVE_FUTURE_DATA
-                    return new Promise((resolve) => {
-                        video.oncanplay = resolve;
-                        video.onerror = resolve;
-                        // Timeout fallback for videos (3s max)
-                        setTimeout(resolve, 3000);
-                    });
-                });
-
-                // 4. Preload critical images từ Introduction
-                const criticalImages = [
-                    '/images/introCard1.webp',
-                    '/images/introCard2.webp',
-                    '/images/introCard3.webp',
-                    '/images/introCard4.webp',
-                ];
-                const preloadPromises = criticalImages.map(src => {
-                    return new Promise((resolve) => {
-                        const img = new Image();
-                        img.onload = resolve;
-                        img.onerror = resolve;
-                        img.src = src;
-                    });
-                });
-
-                // 5. Đợi tất cả resources
-                await Promise.all([
-                    ...imagePromises,
-                    ...videoPromises,
-                    ...preloadPromises
-                ]);
-
-                // Thêm delay nhỏ để đảm bảo render mượt
-                setTimeout(() => {
-                    setIsResourcesLoaded(true);
-                }, 100);
-
-            } catch (error) {
-                console.error('Error loading resources:', error);
-                // Fallback: continue anyway after error
-                setIsResourcesLoaded(true);
-            }
-        };
-
-        // Nếu document đã ready, bắt đầu check resources
-        if (document.readyState === 'complete') {
-            checkResourcesLoaded();
-        } else {
-            // Đợi window load trước
-            const handleLoad = () => checkResourcesLoaded();
-            window.addEventListener('load', handleLoad);
-            return () => window.removeEventListener('load', handleLoad);
-        }
+        // Preload critical images trong background (không block animation)
+        const criticalImages = [
+            '/images/introCard1.webp',
+            '/images/introCard2.webp',
+            '/images/introCard3.webp',
+            '/images/introCard4.webp',
+        ];
+        
+        criticalImages.forEach(src => {
+            const img = new Image();
+            img.src = src;
+        });
     }, [shouldShowPreloader]);
 
     // Lock scroll khi preloader hiển thị
@@ -137,9 +79,9 @@ const Preloader = memo(() => {
         };
     }, [shouldShowPreloader]);
 
-    // ✅ Animation chỉ chạy khi resources đã load
+    // ✅ Animation chạy ngay khi component ready
     useGSAP(() => {
-        if (!shouldShowPreloader || !isResourcesLoaded) return;
+        if (!shouldShowPreloader || !isReady) return;
 
         if (lenisInstance) {
             lenisInstance.stop();
@@ -253,13 +195,13 @@ const Preloader = memo(() => {
                 lenisInstance.start();
             }
 
-            window.dispatchEvent(new CustomEvent('preloaderComplete'));
+            setPreloaderComplete();
         }, null, '-=0.4');
 
         tl.set(container, {
             display: 'none',
         });
-    }, { scope: containerRef, dependencies: [shouldShowPreloader, isResourcesLoaded] });
+    }, { scope: containerRef, dependencies: [shouldShowPreloader, isReady] });
 
     if (!shouldShowPreloader) return null;
 

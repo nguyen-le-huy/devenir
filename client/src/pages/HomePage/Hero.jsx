@@ -4,6 +4,7 @@ import SplitText from 'gsap/src/SplitText';
 import { useGSAP } from '@gsap/react';
 import { useRef, useEffect, useState, memo } from 'react';
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
+import { onPreloaderComplete } from '../../lib/preloader';
 
 gsap.registerPlugin(useGSAP, SplitText, DrawSVGPlugin);
 
@@ -16,27 +17,13 @@ const Hero = memo(() => {
     const [shouldAnimate, setShouldAnimate] = useState(false);
     const [isAnimFinished, setIsAnimFinished] = useState(false);
 
-    // ✅ Lắng nghe event từ Preloader
+    // ✅ Subscribe to preloader complete (works even if already completed)
     useEffect(() => {
-        const handlePreloaderComplete = () => {
+        const unsubscribe = onPreloaderComplete(() => {
             setShouldAnimate(true);
-        };
+        });
 
-        // Kiểm tra navigation type
-        const navigationType = performance.getEntriesByType('navigation')[0]?.type;
-        const isPageLoad = navigationType === 'reload' || navigationType === 'navigate';
-
-        if (isPageLoad) {
-            // Đợi event từ Preloader
-            window.addEventListener('preloaderComplete', handlePreloaderComplete);
-        } else {
-            // Client-side navigation → Animate ngay
-            setShouldAnimate(true);
-        }
-
-        return () => {
-            window.removeEventListener('preloaderComplete', handlePreloaderComplete);
-        };
+        return unsubscribe;
     }, []);
 
     // Chạy animation
