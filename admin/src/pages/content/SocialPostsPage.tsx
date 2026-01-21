@@ -42,7 +42,6 @@ import { useVariantsQuery } from "@/hooks/useVariantsQuery"
 import { toast } from "sonner"
 import {
     IconBrandFacebook,
-    IconBrandInstagram,
     IconSend,
     IconSettings,
     IconCheck,
@@ -57,18 +56,15 @@ import {
     IconTag,
     IconPlayerPlay,
     IconDeviceMobile,
-    IconVideo,
     IconLayoutGrid,
     IconList,
-    IconFilter,
     IconRocket,
     IconAlertCircle,
     IconClock,
     IconEyeCheck,
     IconHeart,
     IconMessageCircle,
-    IconShare,
-    IconChevronDown
+    IconShare
 } from "@tabler/icons-react"
 
 // Types
@@ -138,9 +134,6 @@ export default function SocialPostsPage() {
     // Preview State
     const [previewProduct, setPreviewProduct] = useState<any>(null)
     const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-
-    // Hover state for image zoom
-    const [hoveredImage, setHoveredImage] = useState<string | null>(null)
 
     // Products Query
     const { data: productsData, isLoading: productsLoading } = useProductsQuery({ limit: 100 })
@@ -223,11 +216,6 @@ export default function SocialPostsPage() {
 
     // Check if settings are configured
     const isConfigured = settings.webhookUrl && settings.pageId
-
-    // Check if product is posted
-    const isProductPosted = (productId: string) => {
-        return postedProducts.some(p => p.productId === productId)
-    }
 
     // Get post info for a product
     const getPostInfo = (productId: string) => {
@@ -358,17 +346,6 @@ export default function SocialPostsPage() {
         const updatedPosted = [...postedProducts.filter(p => p.productId !== productId), updated]
         setPostedProducts(updatedPosted)
         localStorage.setItem(POSTED_PRODUCTS_KEY, JSON.stringify(updatedPosted))
-    }
-
-    // Format date
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        })
     }
 
     // Get filtered products based on tab and search
