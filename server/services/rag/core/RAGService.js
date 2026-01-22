@@ -1,5 +1,6 @@
 import { hybridClassifyIntent } from '../orchestrators/intent-classifier.js';
 import { productAdvice } from '../specialized/product-advisor.service.js';
+import { adminAnalytics } from '../specialized/admin-analytics.service.js';
 import { sizeRecommendation } from '../specialized/size-advisor.service.js';
 import { orderLookup } from '../specialized/order-lookup.service.js';
 import { policyFAQ } from '../specialized/policy-faq.service.js';
@@ -19,7 +20,7 @@ export class RAGService {
      */
     async chat(userId, message, conversationHistory = []) {
         const startTime = Date.now();
-        
+
         try {
             // 1. Parallel: Classify intent + Get conversation context + Build customer context
             const [intentResult, context, customerContext] = await Promise.all([
@@ -70,11 +71,25 @@ export class RAGService {
                     result = await handleAddToCart(message, extracted_info, context);
                     break;
 
+                case 'admin_analytics':
+                    // Security check usually happens at API gateway/middleware level, 
+                    // but we double check context here if needed.
+                    result = await adminAnalytics(message, extracted_info, enrichedContext);
+                    break;
+
                 default:
-                    result = {
-                        answer: "Mình có thể giúp bạn:\n• Tư vấn sản phẩm\n• Tư vấn size\n• Gợi ý phối đồ\n• Tra cứu đơn hàng\n• Thông tin thanh toán & giao hàng\n\nBạn cần mình hỗ trợ gì nhé?",
-                        intent: 'general'
-                    };
+                    // Check if user is admin to provide relevant default help
+                    if (customerContext.userProfile?.role === 'admin') {
+                        result = {
+                            answer: "Chào Admin!\nMình là trợ lý vận hành AI. Mình có thể giúp bạn:\n\n- Báo cáo: Doanh thu hôm nay, tuần này...\n- Kho hàng: Kiểm tra tồn kho, sản phẩm...\n- Khách hàng: Tra cứu thông tin, lịch sử mua...\n- Đơn hàng: Kiểm tra trạng thái đơn, vận chuyển...\n\nBạn cần số liệu gì ngay lúc này?",
+                            intent: 'general_admin'
+                        };
+                    } else {
+                        result = {
+                            answer: "Mình có thể giúp bạn:\n• Tư vấn sản phẩm\n• Tư vấn size\n• Gợi ý phối đồ\n• Tra cứu đơn hàng\n• Thông tin thanh toán & giao hàng\n\nBạn cần mình hỗ trợ gì nhé?",
+                            intent: 'general'
+                        };
+                    }
             }
 
             // 4. Save to conversation history

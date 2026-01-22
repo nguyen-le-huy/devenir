@@ -207,7 +207,7 @@ async productAdvice(query, context) {
     // 2. Vector search (Pinecone, topK: 50)
     // 3. Color detection (VI → EN mapping)
     // 4. MongoDB query for color variants
-    // 5. Rerank với Cohere (top 10)
+    // 5. Rerank với Cohere (dùng **Enriched Query** để giữ context sản phẩm, top 10)
     // 6. Build context text
     // 7. Generate response (OpenAI)
     // 8. Return: { answer, sources, suggested_products }

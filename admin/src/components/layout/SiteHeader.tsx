@@ -24,13 +24,16 @@ import {
 } from "@tabler/icons-react"
 import { useTheme } from "next-themes"
 import { useLocale } from "@/contexts/LocaleContext"
+import { ChatWindow } from "@/components/assistant/ChatWindow"
+import { useAssistantStore } from "@/stores/useAssistantStore"
 
 export function SiteHeader() {
   const { user, logout } = useAdminAuth()
   const { theme, setTheme } = useTheme()
   const isDark = theme === "dark"
   const { locale, setLocale } = useLocale()
-  
+  const { open } = useAssistantStore()
+
   // Get display name and email
   const displayName = user?.username || user?.email?.split('@')[0] || 'Admin'
   const displayEmail = user?.email || 'admin@devenir.shop'
@@ -59,6 +62,18 @@ export function SiteHeader() {
 
         {/* Right: Notifications, Quick Actions, Theme, Language, User */}
         <div className="ml-auto flex items-center gap-2">
+          {/* Assistant Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={open}
+          >
+            <img src="/assistant.svg" className="h-5 w-5" alt="Assistant" />
+          </Button>
+
+          <ChatWindow />
+
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

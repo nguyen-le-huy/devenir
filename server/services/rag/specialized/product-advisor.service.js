@@ -112,25 +112,45 @@ async function findColorInQuery(query) {
  */
 export async function productAdvice(query, context = {}) {
     try {
-        // Enrich short queries with context from conversation history
+        // Enrich intent with context from conversation history
         let enrichedQuery = query;
         const recentMsgs = context.recent_messages || [];
 
-        if (query.length < 30 && recentMsgs.length > 0) {
+        // Check for referring expressions: "này", "đó", "trên", "vừa rồi", "this", "that", "it"
+        // OR if query is relatively short (up to 100 chars instead of 30)
+        const referringKeywords = ['này', 'đó', 'kia', 'vừa rồi', 'trên', 'this', 'that', 'it', 'him', 'her', 'them', 'previous'];
+        const hasReferring = referringKeywords.some(k => query.toLowerCase().includes(k));
+
+        if ((query.length < 100 || hasReferring) && recentMsgs.length > 0) {
             // Find the last assistant message with product info
             const assistantMessages = recentMsgs.filter(m =>
                 (m.role === 'assistant' || m.sender === 'bot') &&
-                (m.content || m.text)?.length > 50
+                (m.content || m.text)?.length > 20 // Lower threshold to catch short answers too
             );
 
-            const lastProductContext = assistantMessages.slice(-1)[0];
+            const lastProductContext = assistantMessages.slice(-1)[0]; // Get the very last one
 
             if (lastProductContext) {
                 const content = lastProductContext.content || lastProductContext.text || '';
-                // Extract product name from **ProductName** format
-                const productMatch = content.match(/\*\*([^*]+)\*\*/);
-                if (productMatch) {
-                    enrichedQuery = `${query} ${productMatch[1]}`;
+
+                // Extract ALL product names from **ProductName** format
+                // The previous logic only took the first one, but maybe we discussed multiple.
+                // For "this product", taking the LAST mentioned product is usually safer, or all of them.
+                const productMatches = [...content.matchAll(/\*\*([^*]+)\*\*/g)].map(m => m[1]);
+
+                if (productMatches.length > 0) {
+                    // Use unique names
+                    const uniqueProducts = [...new Set(productMatches)];
+
+                    // If multiple products found, use them all joined, but prioritize the last one?
+                    // Currently text search works best with "query + context".
+                    // Let's prepend the context to ensure it's high priority, or append?
+                    // Appending is safer for "query + context" logic in RAG.
+
+                    // Optimization: If query explicitly asks for "product details", "price", etc.,
+                    // and we have a product name, we should make the product name the PRIMARY search term.
+
+                    enrichedQuery = `${query} ${uniqueProducts.join(' ')}`;
                     console.log(`📝 Enriched query: "${query}" → "${enrichedQuery}"`);
                 }
             }
@@ -203,7 +223,7 @@ export async function productAdvice(query, context = {}) {
 
         // 3. Rerank for better relevance (get more results for better matching)
         const documents = searchResults.map(r => r.metadata?.proposition_text || '');
-        const reranked = await rerankDocuments(query, documents, 10);
+        const reranked = await rerankDocuments(enrichedQuery, documents, 10);
 
         // 4. Get unique product IDs - combine vector search + color search
         let productIds = [
@@ -232,17 +252,28 @@ export async function productAdvice(query, context = {}) {
             .populate('category')
             .lean();
 
-        // 5. Get variants for each product
-        const productsWithVariants = await Promise.all(
-            products.map(async (product) => {
-                const variants = await ProductVariant.find({
-                    product_id: product._id,
-                    isActive: true,
-                    quantity: { $gt: 0 }
-                }).lean();
-                return { ...product, variants };
-            })
-        );
+        // 5. Get variants for all products in one go (Optimization)
+        const allVariants = await ProductVariant.find({
+            product_id: { $in: productIds },
+            isActive: true,
+            quantity: { $gt: 0 }
+        }).lean();
+
+        // Group variants by product_id
+        const variantsByProductId = allVariants.reduce((acc, variant) => {
+            const pId = variant.product_id.toString();
+            if (!acc[pId]) acc[pId] = [];
+            acc[pId].push(variant);
+            return acc;
+        }, {});
+
+        // Attach variants to products
+        const productsWithVariants = products.map(product => {
+            return {
+                ...product,
+                variants: variantsByProductId[product._id.toString()] || []
+            };
+        });
 
         // 6. Build context for LLM
         let contextText = "## Sản phẩm liên quan:\n\n";
@@ -342,8 +373,8 @@ export async function productAdvice(query, context = {}) {
         console.log('=== END CONTEXT ===\\n');
 
         const answer = await generateResponse(
-            query, 
-            contextText, 
+            query,
+            contextText,
             context.recent_messages,
             context.hasCustomerContext ? context : null
         );

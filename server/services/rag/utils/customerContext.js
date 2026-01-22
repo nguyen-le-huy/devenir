@@ -51,7 +51,7 @@ Risk Level: ${intelligence.riskLevel === 'high' ? 'CAO - Có nguy cơ rời bỏ
 
         // 2. Customer Preferences & Interests (từ Tags)
         if (intelligence?.suggestedTags?.length > 0) {
-            const interestTags = intelligence.suggestedTags.filter(t => 
+            const interestTags = intelligence.suggestedTags.filter(t =>
                 t.tag.startsWith('interested:') || t.tag.startsWith('brand:') || t.tag.startsWith('color:')
             );
 
@@ -114,7 +114,7 @@ Risk Level: ${intelligence.riskLevel === 'high' ? 'CAO - Có nguy cơ rời bỏ
                 .slice(0, 2)
                 .map(n => `  - ${n.note}`)
                 .join('\n');
-            
+
             if (recentNotes) {
                 sections.push(`## GHI CHÚ QUAN TRỌNG\n${recentNotes}`);
             }
@@ -127,7 +127,7 @@ ${intelligence.nextBestAction}`);
         }
 
         // Combine all sections
-        const contextString = sections.length > 0 
+        const contextString = sections.length > 0
             ? `\n## THÔNG TIN KHÁCH HÀNG (Chỉ dùng nội bộ, KHÔNG tiết lộ trực tiếp)\n${sections.join('\n\n')}\n`
             : '';
 
@@ -140,7 +140,8 @@ ${intelligence.nextBestAction}`);
                 email: user.email,
                 phone: user.phone,
                 customerType: intelligence?.customerType,
-                engagementScore: intelligence?.engagementScore
+                engagementScore: intelligence?.engagementScore,
+                role: user.role
             }
         };
 

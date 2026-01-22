@@ -218,7 +218,7 @@ orderSchema.virtual('subtotal').get(function () {
  * Calculate total items count
  */
 orderSchema.virtual('totalItems').get(function () {
-  return this.orderItems.reduce((total, item) => total + item.quantity, 0);
+  return (this.orderItems || []).reduce((total, item) => total + (item.quantity || 0), 0);
 });
 
 /**

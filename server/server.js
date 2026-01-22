@@ -47,6 +47,9 @@ const server = http.createServer(app);
 // PayOS webhook - must be before CORS middleware
 app.post('/api/payments/payos/webhook', express.json(), handlePayOSWebhook);
 
+// Serve static files for exports
+app.use('/exports', express.static('public/exports'));
+
 // ============ CORS MIDDLEWARE (MUST BE FIRST!) ============
 // Middleware - CORS configuration cho nhiều origins
 const allowedOrigins = [

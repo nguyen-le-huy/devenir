@@ -55,6 +55,33 @@ export async function classifyIntent(message, conversationHistory = []) {
 export function quickIntentDetection(message) {
     const lowerMessage = message.toLowerCase();
 
+    // Admin Analytics keywords (revenue, stock, customer info)
+    const adminKeywords = [
+        'doanh thu', 'revenue', 'bán được', 'lãi', 'doanh số',
+        'tồn kho', 'stock', 'còn bao nhiêu cái', 'trong kho', 'hết', 'sắp hết', 'hết hàng', 'còn ít', 'cảnh báo', 'warning',
+        'check kho', 'kiểm kho', 'số lượng',
+        'thông tin khách', 'tìm user', 'lịch sử mua', 'customer', 'user', 'khách hàng',
+        'check đơn', 'trạng thái đơn', 'admin', 'báo cáo',
+        'xuất file', 'export', 'csv', 'file tồn kho'
+    ];
+    if (adminKeywords.some(k => lowerMessage.includes(k))) {
+        return { intent: 'admin_analytics', confidence: 0.95 };
+    }
+
+    // Special case: "Thông tin [Name]" or "Tìm [Name]" (Non-product) -> Admin Analytics (Customer Lookup)
+    // We avoid routing "Thông tin sản phẩm" to admin by checking against product matchers
+    if (lowerMessage.startsWith('thông tin ') || lowerMessage.startsWith('info ') || lowerMessage.startsWith('tìm ')) {
+        const productIndicators = [
+            'sản phẩm', 'product', 'áo', 'quần', 'váy', 'đầm', 'giày', 'túi', 'khăn', 'nước hoa',
+            'size', 'màu', 'giá', 'chất liệu', 'shop', 'cửa hàng'
+        ];
+        const isProductQuery = productIndicators.some(k => lowerMessage.includes(k));
+
+        if (!isProductQuery) {
+            return { intent: 'admin_analytics', confidence: 0.95 };
+        }
+    }
+
     // HIGH PRIORITY: Product type keywords - route to product_advice immediately
     const highPriorityProductTypes = [
         'nước hoa', 'fragrance', 'perfume', 'cologne', 'eau de parfum',
@@ -150,6 +177,11 @@ export async function hybridClassifyIntent(message, conversationHistory = []) {
         const quickResult = quickIntentDetection(message);
 
         // These intents have high confidence from keywords - use them directly
+        if (quickResult.intent === 'admin_analytics' && quickResult.confidence >= 0.9) {
+            console.log(`👮 Admin Analytics detected via keywords`);
+            return quickResult;
+        }
+
         if (quickResult.intent === 'policy_faq' && quickResult.confidence >= 0.7) {
             console.log(`📋 Policy FAQ detected via keywords`);
             return quickResult;
