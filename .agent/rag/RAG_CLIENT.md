@@ -1,4 +1,4 @@
-# RAG System Workflow - Devenir Fashion AI
+# Client RAG Workflow - Devenir Fashion AI (Customer Service)
 
 Tài liệu này mô tả chi tiết workflow của hệ thống RAG (Retrieval-Augmented Generation) để tư vấn sản phẩm, size và hỗ trợ khách hàng.
 
@@ -162,7 +162,7 @@ switch (intent) {
 **LLMProvider Methods:**
 
 ```javascript
-// Chat completion (GPT-4o-mini)
+// Chat completion (GPT-4.1-mini)
 await llmProvider.chatCompletion(messages, { temperature: 0.3, maxTokens: 800 })
 
 // JSON response (fast model)
