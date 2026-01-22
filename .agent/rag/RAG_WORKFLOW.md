@@ -203,13 +203,14 @@ quickIntentDetection(message)
 
 ```javascript
 async productAdvice(query, context) {
-    // 1. Enrich short queries with conversation context
-    // 2. Vector search (Pinecone, topK: 50)
-    // 3. Color detection (VI → EN mapping)
-    // 4. MongoDB query for color variants
-    // 5. Rerank với Cohere (dùng **Enriched Query** để giữ context sản phẩm, top 10)
-    // 6. Build context text
-    // 7. Generate response (OpenAI)
+    // 1. Enrich short queries or queries with referring keywords ("này", "đó", "this")
+    //    with conversation context (up to 100 chars, extracting ALL product names).
+    // 2. Vector search (Pinecone, topK: 50) with Enriched Query.
+    // 3. Color detection (VI → EN mapping).
+    // 4. MongoDB query for color variants.
+    // 5. Rerank với Cohere (dùng **Enriched Query** để giữ context sản phẩm, top 10).
+    // 6. Build context text (Priority: Color Match -> Vector Match).
+    // 7. Generate response (OpenAI).
     // 8. Return: { answer, sources, suggested_products }
 }
 ```
@@ -512,7 +513,7 @@ handleYesClick() → useAddToCart(variantId, quantity)
 1. **Parallel Processing**: Intent classification + Context retrieval run in parallel
 2. **Keyword Bypass**: High-confidence keywords skip LLM classification
 3. **Color Cache**: Database colors cached for 1 hour
-4. **Query Enrichment**: Short queries enriched with conversation context
+4. **Query Enrichment**: Short queries (<100 chars) or queries with referring words ("này", "đó") are enriched with product context from history.
 5. **Selective Fields**: MongoDB queries use `.select()` for only needed fields
 
 ---

@@ -91,9 +91,12 @@ Service `admin-analytics.service.js` gọi `classifyAdminIntent` (Lightweight LL
         *   `threshold`: Số lượng cảnh báo (mặc định 10, hoặc tự điền "dưới 5").
     4.  **Order (`order_status`)**:
         *   `target`: Mã đơn hàng.
-    5.  **Export (`inventory_export`)**:
-        *   `scope`: 'all', 'low_stock', 'out_of_stock'.
+    5.  **Export (`inventory_export`, `revenue_export`, `customer_export`)**:
+        *   `scope`: 'all', 'low_stock', 'out_of_stock' (Inventory).
+        *   `period`: 'today', 'this_week', 'last_month', 'custom' (Revenue).
         *   `context`: Tự động suy luận từ hội thoại trước (VD: Hỏi "sắp hết" -> "export" -> export low_stock).
+    6.  **Stats (`customer_stats`)**:
+        *   Không cần metadata, trả về tổng số lượng user.
 
 ### Bước 3: Data Retrieval (Truy vấn Dữ liệu)
 Hệ thống map `type` sang hàm xử lý MongoDB Aggregation/Query tương ứng:
@@ -102,9 +105,12 @@ Hệ thống map `type` sang hàm xử lý MongoDB Aggregation/Query tương ứ
 | :--- | :--- | :--- |
 | `revenue` | `getRevenueData` | Tính tổng doanh thu `paid`/`delivered`. Lấy 5 GD gần nhất. Định dạng tiền tệ **VNĐ**. |
 | `customer_lookup` | `getCustomerData` | Tìm kiếm linh hoạt (Regex) trên: `email`, `phone`, `username`, `firstName`, `lastName`. Trả về Profile, Tổng chi tiêu, Hạng Loyalty, **Danh sách địa chỉ**. |
+| `customer_stats` | `User.countDocuments()` | Đếm tổng số lượng user trong hệ thống. |
 | `order_status` | `getOrderAdminData` | Tìm theo OrderID, Tracking Number. |
 | `product_inventory`| `getProductInventoryData`| **Chế độ 1 (Target):** Tìm variants của SP cụ thể.<br>**Chế độ 2 (Scan):** Quét toàn bộ kho tìm SP có `quantity <= threshold`. |
 | `inventory_export` | `generateInventoryCSV` | Tạo file CSV báo cáo tồn kho (All/Low/Out) và trả về link download. |
+| `revenue_export` | `generateRevenueCSV` | Tạo file CSV báo cáo doanh thu theo kỳ (Ngày/Tuần/Tháng/Qúy/Tùy chỉnh). |
+| `customer_export` | `generateCustomerCSV` | Tạo file CSV danh sách khách hàng (Name, Email, Phone, Role, Total Spent, Total Orders). |
 
 ### Bước 4: Context Injection & Generation
 Dữ liệu thô (Raw JSON) được inject vào System Prompt.
