@@ -11,375 +11,195 @@ import { useColors } from '../../hooks/useColors.js';
 import { createColorMap } from '../../services/colorService.js';
 import { getVariantsByCategory, getVariantsByCategoryWithChildren } from '../../services/productService.js';
 import { getOptimizedImageUrl } from '../../utils/imageOptimization.js';
+import { useProductFilter } from '../../hooks/useProductFilter.js';
+
+// Helper to transform variant to card props - moved outside to stable reference
+const transformVariantToProduct = (variant) => {
+    const productId = variant.productInfo?._id || variant.product;
+    return {
+        id: variant._id,
+        name: variant.productInfo?.name || 'Unknown Product',
+        price: variant.price,
+        image: variant.mainImage || '/images/placeholder.png',
+        imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
+        color: variant.color,
+        size: variant.size,
+        sku: variant.sku,
+        productId: productId,
+    };
+};
 
 const ProductByCategory = memo(() => {
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-    // Filter states
-    const [selectedSort, setSelectedSort] = useState('Default');
-    const [selectedColors, setSelectedColors] = useState([]);
-
     const headerHeight = useHeaderHeight();
-
-    // Lấy categoryId và subcategory từ URL query params
     const [searchParams, setSearchParams] = useSearchParams();
     const categoryId = searchParams.get('category');
     const selectedSubcategory = searchParams.get('subcategory');
 
-    // Fetch all categories to find subcategories
+    // UI State
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [selectedSort, setSelectedSort] = useState('Default');
+    const [selectedColors, setSelectedColors] = useState([]);
+
+    // Data Fetching
     const { data: allCategoriesData } = useCategories();
+    const allCategories = useMemo(() => Array.isArray(allCategoriesData?.data) ? allCategoriesData.data : (Array.isArray(allCategoriesData) ? allCategoriesData : []), [allCategoriesData]);
 
-    // Parse categories array
-    const allCategories = useMemo(() => {
-        if (allCategoriesData?.data) {
-            return allCategoriesData.data;
-        } else if (Array.isArray(allCategoriesData)) {
-            return allCategoriesData;
-        }
-        return [];
-    }, [allCategoriesData]);
-
-    // Fetch data using React Query hooks
     const { data: categoryData, isLoading: categoryLoading } = useCategoryById(categoryId);
+    const category = useMemo(() => categoryData?.data || null, [categoryData]);
 
-    // Fetch variants from category (with or without children based on selection)
     const { data: variantsData = [], isLoading: variantsLoading, error } = useQuery({
         queryKey: ['variants-by-category', categoryId, selectedSubcategory, allCategories.length],
         queryFn: async () => {
             if (!categoryId) return [];
-
-            // Nếu chọn subcategory cụ thể, chỉ lấy variants từ subcategory đó
             if (selectedSubcategory) {
                 return await getVariantsByCategory(selectedSubcategory);
             }
-
-            // Nếu chọn "All", lấy variants từ parent category + tất cả subcategories
             return await getVariantsByCategoryWithChildren(categoryId, allCategories);
         },
-        enabled: !!categoryId && allCategories.length > 0,
-        staleTime: 3 * 60 * 1000, // 3 minutes
-        placeholderData: keepPreviousData, // Keep previous data while fetching (v5 syntax)
+        enabled: !!categoryId,
+        staleTime: 5 * 60 * 1000,
+        placeholderData: keepPreviousData,
     });
 
     const { data: colorsData } = useColors();
+    const colorMap = useMemo(() => createColorMap(colorsData?.data || colorsData || []), [colorsData]);
 
-    // Memoize expensive calculations
-    const colors = useMemo(() => colorsData?.data || colorsData || [], [colorsData]);
-    const colorMap = useMemo(() => createColorMap(colors), [colors]);
-    const category = useMemo(() => categoryData?.data || null, [categoryData]);
-    const variants = useMemo(() => variantsData || [], [variantsData]);
-    const loading = categoryLoading || variantsLoading;
+    // Use Custom Hook for Filtering Logic
+    const { availableColors, colorCounts, filteredVariants } = useProductFilter(variantsData, selectedSort, selectedColors);
 
-    // Reset filters khi category hoặc subcategory thay đổi
-    useEffect(() => {
+    // Derived State
+    const isFiltering = selectedSort !== 'Default' || selectedColors.length > 0;
+    const hasThumbnail = category?.thumbnailUrl && !isFiltering && !selectedSubcategory;
+    const firstFourVariants = hasThumbnail ? filteredVariants.slice(0, 4) : [];
+    const remainingVariants = hasThumbnail ? filteredVariants.slice(4) : filteredVariants;
+    const subcategories = useMemo(() => category?.children || [], [category]);
+
+    // Handlers
+    const handleOpenFilter = useCallback(() => setIsFilterOpen(true), []);
+    const handleCloseFilter = useCallback(() => setIsFilterOpen(false), []);
+
+    const handleResetFilters = useCallback(() => {
         setSelectedSort('Default');
         setSelectedColors([]);
-    }, [categoryId, selectedSubcategory]);
-
-    // Memoize handlers with useCallback
-    const handleOpenFilter = useCallback(() => {
-        setIsFilterOpen(true);
     }, []);
 
-    const handleCloseFilter = useCallback(() => {
-        setIsFilterOpen(false);
-    }, []);
+    const handleSubcategoryChange = useCallback((subcatId) => {
+        const newParams = new URLSearchParams(searchParams);
+        if (subcatId) {
+            newParams.set('subcategory', subcatId);
+        } else {
+            newParams.delete('subcategory');
+        }
+        setSearchParams(newParams);
+    }, [searchParams, setSearchParams]);
 
-    // Create a map of productId -> all variants with different colors
-    // This is used to show color swatches on each card
+    // Reset filters on navigation
+    useEffect(() => {
+        handleResetFilters();
+    }, [categoryId, selectedSubcategory, handleResetFilters]);
+
+    // Calculate product variants map for color swatches
     const productVariantsMap = useMemo(() => {
         const map = new Map();
-
-        variants.forEach(variant => {
+        variantsData.forEach(variant => {
             const productId = variant.productInfo?._id || variant.product;
             if (!productId) return;
-
-            if (!map.has(productId)) {
-                map.set(productId, []);
-            }
-
-            // Add variant with color info
-            map.get(productId).push({
-                _id: variant._id,
-                id: variant._id,
-                color: variant.color,
-                colorHex: colorMap[variant.color] || '#ccc',
-                mainImage: variant.mainImage,
-                hoverImage: variant.hoverImage || variant.mainImage,
-                price: variant.price,
-                name: variant.productInfo?.name,
-                productId: productId
-            });
+            if (!map.has(productId)) map.set(productId, []);
+            map.get(productId).push({ ...variant, productId });
         });
-
         return map;
-    }, [variants, colorMap]);
+    }, [variantsData]);
 
-    // Memoize filtered data calculations
-    const { availableColors, colorCounts, filteredVariants } = useMemo(() => {
-        // Extract unique colors from variants
-        const availableColors = [...new Set(variants.map(v => v.color))].filter(Boolean);
-
-        // ✅ Count unique product + color combinations (not counting multiple sizes)
-        // Nếu 1 product có 3 size cùng màu Black, chỉ đếm là 1
-        const colorCounts = {};
-        const countedProductColors = new Set(); // Track đã đếm productId + color chưa
-
-        variants.forEach(variant => {
-            if (variant.color) {
-                const productId = variant.productInfo?._id || variant.product;
-                const key = `${productId}_${variant.color}`;
-
-                // Chỉ đếm nếu chưa đếm product + color này
-                if (!countedProductColors.has(key)) {
-                    countedProductColors.add(key);
-                    colorCounts[variant.color] = (colorCounts[variant.color] || 0) + 1;
-                }
-            }
-        });
-
-        // Apply filters and sorting
-        let filtered = [...variants];
-
-        // 1. Apply color filter
-        if (selectedColors.length > 0) {
-            filtered = filtered.filter(v => selectedColors.includes(v.color));
-        }
-
-        // 2. Remove duplicate product+color combinations (keep only one variant per product-color)
-        // Group by productId + color, only show one variant even if there are multiple sizes
-        const uniqueMap = new Map();
-        filtered = filtered.filter(variant => {
-            const productId = variant.productInfo?._id || variant.product;
-            const key = `${productId}_${variant.color}`;
-
-            if (!uniqueMap.has(key)) {
-                uniqueMap.set(key, true);
-                return true;
-            }
-            return false;
-        });
-
-        // 3. Apply sorting
-        switch (selectedSort) {
-            case 'Price High':
-                filtered.sort((a, b) => b.price - a.price);
-                break;
-            case 'Price Low':
-                filtered.sort((a, b) => a.price - b.price);
-                break;
-            case 'New In':
-                filtered.sort((a, b) => {
-                    const dateA = a.createdAt || a._id;
-                    const dateB = b.createdAt || b._id;
-                    return dateB > dateA ? 1 : -1;
-                });
-                break;
-            default:
-                // 'Default' - keep original order
-                break;
-        }
-
-        return { availableColors, colorCounts, filteredVariants: filtered };
-    }, [variants, selectedColors, selectedSort]);
-
-    // Check if filters are active
-    const isFiltering = selectedSort !== 'Default' || selectedColors.length > 0;
-
-    // Logic hiển thị: Chỉ hiển thị topBox khi:
-    // 1. Category có thumbnail
-    // 2. Không đang filter
-    // 3. Không đang chọn subcategory (đang ở "All")
-    const hasThumbnail = category?.thumbnailUrl && !isFiltering && !selectedSubcategory;
-
-    // 4 variants đầu tiên cho leftBox (chỉ khi có thumbnail VÀ không filter VÀ không chọn subcategory)
-    const firstFourVariants = hasThumbnail ? filteredVariants.slice(0, 4) : [];
-
-    // Các variants còn lại cho productList
-    const remainingVariants = hasThumbnail ? filteredVariants.slice(4) : filteredVariants;
-
-    // Transform variant data để phù hợp với ScarfCard component
-    const transformVariantToProduct = (variant) => {
-        const productId = variant.productInfo?._id || variant.product;
-        return {
-            id: variant._id,
-            name: variant.productInfo?.name || 'Unknown Product',
-            price: variant.price,
-            image: variant.mainImage || '/images/placeholder.png',
-            imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
-            color: variant.color,
-            size: variant.size,
-            sku: variant.sku,
-            productId: productId,
-        };
-    };
-
-    // Get color variants for a product
-    const getColorVariants = (variant) => {
+    const getColorVariants = useCallback((variant) => {
         const productId = variant.productInfo?._id || variant.product;
         return productVariantsMap.get(productId) || [];
-    };
-
-    // Extract subcategories from category data (must be before early returns)
-    const subcategories = useMemo(() => {
-        return category?.children || [];
-    }, [category]);
+    }, [productVariantsMap]);
 
     if (error) {
         return (
             <div className={styles.productByCategory}>
                 <div className={styles.noProducts}>
                     <h2>Error loading products</h2>
-                    <p>{error.message || 'Something went wrong. Please try again later.'}</p>
+                    <p>{error.message || 'Something went wrong.'}</p>
                 </div>
             </div>
         );
     }
 
     if (!categoryId) {
-        return (
-            <div className={styles.productByCategory}>
-                <h1 className={styles.title}>Please select a category</h1>
-            </div>
-        );
+        return <div className={styles.productByCategory}><h1 className={styles.title}>Please select a category</h1></div>;
     }
 
     return (
-        <PageWrapper isLoading={loading}>
+        <PageWrapper isLoading={categoryLoading || variantsLoading}>
             <div className={styles.productByCategory}>
                 <h1 className={styles.title}>{category?.name || 'Products'}</h1>
 
-            {/* Only show subcategories if they exist */}
-            {subcategories.length > 0 && (
-                <div className={styles.category}>
-                    <p
-                        className={!selectedSubcategory ? styles.active : ''}
-                        onClick={() => {
-                            const newParams = new URLSearchParams(searchParams);
-                            newParams.delete('subcategory');
-                            setSearchParams(newParams);
-                        }}
-                        style={{ cursor: 'pointer' }}
-                    >
-                        All
-                    </p>
-                    {subcategories.map((subcat) => (
-                        <p
-                            key={subcat._id}
-                            className={selectedSubcategory === subcat._id ? styles.active : ''}
-                            onClick={() => {
-                                const newParams = new URLSearchParams(searchParams);
-                                newParams.set('subcategory', subcat._id);
-                                setSearchParams(newParams);
-                            }}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            {subcat.name}
-                        </p>
-                    ))}
+                {subcategories.length > 0 && (
+                    <div className={styles.category}>
+                        <p className={!selectedSubcategory ? styles.active : ''} onClick={() => handleSubcategoryChange(null)} style={{ cursor: 'pointer' }}>All</p>
+                        {subcategories.map((subcat) => (
+                            <p key={subcat._id} className={selectedSubcategory === subcat._id ? styles.active : ''} onClick={() => handleSubcategoryChange(subcat._id)} style={{ cursor: 'pointer' }}>
+                                {subcat.name}
+                            </p>
+                        ))}
+                    </div>
+                )}
+
+                <div className={styles.countAndFilter} style={{ top: `${headerHeight}px` }}>
+                    <span className={styles.count}>{filteredVariants.length} items</span>
+                    <span className={styles.filter} onClick={handleOpenFilter}>Filter & Sort</span>
                 </div>
-            )}
 
-            <div className={styles.countAndFilter} style={{ top: `${headerHeight}px` }}>
-                <span className={styles.count}>{filteredVariants.length} items</span>
-                <span className={styles.filter} onClick={handleOpenFilter}>
-                    Filter & Sort
-                </span>
-            </div>
+                <Filter
+                    isOpen={isFilterOpen}
+                    onClose={handleCloseFilter}
+                    availableColors={availableColors}
+                    colorMap={colorMap}
+                    colorCounts={colorCounts}
+                    selectedSort={selectedSort}
+                    setSelectedSort={setSelectedSort}
+                    selectedColors={selectedColors}
+                    setSelectedColors={setSelectedColors}
+                    totalResults={filteredVariants.length}
+                />
 
-            {/* Filter Component */}
-            <Filter
-                isOpen={isFilterOpen}
-                onClose={handleCloseFilter}
-                availableColors={availableColors}
-                colorMap={colorMap}
-                colorCounts={colorCounts}
-                selectedSort={selectedSort}
-                setSelectedSort={setSelectedSort}
-                selectedColors={selectedColors}
-                setSelectedColors={setSelectedColors}
-                totalResults={filteredVariants.length}
-            />
-
-            <div className={styles.productContainer}>
-                {/* Chỉ hiển thị topBox nếu category có thumbnail */}
-                {hasThumbnail && firstFourVariants.length > 0 && (
-                    <div className={styles.topBox}>
-                        <div className={styles.leftBox}>
-                            {firstFourVariants.map((variant) => (
-                                <ScarfCard
-                                    key={variant._id}
-                                    scarf={transformVariantToProduct(variant)}
-                                    colorVariants={getColorVariants(variant)}
-                                />
-                            ))}
-                        </div>
-                        <div className={styles.rightBox}
-                            style={{
-                                backgroundImage: `url('${getOptimizedImageUrl(category.thumbnailUrl)}')`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                backgroundRepeat: 'no-repeat'
-                            }}
-                        >
-                            <div className={styles.content}>
-                                <h2>{category.description || category.name}</h2>
-                                <a href="#">
-                                    <span>Shop Now</span>
-                                    <svg
-                                        className={styles.linkGraphic}
-                                        width="300%"
-                                        height="100%"
-                                        viewBox="0 0 1200 60"
-                                        preserveAspectRatio="none"
-                                    >
-                                        <path d="M0,56.5c0,0,298.666,0,399.333,0C448.336,56.5,513.994,46,597,46c77.327,0,135,10.5,200.999,10.5c95.996,0,402.001,0,402.001,0"></path>
-                                    </svg>
-                                </a>
+                <div className={styles.productContainer}>
+                    {hasThumbnail && firstFourVariants.length > 0 && (
+                        <div className={styles.topBox}>
+                            <div className={styles.leftBox}>
+                                {firstFourVariants.map((variant) => (
+                                    <ScarfCard key={variant._id} scarf={transformVariantToProduct(variant)} colorVariants={getColorVariants(variant)} />
+                                ))}
+                            </div>
+                            <div className={styles.rightBox} style={{ backgroundImage: `url('${getOptimizedImageUrl(category.thumbnailUrl)}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+                                <div className={styles.content}>
+                                    <h2>{category.description || category.name}</h2>
+                                    <a href="#"><span>Shop Now</span><svg className={styles.linkGraphic} width="300%" height="100%" viewBox="0 0 1200 60" preserveAspectRatio="none"><path d="M0,56.5c0,0,298.666,0,399.333,0C448.336,56.5,513.994,46,597,46c77.327,0,135,10.5,200.999,10.5c95.996,0,402.001,0,402.001,0"></path></svg></a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Product List - hiển thị tất cả nếu không có thumbnail, hoặc variants còn lại */}
-                <div className={styles.productList}>
-                    {remainingVariants.map((variant) => (
-                        <ScarfCard
-                            key={variant._id}
-                            scarf={transformVariantToProduct(variant)}
-                            colorVariants={getColorVariants(variant)}
-                        />
-                    ))}
+                    <div className={styles.productList}>
+                        {remainingVariants.map((variant) => (
+                            <ScarfCard key={variant._id} scarf={transformVariantToProduct(variant)} colorVariants={getColorVariants(variant)} />
+                        ))}
+                    </div>
+
+                    {filteredVariants.length === 0 && variantsData.length > 0 && (
+                        <div className={styles.noProducts}>
+                            <p>No products match your current filters.</p>
+                            <p>Try adjusting your filters or <button onClick={handleResetFilters} style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', padding: 0, color: 'inherit' }}>clear all filters</button>.</p>
+                        </div>
+                    )}
+
+                    {variantsData.length === 0 && (
+                        <div className={styles.noProducts}>
+                            <p>No products found in this category.</p>
+                        </div>
+                    )}
                 </div>
-
-                {/* Hiển thị message nếu không có products sau khi filter */}
-                {filteredVariants.length === 0 && variants.length > 0 && (
-                    <div className={styles.noProducts}>
-                        <p>No products match your current filters.</p>
-                        <p>Try adjusting your filters or <button
-                            onClick={() => {
-                                setSelectedSort('Default');
-                                setSelectedColors([]);
-                            }}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                textDecoration: 'underline',
-                                cursor: 'pointer',
-                                padding: 0,
-                                color: 'inherit'
-                            }}
-                        >clear all filters</button>.</p>
-                    </div>
-                )}
-
-                {/* Hiển thị message nếu category không có products */}
-                {variants.length === 0 && (
-                    <div className={styles.noProducts}>
-                        <p>No products found in this category.</p>
-                    </div>
-                )}
-            </div>
             </div>
         </PageWrapper>
     );

@@ -1,274 +1,36 @@
-import { useState, useRef, useCallback, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { memo } from 'react';
+import PropTypes from 'prop-types';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import styles from './VisualSearch.module.css';
 import Backdrop from '../Backdrop';
-import { useLenisControl } from '../../hooks/useLenisControl';
-import { findSimilarProducts } from '../../services/imageSearchService';
+import { useVisualSearch } from '../../hooks/useVisualSearch';
 
 const VisualSearch = memo(({ isOpen, onClose }) => {
-    const navigate = useNavigate();
-    const fileInputRef = useRef(null);
-    const imgRef = useRef(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
-    const [error, setError] = useState(null);
-    const [previewImage, setPreviewImage] = useState(null);
-
-    // Crop states
-    const [isCropping, setIsCropping] = useState(false);
-    const [crop, setCrop] = useState(null);
-    const [completedCrop, setCompletedCrop] = useState(null);
-
-    // Lock scroll when modal is open
-    useLenisControl(isOpen);
-
-    // Handle file validation
-    const validateFile = useCallback((file) => {
-        // Check file type
-        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!validTypes.includes(file.type)) {
-            return 'Please upload a JPEG, PNG, or WebP image.';
-        }
-
-        // Check file size (max 10MB)
-        const maxSize = 10 * 1024 * 1024;
-        if (file.size > maxSize) {
-            return 'Image size must be less than 10MB.';
-        }
-
-        return null;
-    }, []);
-
-    // Convert file to base64
-    const fileToBase64 = useCallback((file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-        });
-    }, []);
-
-    // Get cropped image as base64
-    const getCroppedImage = useCallback(() => {
-        if (!imgRef.current || !completedCrop) {
-            return previewImage;
-        }
-
-        const image = imgRef.current;
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-            return previewImage;
-        }
-
-        // Calculate crop area in actual image dimensions
-        const scaleX = image.naturalWidth / image.width;
-        const scaleY = image.naturalHeight / image.height;
-
-        const cropX = completedCrop.x * scaleX;
-        const cropY = completedCrop.y * scaleY;
-        const cropWidth = completedCrop.width * scaleX;
-        const cropHeight = completedCrop.height * scaleY;
-
-        // Set canvas dimensions to cropped area
-        canvas.width = cropWidth;
-        canvas.height = cropHeight;
-
-        // Draw the cropped portion
-        ctx.drawImage(
-            image,
-            cropX,
-            cropY,
-            cropWidth,
-            cropHeight,
-            0,
-            0,
-            cropWidth,
-            cropHeight
-        );
-
-        // Return as base64 PNG
-        return canvas.toDataURL('image/png');
-    }, [completedCrop, previewImage]);
-
-    // Handle image load - set default crop to full image
-    const handleImageLoad = useCallback((e) => {
-        const { width, height } = e.currentTarget;
-
-        // Set initial crop to center of image
-        const cropSize = Math.min(width, height) * 0.8;
-        const initialCrop = {
-            unit: 'px',
-            x: (width - cropSize) / 2,
-            y: (height - cropSize) / 2,
-            width: cropSize,
-            height: cropSize
-        };
-
-        setCrop(initialCrop);
-        setCompletedCrop(initialCrop);
-    }, []);
-
-    // Handle file selection - show crop UI
-    const handleFileSelect = useCallback(async (file) => {
-        const validationError = validateFile(file);
-        if (validationError) {
-            setError(validationError);
-            return;
-        }
-
-        setError(null);
-
-        try {
-            const base64Image = await fileToBase64(file);
-            setPreviewImage(base64Image);
-            setIsCropping(true);
-            setCrop(null);
-            setCompletedCrop(null);
-        } catch (err) {
-            console.error('❌ Failed to load image:', err);
-            setError('Failed to load image. Please try again.');
-        }
-    }, [validateFile, fileToBase64]);
-
-    // Handle search with cropped image
-    const handleSearch = useCallback(async () => {
-        if (!previewImage) return;
-
-        setIsUploading(true);
-        setIsCropping(false);
-
-        try {
-            // Get the cropped image (or full image if no crop)
-            const imageToSearch = getCroppedImage();
-
-            console.log('🔍 Starting Visual Search...');
-            console.log('📊 Image size:', Math.round(imageToSearch.length / 1024), 'KB');
-
-            const result = await findSimilarProducts(imageToSearch, 12);
-
-            console.log('✅ Search result:', result);
-
-            if (result.success) {
-                // Navigate to VisuallySimilar page with results
-                navigate('/visually-similar', {
-                    state: {
-                        uploadedImage: imageToSearch,
-                        results: result.data,
-                        count: result.count
-                    }
-                });
-
-                // Close modal after navigation
-                onClose();
-            } else {
-                console.warn('⚠️ No results found');
-                setError('No similar products found. Try another image or crop area.');
-                setIsCropping(true);
-            }
-        } catch (err) {
-            console.error('❌ Image search failed:', err);
-            console.error('Error details:', {
-                message: err.message,
-                status: err.status,
-                data: err.data,
-                name: err.name
-            });
-
-            // More specific error messages
-            if (err.message === 'Network Error') {
-                setError('Network error. Please check your connection or disable ad-blocker.');
-            } else if (err.status === 503) {
-                setError('Visual search service is temporarily unavailable.');
-            } else if (err.status === 413) {
-                setError('Image is too large. Please try a smaller image.');
-            } else {
-                setError('Search failed. Please try again.');
-            }
-            setIsCropping(true);
-        } finally {
-            setIsUploading(false);
-        }
-    }, [previewImage, getCroppedImage, navigate, onClose]);
-
-    // Handle click on upload area
-    const handleClick = useCallback(() => {
-        if (!isUploading && !isCropping) {
-            fileInputRef.current?.click();
-        }
-    }, [isUploading, isCropping]);
-
-    // Handle file input change
-    const handleFileChange = useCallback((e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            handleFileSelect(file);
-        }
-        // Reset input value to allow re-upload of same file
-        e.target.value = '';
-    }, [handleFileSelect]);
-
-    // Handle drag events
-    const handleDragEnter = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!isCropping) {
-            setIsDragging(true);
-        }
-    }, [isCropping]);
-
-    const handleDragLeave = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-    }, []);
-
-    const handleDragOver = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    }, []);
-
-    const handleDrop = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-
-        if (!isCropping) {
-            const file = e.dataTransfer.files?.[0];
-            if (file) {
-                handleFileSelect(file);
-            }
-        }
-    }, [isCropping, handleFileSelect]);
-
-    // Handle back to re-select image
-    const handleBack = useCallback(() => {
-        setIsCropping(false);
-        setPreviewImage(null);
-        setCrop(null);
-        setCompletedCrop(null);
-        setError(null);
-    }, []);
-
-    // Handle close and reset state
-    const handleClose = useCallback(() => {
-        setError(null);
-        setPreviewImage(null);
-        setIsUploading(false);
-        setIsCropping(false);
-        setCrop(null);
-        setCompletedCrop(null);
-        onClose();
-    }, [onClose]);
-
-    // Handle re-upload (change image while cropping)
-    const handleReUpload = useCallback(() => {
-        fileInputRef.current?.click();
-    }, []);
+    const {
+        fileInputRef,
+        imgRef,
+        isDragging,
+        isUploading,
+        error,
+        previewImage,
+        isCropping,
+        crop,
+        completedCrop,
+        setCrop,
+        setCompletedCrop,
+        handleImageLoad,
+        handleSearch,
+        handleClick,
+        handleFileChange,
+        handleDragEnter,
+        handleDragLeave,
+        handleDragOver,
+        handleDrop,
+        handleBack,
+        handleClose,
+        handleReUpload
+    } = useVisualSearch(isOpen, onClose);
 
     if (!isOpen) return null;
 
@@ -277,9 +39,7 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
             <Backdrop isOpen={isOpen} onClick={handleClose} />
             <div className={styles.visualSearchContainer} data-lenis-prevent>
                 <div className={styles.header}>
-                    <h3>
-                        {isCropping ? 'Select Region' : 'Visual Search'}
-                    </h3>
+                    <h3>{isCropping ? 'Select Region' : 'Visual Search'}</h3>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="13"
@@ -293,7 +53,6 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
                     </svg>
                 </div>
 
-                {/* Hidden file input */}
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -302,7 +61,6 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
                     style={{ display: 'none' }}
                 />
 
-                {/* Crop Mode */}
                 {isCropping && previewImage ? (
                     <div className={styles.cropContainer}>
                         <div className={styles.cropArea}>
@@ -321,62 +79,33 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
                                 />
                             </ReactCrop>
                         </div>
-
                         <div className={styles.cropInstructions}>
                             <p>Drag to select the area you want to search</p>
                         </div>
-
                         <div className={styles.cropActions}>
-                            <button
-                                className={styles.backButton}
-                                onClick={handleBack}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                                </svg>
+                            <button className={styles.backButton} onClick={handleBack}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
                                 Back
                             </button>
-                            <button
-                                className={styles.reUploadButton}
-                                onClick={handleReUpload}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="17 8 12 3 7 8" />
-                                    <line x1="12" y1="3" x2="12" y2="15" />
-                                </svg>
+                            <button className={styles.reUploadButton} onClick={handleReUpload}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
                                 Change Image
                             </button>
-                            <button
-                                className={styles.searchButton}
-                                onClick={handleSearch}
-                                disabled={!completedCrop}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="11" cy="11" r="8" />
-                                    <path d="m21 21-4.35-4.35" />
-                                </svg>
+                            <button className={styles.searchButton} onClick={handleSearch} disabled={!completedCrop}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
                                 Search
                             </button>
                         </div>
                     </div>
                 ) : isUploading ? (
-                    /* Uploading/Searching State */
                     <div className={`${styles.input} ${styles.uploading}`}>
-                        {previewImage && (
-                            <img
-                                src={previewImage}
-                                alt="Preview"
-                                className={styles.previewImage}
-                            />
-                        )}
+                        {previewImage && <img src={previewImage} alt="Preview" className={styles.previewImage} />}
                         <div className={styles.loadingContent}>
                             <div className={styles.spinner}></div>
                             <p>Searching for similar products...</p>
                         </div>
                     </div>
                 ) : (
-                    /* Upload Area */
                     <div
                         className={`${styles.input} ${isDragging ? styles.dragging : ''}`}
                         onClick={handleClick}
@@ -408,8 +137,6 @@ const VisualSearch = memo(({ isOpen, onClose }) => {
         </>
     );
 });
-
-import PropTypes from 'prop-types';
 
 VisualSearch.propTypes = {
     isOpen: PropTypes.bool.isRequired,

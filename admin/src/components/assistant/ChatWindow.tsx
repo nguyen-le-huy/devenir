@@ -87,8 +87,17 @@ export function ChatWindow() {
         setMessages(prev => [...prev, { id: typingId, role: 'assistant', isTyping: true }])
 
         try {
-            // 3. Call API
-            const response = await ragService.sendMessage(userMsg.content!)
+            // Prepare history for API (exclude typing indicators and current message)
+            // We need to map our UI Message type to the API ChatMessage type
+            const history = messages
+                .filter(m => !m.isTyping && m.content)
+                .map(m => ({
+                    role: m.role,
+                    content: m.content!
+                }));
+
+            // 3. Call API with history
+            const response = await ragService.sendMessage(userMsg.content!, history)
 
             // 4. Remove typing & add real response
             setMessages(prev => {

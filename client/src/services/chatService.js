@@ -14,7 +14,7 @@ export const sendChatMessage = async (message, conversationHistory = [], isAuthe
 
     const payload = {
         message,
-        conversation_history: conversationHistory.slice(-10).map(msg => ({
+        conversation_history: conversationHistory.slice(-50).map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.text,
             // Include suggested products for context
