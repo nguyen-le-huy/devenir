@@ -105,10 +105,14 @@ const ProductByCategory = memo(() => {
             const productId = variant.productInfo?._id || variant.product;
             if (!productId) return;
             if (!map.has(productId)) map.set(productId, []);
-            map.get(productId).push({ ...variant, productId });
+            map.get(productId).push({
+                ...variant,
+                productId,
+                colorHex: colorMap[variant.color] || '#ccc'
+            });
         });
         return map;
-    }, [variantsData]);
+    }, [variantsData, colorMap]);
 
     const getColorVariants = useCallback((variant) => {
         const productId = variant.productInfo?._id || variant.product;
