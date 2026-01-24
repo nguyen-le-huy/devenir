@@ -51,11 +51,13 @@ src/
 **Ví dụ chi tiết: Cấu trúc 1 Feature (`features/auth`)**
 ```typescript
 features/auth/
-├── api/                     # Logic giao tiếp với Server
-│   ├── authApi.ts           # Axios functions
-│   └── useAuth.ts           # React Query Hooks
-├── components/              # UI Components
-├── pages/                   # Pages (Login, Register)
+├── api/                     # API calls thuần (Axios)
+│   └── authApi.ts           # getLogin, postRegister
+│
+├── hooks/                   # Logic hooks (React Query + Stores)
+│   └── useAuth.ts           # useLoginMutation, useUserQuery
+│
+├── components/              # UI Components chỉ dùng trong Auth Feature                 # Pages (Login, Register)
 ├── types/                   # Types
 └── index.ts                 # Public API
 ```
@@ -66,15 +68,15 @@ features/auth/
 | :--- | :--- | :--- | :--- |
 | **Auth** | `services/authService.js` | `features/auth/api/authApi.ts` | |
 | | `stores/useAuthStore.js` | `core/stores/authStore.ts` | Global store giữ ở `core` |
-| **Products** | `services/productService.js` | `features/products/api/productApi.ts` | |
-| | `hooks/useProducts.js` | `features/products/api/useProducts.ts` | Chứa hooks query/mutation |
+| **Products** | `services/productService.js` | `features/products/api/productApi.ts` | Axios calls only |
+| | `hooks/useProducts.js` | `features/products/hooks/useProducts.ts` | React Query hooks |
 | | `hooks/useProductFilter.js` | `features/products/hooks/useProductFilter.ts` | UI Logic only |
 | | `services/categoryService.js` | `features/products/api/categoryApi.ts` | Gộp vào products domain |
 | | `services/colorService.js` | `features/products/api/attributeApi.ts` | Hoặc tách feature attributes |
 | **Cart** | `services/cartService.js` | `features/cart/api/cartApi.ts` | |
-| | `hooks/useCart.js` | `features/cart/api/useCart.ts` | |
+| | `hooks/useCart.js` | `features/cart/hooks/useCart.ts` | |
 | **Orders** | `services/orderService.js` | `features/orders/api/orderApi.ts` | |
-| | `hooks/useOrders.js` | `features/orders/api/useOrders.ts` | |
+| | `hooks/useOrders.js` | `features/orders/hooks/useOrders.ts` | |
 | | `services/trackingService.ts` | `features/tracking/api/trackingApi.ts` | |
 | **Common** | `services/api.js` | `core/api/apiClient.ts` | |
 | | `hooks/useScrollLock.js` | `shared/hooks/useScrollLock.ts` | |
@@ -106,7 +108,7 @@ Thực hiện từng Feature một để tránh break toàn bộ dự án.
 *   **Constants:** SCREAMING_SNAKE_CASE.
 
 ### State Management
-*   **Server State:** React Query (trong `features/*/api`).
+*   **Server State:** React Query (trong `features/*/hooks`).
 *   **Client State:** Zustand (trong `core/stores`).
 
 ---

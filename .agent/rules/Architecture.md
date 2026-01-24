@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Kiến trúc Dự án Devenir
 
 ## 1. Tổng quan & Tech Stack
@@ -27,7 +31,7 @@ src/
 │
 └── features/                # Feature modules (Self-contained)
     ├── [feature-name]/      # e.g., auth, products, cart
-    │   ├── api/             # API calls thuần
+    │   ├── api/             # API calls
     │   ├── components/      # Feature-specific components
     │   ├── hooks/           # Logic hooks (React Query + Stores)
     │   ├── pages/           # Pages for this feature
