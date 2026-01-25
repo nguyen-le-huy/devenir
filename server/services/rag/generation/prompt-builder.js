@@ -6,7 +6,7 @@ import { getToneInstruction } from '../utils/customerContext.js';
  */
 export function buildCoVePrompt(context, conversationHistory = [], customerContext = null) {
   // Build tone instruction based on customer type
-  const toneInstruction = customerContext?.hasCustomerContext 
+  const toneInstruction = customerContext?.hasCustomerContext
     ? `\n## GIỌNG ĐIỆU & CÁCH TIẾP CẬN:\n${getToneInstruction(customerContext.customerProfile?.customerType)}\n`
     : '';
 
@@ -69,6 +69,8 @@ Sử dụng conversation history để hiểu ngữ cảnh của câu hỏi foll
 - "giá bao nhiêu" → Hỏi về giá sản phẩm trước → product_advice
 - "có màu khác không" → Hỏi về biến thể sản phẩm → product_advice
 - "ship như nào" → Hỏi về vận chuyển cho sản phẩm → product_advice
+- "thông tin chi tiết" → Hỏi chi tiết về sản phẩm trước → product_advice
+- "cách giặt" / "bảo quản" → Hỏi về hướng dẫn sử dụng (product_advice hoặc policy_faq)
 
 **Các loại Intent:**
 - "product_advice": Tư vấn sản phẩm, tìm kiếm, hỏi về hàng/stock, giá, màu sắc

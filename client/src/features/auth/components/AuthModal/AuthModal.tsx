@@ -1,0 +1,176 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/core/stores/useAuthStore';
+import LoginForm from '@/shared/components/form/LoginForm';
+import ForgotPasswordForm from '@/shared/components/form/ForgotPasswordForm';
+import authService from '@/features/auth/api/authService';
+import styles from './AuthModal.module.css';
+import Backdrop from '@/shared/components/Backdrop/Backdrop';
+
+interface AuthModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+/**
+ * AuthModal - Modal version of auth page
+ * Shows login and forgot password forms
+ * Registration moved to separate /register page
+ */
+export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+    const navigate = useNavigate();
+    const login = useAuthStore((state) => state.login);
+    const [activeForm, setActiveForm] = useState<'login' | 'forgot'>('login');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
+
+    if (!isOpen) return null;
+
+    // ============ LOGIN HANDLER ============
+    const handleLogin = async (data: any) => {
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await authService.login(data) as any;
+
+            // Update Auth Store
+            login(response.token, response.user);
+
+            // Close modal after successful login
+            onClose();
+            toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
+        } catch (err: any) {
+            toast.error(err.message || 'Login failed');
+            console.error('Login error:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ============ GOOGLE LOGIN HANDLER ============
+    const handleGoogleLogin = async (credential: string | undefined) => {
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await authService.googleLogin(credential) as any;
+
+            // Update Auth Store
+            login(response.token, response.user);
+
+            // Close modal after successful Google login
+            onClose();
+            toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
+        } catch (err: any) {
+            toast.error(err.message || 'Google login failed');
+            console.error('Google login error:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ============ FORGOT PASSWORD HANDLER ============
+    const handleForgotPassword = async (data: { email: string }) => {
+        setLoading(true);
+        setError('');
+
+        try {
+            await authService.forgotPassword(data);
+            setForgotPasswordSubmitted(true);
+            toast.success('Reset email sent! Please check your inbox.');
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to send reset email');
+            console.error('Forgot password error:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ============ FORM SWITCHERS ============
+    const switchToLogin = () => {
+        setActiveForm('login');
+        setError('');
+        setForgotPasswordSubmitted(false);
+    };
+
+    const switchToForgotPassword = () => {
+        setActiveForm('forgot');
+        setError('');
+        setForgotPasswordSubmitted(false);
+    };
+
+    const switchToRegister = () => {
+        onClose();
+        navigate('/register');
+    };
+
+    return (
+        <>
+            <Backdrop isOpen={isOpen} onClick={onClose} />
+            <div className={styles.modal}>
+                {/* Close Button */}
+                <button className={styles.closeButton} onClick={onClose}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+
+                {/* Header */}
+                <div className={styles.header}>
+                    <h1 className={styles.title}>Devenir</h1>
+                    <p className={styles.subtitle}>
+                        {activeForm === 'login' && 'Đăng nhập vào tài khoản'}
+                        {activeForm === 'forgot' && 'Khôi phục mật khẩu'}
+                    </p>
+                </div>
+
+                {/* Forms */}
+                <div className={styles.formContainer}>
+                    {activeForm === 'login' && (
+                        <div className={styles.formWrapper}>
+                            <LoginForm
+                                onSubmit={handleLogin}
+                                onForgotPassword={switchToForgotPassword}
+                                onGoogleLogin={handleGoogleLogin}
+                                onSwitchToRegister={switchToRegister}
+                                loading={loading}
+                                error={error}
+                            />
+                        </div>
+                    )}
+
+                    {activeForm === 'forgot' && (
+                        <div className={styles.formWrapper}>
+                            {!forgotPasswordSubmitted ? (
+                                <>
+                                    <ForgotPasswordForm
+                                        onSubmit={handleForgotPassword}
+                                        onBack={switchToLogin}
+                                        loading={loading}
+                                        error={error}
+                                    />
+                                </>
+                            ) : (
+                                <div className={styles.successMessage}>
+                                    <h3>✓ Email đã được gửi</h3>
+                                    <p>Vui lòng kiểm tra email của bạn để đặt lại mật khẩu.</p>
+                                    <button
+                                        type="button"
+                                        onClick={switchToLogin}
+                                        className={styles.primaryButton}
+                                    >
+                                        Quay lại đăng nhập
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}

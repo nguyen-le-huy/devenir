@@ -144,8 +144,8 @@ async function classifyAdminIntent(query, history = []) {
     }
 
     // Priority 3: Inventory Export (Generic "export" or "inventory export")
-    // Improved detection: "csv", "export", "xuất file", OR "xuất báo cáo"
-    else if (lowerQuery.includes('csv') || lowerQuery.includes('export') || lowerQuery.includes('xuất file') || lowerQuery.includes('xuất báo cáo') || (lowerQuery.includes('báo cáo') && lowerQuery.includes('kho'))) {
+    // Improved detection: "csv", "export", "xuất file", "xuất báo cáo", "tải", "download"
+    else if (lowerQuery.includes('csv') || lowerQuery.includes('export') || lowerQuery.includes('xuất file') || lowerQuery.includes('xuất báo cáo') || lowerQuery.includes('tải') || lowerQuery.includes('download') || (lowerQuery.includes('báo cáo') && lowerQuery.includes('kho'))) {
         let scope = 'all';
 
         // A. Explicit scope in current query
@@ -192,9 +192,9 @@ async function classifyAdminIntent(query, history = []) {
     - product_inventory (kho hàng, tồn kho, check stock, sắp hết, hết hàng) 
       -> extract metadata: 
          - target (product name, sku)
-         - status: 'all', 'low_stock', 'out_of_stock' (detect from keywords like "sắp hết", "hết")
-         - threshold: number (default 10 if "sắp hết" or "low_stock", extract explicit number if present like "dưới 5")
-    - inventory_export (xuất file, export csv, báo cáo tồn kho...)
+         - status: 'all', 'low_stock', 'out_of_stock' (detect from keywords like "sắp hết", "hết", "cảnh báo")
+         - threshold: number (default 10 if "sắp hết" or "low_stock" or "cảnh báo", extract explicit number if present like "dưới 5")
+    - inventory_export (xuất file, export csv, báo cáo tồn kho, tải danh sách...)
       -> extract metadata: 
          - scope: 'all', 'low_stock', 'out_of_stock', 'category'
          - category: string (if scope is category)
@@ -206,7 +206,7 @@ async function classifyAdminIntent(query, history = []) {
     
     Query: "${query}"
     
-    Return JSON only: { "type": "...", "target": "...", "period": "...", "startDate": "...", "endDate": "...", "status": "...", "threshold": ... }
+    Return JSON only: { "type": "...", "target": "...", "period": "...", "scope": "...", "status": "...", "threshold": ... }
     `;
 
     try {
