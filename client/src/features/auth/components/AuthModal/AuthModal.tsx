@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { LoginData } from '@/features/auth/types';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/core/stores/useAuthStore';
 import LoginForm from '@/shared/components/form/LoginForm';
 import ForgotPasswordForm from '@/shared/components/form/ForgotPasswordForm';
-import authService from '@/features/auth/api/authService';
+import { useLogin, useGoogleAuth, useForgotPassword } from '@/features/auth/hooks';
 import styles from './AuthModal.module.css';
 import Backdrop from '@/shared/components/Backdrop/Backdrop';
 
@@ -20,85 +21,65 @@ interface AuthModalProps {
  */
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const navigate = useNavigate();
-    const login = useAuthStore((state) => state.login);
+    const loginToStore = useAuthStore((state) => state.login);
     const [activeForm, setActiveForm] = useState<'login' | 'forgot'>('login');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
     const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
+
+    // Hooks
+    const loginMutation = useLogin();
+    const googleAuthMutation = useGoogleAuth();
+    const forgotPasswordMutation = useForgotPassword();
 
     if (!isOpen) return null;
 
     // ============ LOGIN HANDLER ============
-    const handleLogin = async (data: any) => {
-        setLoading(true);
-        setError('');
-
-        try {
-            const response = await authService.login(data) as any;
-
-            // Update Auth Store
-            login(response.token, response.user);
-
-            // Close modal after successful login
-            onClose();
-            toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
-        } catch (err: any) {
-            toast.error(err.message || 'Login failed');
-            console.error('Login error:', err);
-        } finally {
-            setLoading(false);
-        }
+    const handleLogin = (data: LoginData) => {
+        loginMutation.mutate(data, {
+            onSuccess: () => {
+                onClose();
+            },
+            onError: () => {
+                // Toast handled by hook
+            }
+        });
     };
 
     // ============ GOOGLE LOGIN HANDLER ============
-    const handleGoogleLogin = async (credential: string | undefined) => {
-        setLoading(true);
-        setError('');
+    const handleGoogleLogin = (credential: string | undefined) => {
+        if (!credential) return;
 
-        try {
-            const response = await authService.googleLogin(credential) as any;
-
-            // Update Auth Store
-            login(response.token, response.user);
-
-            // Close modal after successful Google login
-            onClose();
-            toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
-        } catch (err: any) {
-            toast.error(err.message || 'Google login failed');
-            console.error('Google login error:', err);
-        } finally {
-            setLoading(false);
-        }
+        googleAuthMutation.mutate(credential, {
+            onSuccess: (response: any) => {
+                loginToStore(response.token, response.user);
+                onClose();
+                toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
+            },
+            onError: (err: any) => {
+                toast.error(err?.message || 'Google login failed');
+            }
+        });
     };
 
     // ============ FORGOT PASSWORD HANDLER ============
-    const handleForgotPassword = async (data: { email: string }) => {
-        setLoading(true);
-        setError('');
-
-        try {
-            await authService.forgotPassword(data);
-            setForgotPasswordSubmitted(true);
-            toast.success('Reset email sent! Please check your inbox.');
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to send reset email');
-            console.error('Forgot password error:', err);
-        } finally {
-            setLoading(false);
-        }
+    const handleForgotPassword = (data: { email: string }) => {
+        forgotPasswordMutation.mutate(data, {
+            onSuccess: () => {
+                setForgotPasswordSubmitted(true);
+            },
+            onError: () => {
+                // Toast handled by hook
+            }
+        });
     };
 
     // ============ FORM SWITCHERS ============
     const switchToLogin = () => {
         setActiveForm('login');
-        setError('');
         setForgotPasswordSubmitted(false);
     };
 
     const switchToForgotPassword = () => {
         setActiveForm('forgot');
-        setError('');
         setForgotPasswordSubmitted(false);
     };
 
@@ -137,8 +118,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                 onForgotPassword={switchToForgotPassword}
                                 onGoogleLogin={handleGoogleLogin}
                                 onSwitchToRegister={switchToRegister}
-                                loading={loading}
-                                error={error}
+                                loading={loginMutation.isPending || googleAuthMutation.isPending}
+                                error={loginMutation.error ? (loginMutation.error as any).message : ''}
                             />
                         </div>
                     )}
@@ -150,8 +131,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                     <ForgotPasswordForm
                                         onSubmit={handleForgotPassword}
                                         onBack={switchToLogin}
-                                        loading={loading}
-                                        error={error}
+                                        loading={forgotPasswordMutation.isPending}
+                                        error={forgotPasswordMutation.error ? (forgotPasswordMutation.error as any).message : ''}
                                     />
                                 </>
                             ) : (

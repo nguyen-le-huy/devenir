@@ -1,438 +1,47 @@
 import asyncHandler from 'express-async-handler';
-import payosClient from '../services/payos/payosClient.js';
-import Cart from '../models/CartModel.js';
-import Order from '../models/OrderModel.js';
-import logger from '../config/logger.js';
-import { sendOrderConfirmationEmail } from '../utils/emailService.js';
-import nowpaymentsClient from '../services/nowpayments/nowpaymentsClient.js';
-import crypto from 'crypto';
-import { sendOrderNotificationToTelegram } from '../services/telegram/telegramNotification.js';
-import { emitOrderUpdate } from '../utils/socketEmitter.js';
-import { eventProcessor } from './EventController.js';
+import paymentService from '../services/payment.service.js';
+import Order from '../models/OrderModel.js'; // Needed due to simple getter logic not moved yet
 
-const DELIVERY_OPTIONS = ['standard', 'next', 'nominated'];
-const SHIPPING_METHODS = ['home'];
-const SHIPPING_FEES = {
-  standard: 0,
-  next: 5,
-  nominated: 10,
-};
-
-const PAYOS_DESCRIPTION_LIMIT = 25;
-const buildPayOSDescription = (orderCode) => {
-  const base = `DN-${orderCode}`;
-  return base.length > PAYOS_DESCRIPTION_LIMIT
-    ? base.slice(0, PAYOS_DESCRIPTION_LIMIT)
-    : base;
-};
-
-const DELIVERY_LABELS = {
-  standard: 'Standard delivery',
-  next: 'Next day delivery',
-  nominated: 'Nominated day delivery',
-};
-
-const REQUIRED_ADDRESS_FIELDS = ['firstName', 'lastName', 'phoneNumber', 'address', 'city', 'district', 'zipCode'];
-
-const defaultClientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 const getClientBaseUrl = (req) => {
   const origin = req.get('origin');
   if (origin && origin.startsWith('http')) return origin;
-  return defaultClientBaseUrl;
+  return process.env.CLIENT_URL || 'http://localhost:5173';
 };
 
-const getShippingFee = (deliveryWindow) => SHIPPING_FEES[deliveryWindow] ?? 0;
-
-const ensureAddressPayload = (address = {}) => {
-  const missing = REQUIRED_ADDRESS_FIELDS.filter((field) => !address[field] || !String(address[field]).trim());
-  if (missing.length) {
-    throw new Error(`Missing shipping address fields: ${missing.join(', ')}`);
-  }
-  return address;
-};
-
-const buildOrderItems = (cartItems = []) => {
-  return cartItems.map((item) => {
-    const variant = item.productVariant;
-    if (!variant) {
-      throw new Error('A variant in your cart is no longer available. Please refresh your cart.');
-    }
-
-    const product = variant.product_id;
-    const fallbackImage = Array.isArray(variant.images) && variant.images.length > 0
-      ? variant.images[0]
-      : variant.mainImage || variant.hoverImage || (product?.images?.[0]?.url ?? '');
-
-    return {
-      name: product?.name || 'Devenir item',
-      sku: variant.sku,
-      color: variant.color,
-      size: variant.size,
-      quantity: item.quantity,
-      price: variant.price,
-      image: fallbackImage,
-      mainImage: variant.mainImage || fallbackImage,
-      hoverImage: variant.hoverImage || fallbackImage,
-      productVariant: variant._id,
-      product: product?._id,
-    };
-  });
-};
-
-const generateGatewayOrderCode = async () => {
-  let code;
-  let exists = true;
-
-  while (exists) {
-    const timestampPart = Date.now().toString().slice(-10);
-    const randomPart = Math.floor(100 + Math.random() * 900).toString();
-    code = Number(`${timestampPart}${randomPart}`);
-    exists = await Order.exists({ 'paymentIntent.gatewayOrderCode': code });
-  }
-
-  return code;
-};
-
+/**
+ * PayOS Controllers
+ */
 export const createPayOSPaymentLink = asyncHandler(async (req, res) => {
-  const user = req.user;
-  const userId = req.userId;
-  const { shippingMethod, deliveryTime, address: addressPayload, giftCode } = req.body;
-  const clientBaseUrl = getClientBaseUrl(req);
-
-  // Check for valid gift code - fixed price 5000 VND
-  const VALID_GIFT_CODE = 'emanhhuy';
-  const GIFT_CODE_FIXED_PRICE = 5000; // 5000 VND
-  const isGiftCodeApplied = giftCode && giftCode.toLowerCase() === VALID_GIFT_CODE;
-
-  if (!SHIPPING_METHODS.includes(shippingMethod)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Currently only home delivery is supported for PayOS payments.',
-    });
-  }
-
-  if (!DELIVERY_OPTIONS.includes(deliveryTime)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid delivery option selected.',
-    });
-  }
-
-  let shippingAddress;
   try {
-    shippingAddress = ensureAddressPayload(addressPayload);
+    const clientBaseUrl = getClientBaseUrl(req);
+    const result = await paymentService.createPayOSSession({
+      user: req.user,
+      userId: req.userId,
+      ...req.body,
+      clientBaseUrl
+    });
+    res.status(201).json({ success: true, message: 'PayOS link created', data: result });
   } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-
-  const cart = await Cart.findOne({ user: userId }).populate({
-    path: 'items.productVariant',
-    populate: { path: 'product_id', select: 'name images brand' },
-  });
-
-  if (!cart || cart.items.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Your cart is empty. Please add items before checking out.',
-    });
-  }
-
-  let orderItems;
-  try {
-    orderItems = buildOrderItems(cart.items);
-  } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const shippingFee = getShippingFee(deliveryTime);
-  const totalPrice = Number((subtotal + shippingFee).toFixed(2));
-
-  const buyerName = `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim();
-  const buyerAddress = [shippingAddress.address, shippingAddress.district, shippingAddress.city]
-    .filter(Boolean)
-    .join(', ');
-  const streetLine = [shippingAddress.address, shippingAddress.district].filter(Boolean).join(', ');
-
-  const gatewayOrderCode = await generateGatewayOrderCode();
-
-  let orderDoc = null;
-
-  try {
-    orderDoc = await Order.create({
-      user: userId,
-      orderItems,
-      shippingAddress: {
-        street: streetLine,
-        city: shippingAddress.city,
-        postalCode: String(shippingAddress.zipCode),
-        phone: String(shippingAddress.phoneNumber),
-      },
-      deliveryMethod: shippingMethod,
-      deliveryWindow: deliveryTime,
-      paymentMethod: 'Bank',
-      paymentGateway: 'PayOS',
-      totalPrice: isGiftCodeApplied ? GIFT_CODE_FIXED_PRICE : totalPrice,
-      shippingPrice: isGiftCodeApplied ? 0 : shippingFee,
-      appliedGiftCode: isGiftCodeApplied ? giftCode : null,
-      status: 'pending',
-    });
-
-    const payosItems = orderItems.map((item) => ({
-      name: `${item.name} (${item.color}/${item.size})`,
-      quantity: item.quantity,
-      price: Math.round(item.price),
-    }));
-
-    if (shippingFee > 0) {
-      payosItems.push({
-        name: DELIVERY_LABELS[deliveryTime],
-        quantity: 1,
-        price: Math.round(shippingFee),
-      });
-    }
-
-    // Calculate payable amount - use fixed price if gift code is applied
-    let payableAmount;
-    let finalPayosItems;
-
-    if (isGiftCodeApplied) {
-      // Gift code applied - fixed price 1000 VND
-      payableAmount = GIFT_CODE_FIXED_PRICE;
-      finalPayosItems = [{
-        name: 'Gift Code Order (emanhhuy)',
-        quantity: 1,
-        price: GIFT_CODE_FIXED_PRICE,
-      }];
-    } else {
-      payableAmount = payosItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      finalPayosItems = payosItems;
-    }
-
-    const paymentDescription = buildPayOSDescription(gatewayOrderCode);
-
-    const paymentLink = await payosClient.paymentRequests.create({
-      orderCode: gatewayOrderCode,
-      amount: payableAmount,
-      description: paymentDescription,
-      returnUrl: `${clientBaseUrl}/checkout/payos/success?orderCode=${gatewayOrderCode}`,
-      cancelUrl: `${clientBaseUrl}/shipping?payment=cancelled`,
-      buyerName,
-      buyerEmail: user.email,
-      buyerPhone: String(shippingAddress.phoneNumber),
-      buyerAddress,
-      items: finalPayosItems,
-      expiredAt: Math.floor(Date.now() / 1000) + 30 * 60,
-    });
-
-    orderDoc.paymentIntent = {
-      gatewayOrderCode,
-      paymentLinkId: paymentLink.paymentLinkId,
-      checkoutUrl: paymentLink.checkoutUrl,
-      qrCode: paymentLink.qrCode,
-      amount: paymentLink.amount,
-      currency: paymentLink.currency,
-      rawResponse: paymentLink,
-      status: paymentLink.status,
-    };
-    await orderDoc.save();
-
-    return res.status(201).json({
-      success: true,
-      message: 'PayOS payment link generated successfully.',
-      data: {
-        checkoutUrl: paymentLink.checkoutUrl,
-        qrCode: paymentLink.qrCode,
-        orderCode: gatewayOrderCode,
-        amount: paymentLink.amount,
-        currency: paymentLink.currency,
-        totalPrice,
-        shippingFee,
-        chargeAmount: payableAmount,
-      },
-    });
-  } catch (error) {
-    logger.error('Failed to initiate PayOS payment', {
-      userId,
-      error: error.message,
-    });
-
-    if (orderDoc?._id) {
-      try {
-        await orderDoc.cancelOrder();
-        await Order.findByIdAndDelete(orderDoc._id);
-      } catch (cleanupError) {
-        logger.error('Failed to cleanup order after PayOS init failure', {
-          orderId: orderDoc._id,
-          error: cleanupError.message,
-        });
-      }
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: 'Unable to initiate PayOS payment. Please try again later.',
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 export const handlePayOSWebhook = asyncHandler(async (req, res) => {
-  try {
-    // Handle PayOS webhook test/ping (empty body or test data)
-    if (!req.body || Object.keys(req.body).length === 0) {
-      logger.info('PayOS webhook test ping received');
-      return res.status(200).json({ success: true, message: 'Webhook is active' });
-    }
-
-    // Handle PayOS webhook confirmation test
-    if (req.body.code === 'test' || req.body.desc === 'test') {
-      logger.info('PayOS webhook confirmation test received');
-      return res.status(200).json({ success: true, message: 'Webhook confirmed' });
-    }
-
-    let verifiedData;
-    try {
-      verifiedData = await payosClient.webhooks.verify(req.body);
-    } catch (verifyError) {
-      // If verification fails but has orderCode, it might be a test or malformed request
-      logger.warn('PayOS webhook verification failed', {
-        error: verifyError.message,
-        body: req.body,
-      });
-      // Return 200 to acknowledge receipt (PayOS expects 200)
-      return res.status(200).json({ success: true, message: 'Webhook received but verification failed' });
-    }
-
-    const order = await Order.findOne({ 'paymentIntent.gatewayOrderCode': verifiedData.orderCode }).populate('user', 'email firstName lastName username');
-
-    if (!order) {
-      logger.error('PayOS webhook received for unknown order', {
-        orderCode: verifiedData.orderCode,
-      });
-      return res.status(200).json({ success: true });
-    }
-
-    if (order.status === 'paid') {
-      return res.status(200).json({ success: true, message: 'Order already processed.' });
-    }
-
-    const paymentLinkId = verifiedData.paymentLinkId || order.paymentIntent?.paymentLinkId || '';
-
-    if (verifiedData.code !== '00') {
-      order.paymentIntent = {
-        ...order.paymentIntent,
-        status: 'FAILED',
-        rawResponse: verifiedData,
-      };
-      order.paymentResult = {
-        id: paymentLinkId,
-        status: 'failed',
-        update_time: verifiedData.transactionDateTime,
-        email_address: order.user.email,
-      };
-      await order.save();
-      return res.status(200).json({ success: true, message: 'Payment marked as failed.' });
-    }
-
-    await order.markAsPaid({
-      id: paymentLinkId,
-      status: 'success',
-      update_time: verifiedData.transactionDateTime,
-      email_address: order.user.email,
-    });
-
-    order.paymentIntent = {
-      ...order.paymentIntent,
-      status: 'PAID',
-      amount: verifiedData.amount || order.paymentIntent?.amount,
-      rawResponse: verifiedData,
-    };
-
-    const cart = await Cart.findOne({ user: order.user._id });
-    if (cart) {
-      try {
-        cart.items = [];
-        await cart.save();
-      } catch (cartError) {
-        logger.error('Failed to clear cart after PayOS success', {
-          orderCode: order.paymentIntent?.gatewayOrderCode,
-          error: cartError.message,
-        });
-      }
-    }
-
-    if (!order.confirmationEmailSentAt) {
-      try {
-        await sendOrderConfirmationEmail({
-          email: order.user.email,
-          order,
-        });
-        order.confirmationEmailSentAt = new Date();
-      } catch (emailError) {
-        logger.error('Failed to send confirmation email', {
-          orderCode: order.paymentIntent?.gatewayOrderCode,
-          error: emailError.message,
-        });
-      }
-    }
-
-    await order.save();
-
-    emitOrderUpdate(req.app.get('io'), order);
-
-    // Track purchase event for customer intelligence
-    eventProcessor.emit('purchase', {
-      userId: order.user._id.toString(),
-      data: {
-        orderId: order._id.toString(),
-        totalAmount: order.totalPrice,
-        items: order.orderItems.map(item => ({
-          productId: item.product?._id || item.product,
-          name: item.name,
-          category: item.category || 'unknown',
-          brand: item.brand || 'unknown',
-          color: item.color,
-          size: item.size,
-          price: item.price,
-          quantity: item.quantity
-        }))
-      }
-    });
-
-    // Send Telegram notification (non-blocking)
-    sendOrderNotificationToTelegram(order).catch(err => {
-      logger.error('Telegram notification failed for PayOS order', {
-        orderCode: order.paymentIntent?.gatewayOrderCode,
-        error: err.message
-      });
-    });
-
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    logger.error('PayOS webhook verification failed', {
-      error: error.message,
-      payload: req.body,
-    });
-    return res.status(400).json({ success: false, message: error.message });
+  const result = await paymentService.handlePayOSWebhook(req.body);
+  if (result.order) {
+    req.app.get('io')?.to('orders').emit('order:updated', result.order);
   }
+  // PayOS requires 200 OK
+  res.status(200).json({ success: true, message: result.message });
 });
 
 export const getPayOSOrderStatus = asyncHandler(async (req, res) => {
   const orderCode = Number(req.params.orderCode);
+  const order = await Order.findOne({ 'paymentIntent.gatewayOrderCode': orderCode, user: req.userId });
 
-  if (!orderCode) {
-    return res.status(400).json({ success: false, message: 'Order code is required.' });
-  }
+  if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-  const order = await Order.findOne({
-    'paymentIntent.gatewayOrderCode': orderCode,
-    user: req.userId,
-  });
-
-  if (!order) {
-    return res.status(404).json({ success: false, message: 'Order not found.' });
-  }
-
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     data: {
       status: order.status,
@@ -445,302 +54,48 @@ export const getPayOSOrderStatus = asyncHandler(async (req, res) => {
       deliveryWindow: order.deliveryWindow,
       paymentResult: order.paymentResult,
       confirmationEmailSentAt: order.confirmationEmailSentAt,
-    },
+    }
   });
 });
 
-// ============================================
-// NowPayments Integration (USDT BSC)
-// ============================================
-
-const serverBaseUrl = process.env.SERVER_URL || 'http://localhost:3111';
-
 /**
- * Create NowPayments invoice for USDT BSC payment
+ * NowPayments Controllers
  */
 export const createNowPaymentsInvoice = asyncHandler(async (req, res) => {
-  const user = req.user;
-  const userId = req.userId;
-  const { shippingMethod, deliveryTime, address: addressPayload, giftCode } = req.body;
-  const clientBaseUrl = getClientBaseUrl(req);
-
-  // Check for valid gift code - fixed price 0.1 USDT
-  const VALID_GIFT_CODE = 'emanhhuy';
-  const GIFT_CODE_FIXED_PRICE = 0.1; // 0.1 USDT
-  const isGiftCodeApplied = giftCode && giftCode.toLowerCase() === VALID_GIFT_CODE;
-
-  if (!SHIPPING_METHODS.includes(shippingMethod)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Currently only home delivery is supported for NowPayments.',
-    });
-  }
-
-  if (!DELIVERY_OPTIONS.includes(deliveryTime)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid delivery option selected.',
-    });
-  }
-
-  let shippingAddress;
   try {
-    shippingAddress = ensureAddressPayload(addressPayload);
+    const clientBaseUrl = getClientBaseUrl(req);
+    const serverBaseUrl = process.env.SERVER_URL || 'http://localhost:3111';
+
+    const result = await paymentService.createNowPaymentsSession({
+      user: req.user,
+      userId: req.userId,
+      ...req.body,
+      clientBaseUrl,
+      serverBaseUrl
+    });
+    res.status(201).json({ success: true, message: 'Invoice created', data: result });
   } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-
-  const cart = await Cart.findOne({ user: userId }).populate({
-    path: 'items.productVariant',
-    populate: { path: 'product_id', select: 'name images brand' },
-  });
-
-  if (!cart || cart.items.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Your cart is empty. Please add items before checking out.',
-    });
-  }
-
-  let orderItems;
-  try {
-    orderItems = buildOrderItems(cart.items);
-  } catch (error) {
-    return res.status(400).json({ success: false, message: error.message });
-  }
-
-  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const shippingFee = getShippingFee(deliveryTime);
-  const totalPrice = Number((subtotal + shippingFee).toFixed(2));
-
-  const streetLine = [shippingAddress.address, shippingAddress.district].filter(Boolean).join(', ');
-
-  const gatewayOrderCode = await generateGatewayOrderCode();
-
-  // Calculate final price (in USD, which equals USDT)
-  const finalPrice = isGiftCodeApplied ? GIFT_CODE_FIXED_PRICE : totalPrice;
-
-  let orderDoc = null;
-
-  try {
-    orderDoc = await Order.create({
-      user: userId,
-      orderItems,
-      shippingAddress: {
-        street: streetLine,
-        city: shippingAddress.city,
-        postalCode: String(shippingAddress.zipCode),
-        phone: String(shippingAddress.phoneNumber),
-      },
-      deliveryMethod: shippingMethod,
-      deliveryWindow: deliveryTime,
-      paymentMethod: 'Crypto',
-      paymentGateway: 'NowPayments',
-      totalPrice: finalPrice,
-      shippingPrice: isGiftCodeApplied ? 0 : shippingFee,
-      appliedGiftCode: isGiftCodeApplied ? giftCode : null,
-      status: 'pending',
-    });
-
-    // Create NowPayments invoice
-    const invoice = await nowpaymentsClient.createInvoice({
-      price_amount: finalPrice,
-      price_currency: 'usd',
-      pay_currency: 'usdtbsc',
-      order_id: String(orderDoc._id),
-      order_description: `Devenir Order #${gatewayOrderCode}`,
-      ipn_callback_url: `${serverBaseUrl}/api/payments/nowpayments/webhook`,
-      success_url: `${clientBaseUrl}/checkout/nowpayments/success?orderId=${orderDoc._id}`,
-      cancel_url: `${clientBaseUrl}/shipping?payment=cancelled`,
-    });
-
-    orderDoc.paymentIntent = {
-      gatewayOrderCode,
-      paymentLinkId: invoice.id,
-      checkoutUrl: invoice.invoice_url,
-      amount: finalPrice,
-      currency: 'USDT',
-      rawResponse: invoice,
-      status: 'PENDING',
-    };
-    await orderDoc.save();
-
-    return res.status(201).json({
-      success: true,
-      message: 'NowPayments invoice created successfully.',
-      data: {
-        invoiceUrl: invoice.invoice_url,
-        invoiceId: invoice.id,
-        orderId: orderDoc._id,
-        orderCode: gatewayOrderCode,
-        amount: finalPrice,
-        currency: 'USDT',
-        payCurrency: 'USDTBSC',
-      },
-    });
-  } catch (error) {
-    logger.error('Failed to initiate NowPayments payment', {
-      userId,
-      error: error.message,
-    });
-
-    if (orderDoc?._id) {
-      try {
-        await orderDoc.cancelOrder();
-        await Order.findByIdAndDelete(orderDoc._id);
-      } catch (cleanupError) {
-        logger.error('Failed to cleanup order after NowPayments init failure', {
-          orderId: orderDoc._id,
-          error: cleanupError.message,
-        });
-      }
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: 'Unable to initiate NowPayments payment. Please try again later.',
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-/**
- * Handle NowPayments IPN webhook
- */
 export const handleNowPaymentsWebhook = asyncHandler(async (req, res) => {
-  try {
-    // Handle empty body (test ping)
-    if (!req.body || Object.keys(req.body).length === 0) {
-      logger.info('NowPayments webhook test ping received');
-      return res.status(200).json({ success: true, message: 'Webhook is active' });
-    }
+  const signature = req.headers['x-nowpayments-sig'];
+  const result = await paymentService.handleNowPaymentsWebhook(req.body, signature);
 
-    const signature = req.headers['x-nowpayments-sig'];
-
-    // Verify IPN signature
-    if (signature) {
-      const isValid = nowpaymentsClient.verifyIPN(req.body, signature);
-      if (!isValid) {
-        logger.warn('NowPayments IPN signature verification failed');
-        return res.status(200).json({ success: true, message: 'Invalid signature' });
-      }
-    }
-
-    const { order_id, payment_status, pay_amount, pay_currency, actually_paid } = req.body;
-
-    if (!order_id) {
-      return res.status(200).json({ success: true, message: 'No order_id in payload' });
-    }
-
-    const order = await Order.findById(order_id).populate('user', 'email firstName lastName username');
-
-    if (!order) {
-      logger.error('NowPayments webhook received for unknown order', { order_id });
-      return res.status(200).json({ success: true });
-    }
-
-    if (order.status === 'paid') {
-      return res.status(200).json({ success: true, message: 'Order already processed.' });
-    }
-
-    // Update payment intent with latest status
-    order.paymentIntent = {
-      ...order.paymentIntent,
-      rawResponse: req.body,
-      status: payment_status?.toUpperCase() || 'PENDING',
-    };
-
-    // Check if payment is finished/confirmed
-    if (payment_status === 'finished' || payment_status === 'confirmed') {
-      await order.markAsPaid({
-        id: order.paymentIntent?.paymentLinkId || '',
-        status: 'success',
-        update_time: new Date().toISOString(),
-        email_address: order.user.email,
-      });
-
-      order.paymentIntent.status = 'PAID';
-
-      // Clear cart
-      const cart = await Cart.findOne({ user: order.user._id });
-      if (cart) {
-        try {
-          cart.items = [];
-          await cart.save();
-        } catch (cartError) {
-          logger.error('Failed to clear cart after NowPayments success', {
-            orderId: order._id,
-            error: cartError.message,
-          });
-        }
-      }
-
-      // Send confirmation email
-      if (!order.confirmationEmailSentAt) {
-        try {
-          await sendOrderConfirmationEmail({
-            email: order.user.email,
-            order,
-          });
-          order.confirmationEmailSentAt = new Date();
-        } catch (emailError) {
-          logger.error('Failed to send confirmation email', {
-            orderId: order._id,
-            error: emailError.message,
-          });
-        }
-      }
-
-      // Send Telegram notification (non-blocking)
-      sendOrderNotificationToTelegram(order).catch(err => {
-        logger.error('Telegram notification failed for NowPayments order', {
-          orderId: order._id,
-          error: err.message
-        });
-      });
-    } else if (payment_status === 'failed' || payment_status === 'expired') {
-      order.paymentIntent.status = 'FAILED';
-      order.paymentResult = {
-        id: order.paymentIntent?.paymentLinkId || '',
-        status: 'failed',
-        update_time: new Date().toISOString(),
-        email_address: order.user.email,
-      };
-    }
-
-    await order.save();
-
-    emitOrderUpdate(req.app.get('io'), order);
-
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    logger.error('NowPayments webhook error', {
-      error: error.message,
-      payload: req.body,
-    });
-    return res.status(200).json({ success: true, message: error.message });
+  if (result.order) {
+    req.app.get('io')?.to('orders').emit('order:updated', result.order);
   }
+  res.status(200).json({ success: true, message: result.message });
 });
 
-/**
- * Get NowPayments payment status
- */
 export const getNowPaymentsStatus = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
+  const order = await Order.findOne({ _id: orderId, user: req.userId });
 
-  if (!orderId) {
-    return res.status(400).json({ success: false, message: 'Order ID is required.' });
-  }
+  if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-  const order = await Order.findOne({
-    _id: orderId,
-    user: req.userId,
-  });
-
-  if (!order) {
-    return res.status(404).json({ success: false, message: 'Order not found.' });
-  }
-
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     data: {
       status: order.status,
@@ -758,4 +113,3 @@ export const getNowPaymentsStatus = asyncHandler(async (req, res) => {
     },
   });
 });
-

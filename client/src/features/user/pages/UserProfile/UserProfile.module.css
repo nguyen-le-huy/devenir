@@ -80,15 +80,15 @@
 
 .helpTitle {
     font-family: 'Satoshi', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 500;
     color: #000;
     margin: 0 0 8px 0;
 }
 
 .helpText {
     font-family: 'Satoshi', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     color: #666;
     margin: 0 0 12px 0;
     line-height: 1.5;
@@ -101,7 +101,7 @@
 
 .helpLink {
     font-family: 'Satoshi', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--brown);
     text-decoration: none;
     font-weight: 500;

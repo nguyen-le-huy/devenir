@@ -74,7 +74,7 @@
     color: #c00;
     padding: 12px 15px;
     margin-bottom: 20px;
-    font-size: 14px;
+    font-size: 15px;
     text-align: center;
 }
 
@@ -84,7 +84,7 @@
 }
 
 .benefitIntro {
-    font-size: 14px;
+    font-size: 16px;
     color: #666;
     line-height: 1.6;
     margin: 0 0 20px 0;
@@ -102,7 +102,7 @@
     align-items: flex-start;
     gap: 12px;
     margin-bottom: 16px;
-    font-size: 14px;
+    font-size: 16px;
     color: #333;
     line-height: 1.5;
 }

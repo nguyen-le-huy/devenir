@@ -1,52 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import authService from '@/features/auth/api/authService';
+import { useVerifyEmail } from '@/features/auth/hooks';
 import styles from './EmailVerificationPage.module.css';
 
 export default function EmailVerificationPage() {
     const { token } = useParams();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(true);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
+
+    const verifyMutation = useVerifyEmail();
 
     useEffect(() => {
-        const verifyEmail = async () => {
-            try {
-                if (!token) {
-                    setError('Verification token is missing');
-                    setLoading(false);
-                    return;
+        if (token) {
+            verifyMutation.mutate(token, {
+                onSuccess: () => {
+                    // Redirect to login after 3 seconds
+                    setTimeout(() => {
+                        navigate('/auth');
+                    }, 3000);
                 }
-
-                await authService.verifyEmail(token);
-                setSuccess(true);
-
-                // Redirect to login after 3 seconds
-                setTimeout(() => {
-                    navigate('/auth');
-                }, 3000);
-            } catch (err: any) {
-                setError(err.message || 'Email verification failed. Please try again.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        verifyEmail();
-    }, [token, navigate]);
+            });
+        }
+    }, [token, navigate]); // Removed verifyMutation from deps to avoid loop 
 
     return (
         <div className={styles.container}>
             <div className={styles.card}>
-                {loading && (
+                {verifyMutation.isPending && (
                     <div className={styles.loading}>
                         <div className={styles.spinner}></div>
                         <p>Verifying your email...</p>
                     </div>
                 )}
 
-                {success && (
+                {verifyMutation.isSuccess && (
                     <div className={styles.success}>
                         <div className={styles.successIcon}>✓</div>
                         <h1 className={styles.title}>Email Verified</h1>
@@ -59,11 +45,11 @@ export default function EmailVerificationPage() {
                     </div>
                 )}
 
-                {error && (
+                {verifyMutation.isError && (
                     <div className={styles.error}>
                         <div className={styles.errorIcon}>✕</div>
                         <h1 className={styles.title}>Verification Failed</h1>
-                        <p className={styles.message}>{error}</p>
+                        <p className={styles.message}>{(verifyMutation.error as any)?.message || 'Email verification failed. Please try again.'}</p>
                         <button
                             onClick={() => navigate('/auth')}
                             className={styles.button}

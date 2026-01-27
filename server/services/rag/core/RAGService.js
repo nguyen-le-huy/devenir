@@ -8,7 +8,7 @@ import { handleAddToCart } from '../specialized/add-to-cart.service.js';
 import { styleMatcher } from '../specialized/style-matcher.service.js';
 import { ConversationManager } from '../orchestrators/conversation-manager.js';
 import { buildCustomerContext } from '../utils/customerContext.js';
-import { logChatInteraction } from '../../chatbotAnalytics.js';
+import chatbotAnalyticsService from '../../chatbotAnalytics.service.js';
 
 export class RAGService {
     constructor() {
@@ -109,7 +109,7 @@ export class RAGService {
 
             // 5. Log analytics
             const responseTime = Date.now() - startTime;
-            await logChatInteraction({
+            await chatbotAnalyticsService.logChatInteraction({
                 userId,
                 sessionId: context.conversation_id,
                 intent,

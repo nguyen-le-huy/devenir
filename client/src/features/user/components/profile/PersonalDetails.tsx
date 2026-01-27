@@ -1,33 +1,20 @@
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { useAuthStore } from '@/core/stores/useAuthStore';
-import authService from '@/features/auth/api/authService';
+
+import { useState, ChangeEvent, FormEvent } from 'react';
+import { useUpdateProfile, useChangePassword } from '@/features/auth/hooks';
 import FormError from '@/shared/components/form/FormError';
 import styles from './PersonalDetails.module.css';
 
 interface PersonalDetailsProps {
     user: any;
-    loading: boolean;
-    error: string;
-    successMessage: string;
-    setError: (msg: string) => void;
-    setSuccessMessage: (msg: string) => void;
-    setLoading: (loading: boolean) => void;
 }
 
 /**
  * Personal Details Component
  * Allows users to edit their personal information and password
  */
-export default function PersonalDetails({
-    user,
-    loading,
-    error,
-    successMessage,
-    setError,
-    setSuccessMessage,
-    setLoading
-}: PersonalDetailsProps) {
-    const updateUser = useAuthStore((state) => state.updateUser);
+export default function PersonalDetails({ user }: PersonalDetailsProps) {
+
+    // Form States
     const [formData, setFormData] = useState({
         username: user?.username || '',
         email: user?.email || '',
@@ -47,20 +34,9 @@ export default function PersonalDetails({
     const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
     const [showPasswordSection, setShowPasswordSection] = useState(false);
 
-    // Clear messages after 5 seconds
-    useEffect(() => {
-        if (successMessage) {
-            const timer = setTimeout(() => setSuccessMessage(''), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [successMessage, setSuccessMessage]);
-
-    useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => setError(''), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [error, setError]);
+    // Hooks
+    const updateProfileMutation = useUpdateProfile();
+    const changePasswordMutation = useChangePassword();
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -128,80 +104,48 @@ export default function PersonalDetails({
         return errors;
     };
 
-    const handleUpdateProfile = async (e: FormEvent) => {
+    const handleUpdateProfile = (e: FormEvent) => {
         e.preventDefault();
         const errors = validateProfileForm();
 
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
-            setError('Please fix the errors below');
             return;
         }
 
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
 
-        try {
-            // Call API to update profile
-            await authService.updateProfile(formData);
-            setSuccessMessage('Profile updated successfully!');
-            // Update AuthContext with new user data
-            updateUser({
-                username: formData.username,
-                phone: formData.phone,
-                birthday: formData.birthday,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-            });
-        } catch (err: any) {
-            setError(err.message || 'Failed to update profile');
-        } finally {
-            setLoading(false);
-        }
+        updateProfileMutation.mutate(formData);
     };
 
-    const handleChangePassword = async (e: FormEvent) => {
+    const handleChangePassword = (e: FormEvent) => {
         e.preventDefault();
         const errors = validatePasswordForm();
 
         if (Object.keys(errors).length > 0) {
             setPasswordErrors(errors);
-            setError('Please fix the errors below');
             return;
         }
 
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
-
-        try {
-            // Call API to change password
-            await authService.changePassword({
-                currentPassword: passwordData.currentPassword,
-                newPassword: passwordData.newPassword,
-            });
-            setSuccessMessage('Password changed successfully!');
-            setPasswordData({
-                currentPassword: '',
-                newPassword: '',
-                confirmPassword: '',
-            });
-            setShowPasswordSection(false);
-        } catch (err: any) {
-            setError(err.message || 'Failed to change password');
-        } finally {
-            setLoading(false);
-        }
+        changePasswordMutation.mutate({
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword,
+        }, {
+            onSuccess: () => {
+                setPasswordData({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: '',
+                });
+                setShowPasswordSection(false);
+            }
+        });
     };
 
     return (
         <div className={styles.personalDetails}>
-            {/* Error/Success Messages */}
-            {error && <FormError message={error} />}
-            {successMessage && (
-                <div className={styles.successMessage}>{successMessage}</div>
-            )}
+            {/* Error/Success Messages managed by Toast mostly, but inline error if needed */}
+            {updateProfileMutation.isError && <FormError message={(updateProfileMutation.error as any).message || 'Failed to update profile'} />}
+            {changePasswordMutation.isError && <FormError message={(changePasswordMutation.error as any).message || 'Failed to change password'} />}
 
             {/* Personal Information Section */}
             <div className={styles.section}>
@@ -217,7 +161,7 @@ export default function PersonalDetails({
                                 name="username"
                                 value={formData.username}
                                 onChange={handleChange}
-                                className={`${styles.input} ${fieldErrors.username ? styles.inputError : ''}`}
+                                className={`${styles.input} ${fieldErrors.username ? styles.inputError : ''} `}
                                 placeholder="Enter your username"
                             />
                             {fieldErrors.username && (
@@ -271,7 +215,7 @@ export default function PersonalDetails({
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
-                                className={`${styles.input} ${fieldErrors.phone ? styles.inputError : ''}`}
+                                className={`${styles.input} ${fieldErrors.phone ? styles.inputError : ''} `}
                                 placeholder="+84 or 0 followed by 9-10 digits"
                             />
                             {fieldErrors.phone && (
@@ -287,7 +231,7 @@ export default function PersonalDetails({
                                 type="email"
                                 value={formData.email}
                                 disabled
-                                className={`${styles.input} ${styles.inputDisabled}`}
+                                className={`${styles.input} ${styles.inputDisabled} `}
                             />
                             <p className={styles.helperText}>
                                 To update your email, please contact our Customer Support team
@@ -297,10 +241,10 @@ export default function PersonalDetails({
 
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={updateProfileMutation.isPending}
                         className={styles.saveBtn}
                     >
-                        {loading ? 'Saving...' : 'Save Changes'}
+                        {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
                     </button>
                 </form>
             </div>
@@ -331,7 +275,7 @@ export default function PersonalDetails({
                                 name="currentPassword"
                                 value={passwordData.currentPassword}
                                 onChange={handlePasswordChange}
-                                className={`${styles.input} ${passwordErrors.currentPassword ? styles.inputError : ''}`}
+                                className={`${styles.input} ${passwordErrors.currentPassword ? styles.inputError : ''} `}
                                 placeholder="Enter your current password"
                             />
                             {passwordErrors.currentPassword && (
@@ -346,7 +290,7 @@ export default function PersonalDetails({
                                 name="newPassword"
                                 value={passwordData.newPassword}
                                 onChange={handlePasswordChange}
-                                className={`${styles.input} ${passwordErrors.newPassword ? styles.inputError : ''}`}
+                                className={`${styles.input} ${passwordErrors.newPassword ? styles.inputError : ''} `}
                                 placeholder="Enter your new password"
                             />
                             {passwordErrors.newPassword && (
@@ -361,7 +305,7 @@ export default function PersonalDetails({
                                 name="confirmPassword"
                                 value={passwordData.confirmPassword}
                                 onChange={handlePasswordChange}
-                                className={`${styles.input} ${passwordErrors.confirmPassword ? styles.inputError : ''}`}
+                                className={`${styles.input} ${passwordErrors.confirmPassword ? styles.inputError : ''} `}
                                 placeholder="Confirm your new password"
                             />
                             {passwordErrors.confirmPassword && (
@@ -372,10 +316,10 @@ export default function PersonalDetails({
                         <div className={styles.passwordActions}>
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={changePasswordMutation.isPending}
                                 className={styles.changePasswordSubmitBtn}
                             >
-                                {loading ? 'Changing...' : 'Change password'}
+                                {changePasswordMutation.isPending ? 'Changing...' : 'Change password'}
                             </button>
 
                             <button

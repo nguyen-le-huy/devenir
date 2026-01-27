@@ -1,13 +1,5 @@
 import asyncHandler from 'express-async-handler';
-import {
-    getChatbotOverview,
-    getCustomerTypeDistribution,
-    getIntentDistribution,
-    getPersonalizationEffectiveness,
-    getDailyUsageTrend,
-    getTopChatProducts,
-    getChatbotConversionMetrics
-} from '../services/chatbotAnalytics.js';
+import chatbotAnalyticsService from '../services/chatbotAnalytics.service.js';
 
 /**
  * @desc    Get chatbot analytics overview
@@ -15,14 +7,9 @@ import {
  * @access  Private/Admin
  */
 export const getChatbotAnalyticsOverview = asyncHandler(async (req, res) => {
-    const { days = 7 } = req.query;
-
-    const overview = await getChatbotOverview(parseInt(days));
-
-    res.json({
-        success: true,
-        data: overview
-    });
+    const { days } = req.query; // Parsed by Zod
+    const overview = await chatbotAnalyticsService.getChatbotOverview(days);
+    res.json({ success: true, data: overview });
 });
 
 /**
@@ -31,14 +18,9 @@ export const getChatbotAnalyticsOverview = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getCustomerTypes = asyncHandler(async (req, res) => {
-    const { days = 7 } = req.query;
-
-    const distribution = await getCustomerTypeDistribution(parseInt(days));
-
-    res.json({
-        success: true,
-        data: distribution
-    });
+    const { days } = req.query;
+    const distribution = await chatbotAnalyticsService.getCustomerTypeDistribution(days);
+    res.json({ success: true, data: distribution });
 });
 
 /**
@@ -47,14 +29,9 @@ export const getCustomerTypes = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getIntents = asyncHandler(async (req, res) => {
-    const { days = 7 } = req.query;
-
-    const distribution = await getIntentDistribution(parseInt(days));
-
-    res.json({
-        success: true,
-        data: distribution
-    });
+    const { days } = req.query;
+    const distribution = await chatbotAnalyticsService.getIntentDistribution(days);
+    res.json({ success: true, data: distribution });
 });
 
 /**
@@ -63,14 +40,9 @@ export const getIntents = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getPersonalizationMetrics = asyncHandler(async (req, res) => {
-    const { days = 7 } = req.query;
-
-    const metrics = await getPersonalizationEffectiveness(parseInt(days));
-
-    res.json({
-        success: true,
-        data: metrics
-    });
+    const { days } = req.query;
+    const metrics = await chatbotAnalyticsService.getPersonalizationEffectiveness(days);
+    res.json({ success: true, data: metrics });
 });
 
 /**
@@ -79,14 +51,9 @@ export const getPersonalizationMetrics = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getUsageTrend = asyncHandler(async (req, res) => {
-    const { days = 7 } = req.query;
-
-    const trend = await getDailyUsageTrend(parseInt(days));
-
-    res.json({
-        success: true,
-        data: trend
-    });
+    const { days } = req.query;
+    const trend = await chatbotAnalyticsService.getDailyUsageTrend(days);
+    res.json({ success: true, data: trend });
 });
 
 /**
@@ -95,14 +62,9 @@ export const getUsageTrend = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getTopProducts = asyncHandler(async (req, res) => {
-    const { days = 7, limit = 10 } = req.query;
-
-    const products = await getTopChatProducts(parseInt(days), parseInt(limit));
-
-    res.json({
-        success: true,
-        data: products
-    });
+    const { days, limit } = req.query;
+    const products = await chatbotAnalyticsService.getTopChatProducts(days, limit);
+    res.json({ success: true, data: products });
 });
 
 /**
@@ -111,14 +73,9 @@ export const getTopProducts = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getConversionMetrics = asyncHandler(async (req, res) => {
-    const { days = 7 } = req.query;
-
-    const metrics = await getChatbotConversionMetrics(parseInt(days));
-
-    res.json({
-        success: true,
-        data: metrics
-    });
+    const { days } = req.query;
+    const metrics = await chatbotAnalyticsService.getChatbotConversionMetrics(days);
+    res.json({ success: true, data: metrics });
 });
 
 /**
@@ -127,39 +84,7 @@ export const getConversionMetrics = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getChatbotDashboard = asyncHandler(async (req, res) => {
-    const { days = 7 } = req.query;
-    const parsedDays = parseInt(days);
-
-    // Fetch all analytics in parallel
-    const [
-        overview,
-        customerTypes,
-        intents,
-        personalization,
-        trend,
-        topProducts,
-        conversion
-    ] = await Promise.all([
-        getChatbotOverview(parsedDays),
-        getCustomerTypeDistribution(parsedDays),
-        getIntentDistribution(parsedDays),
-        getPersonalizationEffectiveness(parsedDays),
-        getDailyUsageTrend(parsedDays),
-        getTopChatProducts(parsedDays, 5),
-        getChatbotConversionMetrics(parsedDays)
-    ]);
-
-    res.json({
-        success: true,
-        data: {
-            overview,
-            customerTypes,
-            intents,
-            personalization,
-            trend,
-            topProducts,
-            conversion,
-            period: `Last ${parsedDays} days`
-        }
-    });
+    const { days } = req.query;
+    const data = await chatbotAnalyticsService.getChatbotDashboard(days);
+    res.json({ success: true, data });
 });

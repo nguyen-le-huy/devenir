@@ -133,7 +133,7 @@ export default function CustomersPage() {
           />
           <MetricCard
             title="Repeat Customer Rate"
-            value={overview?.revenue?.repeatPurchaseRate ? `${overview.revenue.repeatPurchaseRate}%` : '—'}
+            value={overview?.revenue?.repeatPurchaseRate ? `${overview.revenue.repeatPurchaseRate.toFixed(1)}%` : '—'}
             change={undefined}
             trend="neutral"
           />

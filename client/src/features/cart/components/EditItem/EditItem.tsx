@@ -1,4 +1,5 @@
 import styles from './EditItem.module.css';
+import { toast } from 'sonner';
 import { useLenisControl } from '@/shared/hooks/useLenisControl';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useProductVariants } from '@/features/products/hooks/useProducts';
@@ -107,7 +108,7 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
             );
 
             if (!newVariant) {
-                alert('Selected size is not available');
+                toast.error('Selected size is not available');
                 return;
             }
 
@@ -122,13 +123,13 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
                                 handleClose();
                             },
                             onError: (error) => {
-                                alert(error.message || 'Failed to add new size');
+                                toast.error(error.message || 'Failed to add new size');
                             }
                         }
                     );
                 },
                 onError: (error) => {
-                    alert(error.message || 'Failed to update item');
+                    toast.error(error.message || 'Failed to update item');
                 }
             });
         } else {
@@ -140,7 +141,7 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
                         handleClose();
                     },
                     onError: (error) => {
-                        alert(error.message || 'Failed to update quantity');
+                        toast.error(error.message || 'Failed to update quantity');
                     }
                 }
             );

@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Quy tắc & Hướng dẫn Phát triển (Rules & Guidelines)
 
 ## 1. Nguyên tắc Cốt lõi (Core Principles)

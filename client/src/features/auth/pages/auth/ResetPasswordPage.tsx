@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import FormInput from '@/shared/components/form/FormInput';
 import FormButton from '@/shared/components/form/FormButton';
 import FormError from '@/shared/components/form/FormError';
-import authService from '@/features/auth/api/authService';
+import { useResetPassword } from '@/features/auth/hooks';
 import styles from './ResetPasswordPage.module.css';
 
 /**
@@ -13,14 +13,14 @@ import styles from './ResetPasswordPage.module.css';
 const ResetPasswordPage = () => {
     const { token } = useParams();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
     const [formData, setFormData] = useState({
         newPassword: '',
         confirmPassword: '',
     });
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    // Hooks
+    const resetMutation = useResetPassword();
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -54,7 +54,7 @@ const ResetPasswordPage = () => {
         return errors;
     };
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
         const errors = validateForm();
@@ -63,23 +63,11 @@ const ResetPasswordPage = () => {
             return;
         }
 
-        setLoading(true);
-        setError('');
-
-        try {
-            await authService.resetPassword(token as string, {
-                newPassword: formData.newPassword,
+        if (token) {
+            resetMutation.mutate({
+                token,
+                data: { newPassword: formData.newPassword }
             });
-
-            setSuccess(true);
-            setTimeout(() => {
-                navigate('/auth');
-            }, 2000);
-        } catch (err: any) {
-            setError(err.message || 'Reset mật khẩu thất bại');
-            console.error('Reset password error:', err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -97,7 +85,7 @@ const ResetPasswordPage = () => {
         );
     }
 
-    if (success) {
+    if (resetMutation.isSuccess) {
         return (
             <div className={styles.container}>
                 <div className={styles.card}>
@@ -117,7 +105,7 @@ const ResetPasswordPage = () => {
                 <h1 className={styles.title}>Đặt lại mật khẩu</h1>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    {error && <FormError message={error} />}
+                    {resetMutation.error && <FormError message={(resetMutation.error as any).message || 'Reset mật khẩu thất bại'} />}
 
                     <FormInput
                         label="Mật khẩu mới"
@@ -145,8 +133,8 @@ const ResetPasswordPage = () => {
 
                     <FormButton
                         type="submit"
-                        disabled={loading}
-                        loading={loading}
+                        disabled={resetMutation.isPending}
+                        loading={resetMutation.isPending}
                         variant="primary"
                     >
                         Đặt lại mật khẩu

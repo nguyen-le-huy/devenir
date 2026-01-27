@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from "react";
+import { toast } from 'sonner';
 import styles from "./Checkout.module.css";
 import { useShippingAddress, useSaveShippingAddress, useUpdateShippingAddress } from '@/features/checkout/hooks/useShipping';
 import { useCart } from '@/features/cart/hooks/useCart';
@@ -113,7 +114,7 @@ const Shipping = memo(() => {
         // Validate form
         const isValid = Object.values(formData).every(value => value.trim() !== "");
         if (!isValid) {
-            alert("Please fill in all required fields");
+            toast.error("Please fill in all required fields");
             return;
         }
 
@@ -134,7 +135,7 @@ const Shipping = memo(() => {
 
         } catch (error: any) {
             console.error("Error saving address:", error);
-            alert(error.message || "Failed to save address. Please try again.");
+            toast.error(error.message || "Failed to save address. Please try again.");
         }
     };
 

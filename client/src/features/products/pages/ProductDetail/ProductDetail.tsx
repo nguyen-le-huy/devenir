@@ -1,4 +1,5 @@
 import styles from './ProductDetail.module.css';
+import { toast } from 'sonner';
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useHeaderHeight } from '@/shared/hooks/useHeaderHeight';
@@ -91,7 +92,7 @@ const ProductDetail = memo(() => {
             { variantId: variant._id, quantity: 1 },
             {
                 onSuccess: () => setIsAddToBagNotiOpen(true),
-                onError: (error: any) => alert(error.response?.data?.message || 'Failed to add to bag. Please login first.')
+                onError: (error: any) => toast.error(error.response?.data?.message || 'Failed to add to bag. Please login first.')
             }
         );
     }, [variant?._id, addToCartMutation]);

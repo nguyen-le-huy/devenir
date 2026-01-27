@@ -1,4 +1,5 @@
 import styles from "./SelectSize.module.css";
+import { toast } from 'sonner';
 import { useState } from "react";
 import { useLenisControl } from '@/shared/hooks/useLenisControl';
 import { useAddToCart } from '@/features/cart/hooks/useCart';
@@ -80,7 +81,7 @@ const SelectSize = ({ isOpen, onClose, variants = [], currentVariant: _currentVa
                         }
                     },
                     onError: (error: any) => {
-                        alert(error.response?.data?.message || 'Failed to add to bag. Please login first.');
+                        toast.error(error.response?.data?.message || 'Failed to add to bag. Please login first.');
                     }
                 }
             );

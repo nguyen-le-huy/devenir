@@ -30,9 +30,6 @@ const UserProfile = memo(() => {
     const initialTab = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
 
     // Check authentication
     useEffect(() => {
@@ -61,8 +58,6 @@ const UserProfile = memo(() => {
         window.open('http://localhost:5173', '_blank');
     };
 
-
-
     const handleTabChange = (id: string) => {
         setActiveTab(id);
         setSearchParams((prev) => {
@@ -83,29 +78,13 @@ const UserProfile = memo(() => {
                 );
             case 'personal':
                 return (
-                    <PersonalDetails
-                        user={user}
-                        loading={loading}
-                        error={error}
-                        successMessage={successMessage}
-                        setError={setError}
-                        setSuccessMessage={setSuccessMessage}
-                        setLoading={setLoading}
-                    />
+                    <PersonalDetails user={user} />
                 );
             case 'orders':
                 return <ProfileOrders />;
             case 'preferences':
                 return (
-                    <MarketingPreferences
-                        user={user}
-                        loading={loading}
-                        error={error}
-                        successMessage={successMessage}
-                        setError={setError}
-                        setSuccessMessage={setSuccessMessage}
-                        setLoading={setLoading}
-                    />
+                    <MarketingPreferences user={user} />
                 );
             default:
                 return null;

@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/core/stores/useAuthStore';
 import RegisterForm from '@/shared/components/form/RegisterForm';
-import authService from '@/features/auth/api/authService';
+import { useRegister, useGoogleAuth } from '@/features/auth/hooks';
+import { RegisterData, AuthResponse } from '@/features/auth/types';
 import styles from './RegisterPage.module.css';
 
 /**
@@ -12,54 +12,48 @@ import styles from './RegisterPage.module.css';
  */
 export default function RegisterPage() {
     const navigate = useNavigate();
-    const login = useAuthStore((state) => state.login);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const loginToStore = useAuthStore((state) => state.login);
 
-    const handleRegister = async (data: any) => {
-        setLoading(true);
-        setError('');
+    // Hooks
+    const registerMutation = useRegister();
+    const googleAuthMutation = useGoogleAuth();
 
-        try {
-            const response = await authService.register(data);
-
-            // Update Auth Store
-            login(response.token, response.user);
-
-            // Redirect to home
-            navigate('/');
-            toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
-        } catch (err: any) {
-            toast.error(err.message || 'Registration failed');
-            console.error('Register error:', err);
-        } finally {
-            setLoading(false);
-        }
+    const handleRegister = (data: RegisterData) => {
+        registerMutation.mutate(data, {
+            onSuccess: (response: AuthResponse) => {
+                if (response.token && response.user) {
+                    loginToStore(response.token, response.user);
+                    navigate('/');
+                    toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
+                } else {
+                    // Verification flow
+                    toast.success('Registration successful! Please check your email to verify your account.');
+                    navigate('/auth'); // Redirect to login
+                }
+            },
+            onError: () => {
+                // Toast handled by hook usually
+            }
+        });
     };
 
-    const handleGoogleLogin = async (credential: string | undefined) => {
-        setLoading(true);
-        setError('');
+    const handleGoogleLogin = (credential: string | undefined) => {
+        if (!credential) return;
 
-        try {
-            const response = await authService.googleLogin(credential);
-
-            // Update Auth Store
-            login(response.token, response.user);
-
-            // Redirect to home
-            navigate('/');
-            toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
-        } catch (err: any) {
-            toast.error(err.message || 'Google registration failed');
-            console.error('Google login error:', err);
-        } finally {
-            setLoading(false);
-        }
+        googleAuthMutation.mutate(credential, {
+            onSuccess: (response: any) => {
+                loginToStore(response.token, response.user);
+                navigate('/');
+                toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
+            },
+            onError: (err: any) => {
+                toast.error(err?.message || 'Google registration failed');
+            }
+        });
     };
 
     const handleSwitchToLogin = () => {
-        navigate('/');
+        navigate('/auth');
     };
 
     return (
@@ -76,9 +70,9 @@ export default function RegisterPage() {
                     <RegisterForm
                         onSubmit={handleRegister}
                         onGoogleLogin={handleGoogleLogin}
-                        loading={loading}
-                        error={error}
-                        onBack={handleSwitchToLogin} // Assuming RegisterForm supports onBack or we remove it if not needed for full page
+                        loading={registerMutation.isPending || googleAuthMutation.isPending}
+                        error={registerMutation.error ? (registerMutation.error as any).message : ''}
+                        onBack={handleSwitchToLogin}
                     />
                     <div className={styles.switchForm}>
                         <span>Đã có tài khoản?</span>

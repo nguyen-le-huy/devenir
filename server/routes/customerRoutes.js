@@ -1,6 +1,12 @@
 import express from 'express'
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js'
-import { sanitizeBody, validateCustomerInput, validateObjectId, validatePagination } from '../middleware/validationMiddleware.js'
+import { validate } from '../middleware/validate.js'
+import {
+  createCustomerSchema,
+  updateCustomerSchema,
+  customerIdParamSchema,
+  customerQuerySchema,
+} from '../validators/customer.validator.js'
 import {
   getCustomers,
   getCustomerOverview,
@@ -16,11 +22,11 @@ const router = express.Router()
 router.use(authenticate, isAdmin)
 
 router.get('/overview', getCustomerOverview)
-router.get('/', validatePagination, getCustomers)
-router.get('/:id/orders', validateObjectId('id'), getCustomerOrders)
-router.get('/:id', validateObjectId('id'), getCustomerById)
-router.post('/', sanitizeBody, validateCustomerInput, createCustomer)
-router.put('/:id', sanitizeBody, validateObjectId('id'), validateCustomerInput, updateCustomer)
-router.delete('/:id', validateObjectId('id'), deleteCustomer)
+router.get('/', validate(customerQuerySchema), getCustomers)
+router.get('/:id/orders', validate(customerIdParamSchema), getCustomerOrders)
+router.get('/:id', validate(customerIdParamSchema), getCustomerById)
+router.post('/', validate(createCustomerSchema), createCustomer)
+router.put('/:id', validate(updateCustomerSchema), updateCustomer)
+router.delete('/:id', validate(customerIdParamSchema), deleteCustomer)
 
 export default router

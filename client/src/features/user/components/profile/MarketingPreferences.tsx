@@ -1,30 +1,18 @@
-import { useState, useEffect, FormEvent } from 'react';
-import authService from '@/features/auth/api/authService';
+import { useState, FormEvent } from 'react';
+import { useUpdatePreferences } from '@/features/auth/hooks';
 import styles from './MarketingPreferences.module.css';
 
 interface MarketingPreferencesProps {
     user: any; // Specify user type if available
-    loading: boolean;
-    error: string;
-    successMessage: string;
-    setError: (msg: string) => void;
-    setSuccessMessage: (msg: string) => void;
-    setLoading: (loading: boolean) => void;
 }
 
 /**
  * Marketing Preferences Component
  * Allows users to manage communication preferences
  */
-export default function MarketingPreferences({
-    user,
-    loading,
-    error,
-    successMessage,
-    setError,
-    setSuccessMessage,
-    setLoading
-}: MarketingPreferencesProps) {
+export default function MarketingPreferences({ user }: MarketingPreferencesProps) {
+    const updatePreferencesMutation = useUpdatePreferences();
+
     const [preferences, setPreferences] = useState({
         channels: {
             email: true,
@@ -35,21 +23,6 @@ export default function MarketingPreferences({
         },
         interests: user?.preferences?.interests || 'menswear',
     });
-
-    // Clear messages after 5 seconds
-    useEffect(() => {
-        if (successMessage) {
-            const timer = setTimeout(() => setSuccessMessage(''), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [successMessage, setSuccessMessage]);
-
-    useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => setError(''), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [error, setError]);
 
     const handleChannelChange = (channel: keyof typeof preferences.channels) => {
         setPreferences((prev) => ({
@@ -68,21 +41,9 @@ export default function MarketingPreferences({
         }));
     };
 
-    const handleSavePreferences = async (e: FormEvent) => {
+    const handleSavePreferences = (e: FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
-
-        try {
-            // Call API to save preferences
-            await authService.updatePreferences(preferences);
-            setSuccessMessage('Marketing preferences updated successfully!');
-        } catch (err: any) {
-            setError(err.message || 'Failed to save preferences');
-        } finally {
-            setLoading(false);
-        }
+        updatePreferencesMutation.mutate(preferences);
     };
 
     const getChannelLabel = (channel: string) => {
@@ -97,12 +58,9 @@ export default function MarketingPreferences({
 
     return (
         <div className={styles.preferences}>
-            {/* Error/Success Messages */}
-            {error && (
-                <div className={styles.errorMessage}>{error}</div>
-            )}
-            {successMessage && (
-                <div className={styles.successMessage}>{successMessage}</div>
+            {/* Error/Success Messages handled by Toast mostly */}
+            {updatePreferencesMutation.isError && (
+                <div className={styles.errorMessage}>{(updatePreferencesMutation.error as any).message || 'Failed to update preferences'}</div>
             )}
 
             <form onSubmit={handleSavePreferences} className={styles.form}>
@@ -198,10 +156,10 @@ export default function MarketingPreferences({
                 {/* Save Button */}
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={updatePreferencesMutation.isPending}
                     className={styles.saveBtn}
                 >
-                    {loading ? 'Saving...' : 'Save Changes'}
+                    {updatePreferencesMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </button>
             </form>
         </div>

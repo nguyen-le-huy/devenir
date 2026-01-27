@@ -1,4 +1,5 @@
 import styles from './Search.module.css';
+import { toast } from 'sonner';
 import { useEffect, useRef, useState, useCallback, useMemo, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
@@ -218,14 +219,14 @@ const Search = ({ onClose }: SearchProps) => {
             } else {
                 // Nếu không có variant, hiển thị thông báo lỗi
                 console.error('No variants found for this product');
-                alert('This product has no variants available.');
+                toast.error('This product has no variants available.');
             }
 
             // Đóng search modal
             handleClose();
         } catch (error) {
             console.error('Error navigating to product:', error);
-            alert('An error occurred while loading the product.');
+            toast.error('An error occurred while loading the product.');
             handleClose();
         }
     }, [navigate, handleClose]);

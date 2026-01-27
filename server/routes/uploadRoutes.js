@@ -3,6 +3,8 @@ import multer from 'multer';
 import { uploadImage, uploadImages, deleteImage, uploadCategoryImage } from '../controllers/UploadController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { upload, uploadToR2 } from '../middleware/uploadMiddleware.js';
+import { validate } from '../middleware/validate.js';
+import { deleteImageSchema } from '../validators/upload.validator.js';
 
 const router = express.Router();
 
@@ -30,11 +32,8 @@ router.post('/images', authenticate, isAdmin, upload.array('images', 10), upload
  */
 router.post('/category-image', authenticate, isAdmin, upload.single('image'), uploadToR2, uploadCategoryImage);
 
-/**
- * DELETE /api/upload/:publicId
- * Delete image from R2
- */
-router.delete('/:publicId', authenticate, isAdmin, deleteImage);
+// DELETE /api/upload/:publicId
+router.delete('/:publicId', authenticate, isAdmin, validate(deleteImageSchema), deleteImage);
 
 // Error handling middleware for multer errors
 router.use((err, req, res, next) => {

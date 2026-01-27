@@ -1,4 +1,5 @@
 import styles from "./Checkout.module.css";
+import { toast } from 'sonner';
 import ProductCheckout from '@/features/products/components/ProductCard/ProductCheckout';
 import ProductCarousel from '@/features/products/components/ProductCarousel/ProductCarousel';
 import PageWrapper from '@/shared/components/PageWrapper/PageWrapper';
@@ -52,7 +53,7 @@ const Checkout = memo(() => {
                 // Item removed successfully
             },
             onError: (error: any) => {
-                alert(error.message || 'Failed to remove item');
+                toast.error(error.message || 'Failed to remove item');
             }
         });
     };
@@ -70,7 +71,7 @@ const Checkout = memo(() => {
     const handleCheckout = () => {
         // Check if cart is not empty
         if (cart.items.length === 0) {
-            alert('Your bag is empty. Please add items to checkout.');
+            toast.error('Your bag is empty. Please add items to checkout.');
             return;
         }
 

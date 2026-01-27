@@ -1,0 +1,10 @@
+Order ID,Date,Customer Name,Customer Phone,Total Amount (VND),Payment Method,Payment Status,Order Status
+6975eb3cecd35d09166a376d,"17:06:52 25/1/2026","lehyyy","0364075812",15000,Bank,Paid,shipped
+6975ea99ecd35d09166a3719,"17:04:09 25/1/2026","lehyyy","0364075812",23000,Bank,Paid,shipped
+6975ea25ecd35d09166a3705,"17:02:13 25/1/2026","lehyyy","0364075812",23000,Bank,Paid,shipped
+6975e990e507a1578426f5fa,"16:59:44 25/1/2026","lehyyy","0364075812",23000,Bank,Paid,shipped
+6975e8342f49af905c458ffe,"16:53:56 25/1/2026","lehyyy","0364075812",23000,Bank,Paid,shipped
+6975e5e62f49af905c458f84,"16:44:06 25/1/2026","lehyyy","0364075812",23000,Bank,Paid,shipped
+69719feba26ae3b1dc20d7e6,"10:56:27 22/1/2026","huynl","0364075812",6111,Bank,Paid,shipped
+696a17695194b3a15500d585,"17:48:09 16/1/2026","dung1322003","0929561600",5432,Bank,Paid,shipped
+6961341fe442ef8e35c0dceb,"00:00:15 10/1/2026","lehyyy","0364075812",49000,Bank,Paid,shipped

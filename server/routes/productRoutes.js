@@ -15,6 +15,14 @@ import {
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { cacheMiddleware, clearCache } from '../middleware/cacheMiddleware.js';
 import logger from '../config/logger.js';
+import { validate } from '../middleware/validate.js';
+import {
+  createProductSchema,
+  updateProductSchema,
+  createVariantSchema,
+  updateVariantSchema,
+  bulkUpdateVariantsSchema
+} from '../validators/product.validator.js';
 
 const router = express.Router();
 
@@ -56,13 +64,13 @@ router.get('/', cacheMiddleware(300), getAllProducts);
  * Create new product (Admin only)
  * Body: { name, description, basePrice, category, brand, images, tags, status, variants }
  */
-router.post('/admin', authenticate, isAdmin, clearProductCache, createProduct);
+router.post('/admin', authenticate, isAdmin, validate(createProductSchema), clearProductCache, createProduct);
 
 /**
  * PUT /api/products/admin/:id
  * Update product (Admin only)
  */
-router.put('/admin/:id', authenticate, isAdmin, clearProductCache, updateProduct);
+router.put('/admin/:id', authenticate, isAdmin, validate(updateProductSchema), clearProductCache, updateProduct);
 
 /**
  * DELETE /api/products/admin/:id
@@ -80,13 +88,13 @@ router.get('/admin/variants', authenticate, isAdmin, getAllVariants);
  * POST /api/products/admin/:id/variants
  * Create variant (Admin only)
  */
-router.post('/admin/:id/variants', authenticate, isAdmin, clearProductCache, createVariant);
+router.post('/admin/:id/variants', authenticate, isAdmin, validate(createVariantSchema), clearProductCache, createVariant);
 
 /**
  * PUT /api/products/admin/variants/:skuOrId
  * Update variant (Admin only)
  */
-router.put('/admin/variants/:skuOrId', authenticate, isAdmin, clearProductCache, updateVariant);
+router.put('/admin/variants/:skuOrId', authenticate, isAdmin, validate(updateVariantSchema), clearProductCache, updateVariant);
 
 /**
  * DELETE /api/products/admin/variants/:skuOrId
@@ -99,7 +107,7 @@ router.delete('/admin/variants/:skuOrId', authenticate, isAdmin, clearProductCac
  * Bulk update variants (Admin only)
  * Body: { skus: string[], operation: 'set'|'add'|'subtract', amount: number }
  */
-router.put('/admin/variants/bulk-update', authenticate, isAdmin, clearProductCache, bulkUpdateVariants);
+router.put('/admin/variants/bulk-update', authenticate, isAdmin, validate(bulkUpdateVariantsSchema), clearProductCache, bulkUpdateVariants);
 
 // ============ PUBLIC DYNAMIC ROUTES ============
 
