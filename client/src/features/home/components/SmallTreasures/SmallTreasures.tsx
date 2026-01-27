@@ -15,7 +15,7 @@ const SmallTreasures = () => {
         const container = smallTreasureRef.current;
         if (!container) return;
 
-        const images = gsap.utils.toArray(`.${styles.imageParallax}`);
+        const images = gsap.utils.toArray(`.${styles.imageParallax}`) as Element[];
 
         gsap.from(titleRef.current, {
             opacity: 0,
@@ -27,7 +27,7 @@ const SmallTreasures = () => {
             }
         })
 
-        images.forEach((image: any, index: number) => {
+        images.forEach((image: Element, index: number) => {
             const speeds = [-300, -350, -280, -320, -290, -330, -200];
             const speed = speeds[index] || 100;
 

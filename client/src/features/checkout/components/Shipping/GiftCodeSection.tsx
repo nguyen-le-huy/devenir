@@ -1,4 +1,4 @@
-import styles from "./Checkout.module.css";
+import styles from "@/features/checkout/pages/Checkout/Checkout.module.css";
 
 interface GiftCodeSectionProps {
     giftCode: string;

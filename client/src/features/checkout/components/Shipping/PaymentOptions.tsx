@@ -1,9 +1,11 @@
-import styles from "./Checkout.module.css";
+import styles from "@/features/checkout/pages/Checkout/Checkout.module.css";
 import { memo } from "react";
 
+import { PaymentMethodType } from '@/features/checkout/types';
+
 interface PaymentOptionsProps {
-    paymentMethod: string;
-    setPaymentMethod: (method: string) => void;
+    paymentMethod: PaymentMethodType;
+    setPaymentMethod: (method: PaymentMethodType) => void;
 }
 
 const PaymentOptions = memo(({ paymentMethod, setPaymentMethod }: PaymentOptionsProps) => {

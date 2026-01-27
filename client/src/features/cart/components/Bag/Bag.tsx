@@ -1,4 +1,4 @@
-import { memo, useEffect, useState, useMemo, useCallback } from "react";
+import { memo, useEffect, useState, useCallback } from "react";
 import styles from "./Bag.module.css";
 import { useHeaderHeight } from '@/shared/hooks/useHeaderHeight';
 import { useLenisControl } from '@/shared/hooks/useLenisControl';
@@ -6,7 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from '@/features/cart/hooks/useCart';
 import Backdrop from '@/shared/components/Backdrop/Backdrop';
 import Loading from "@/shared/components/Loading/Loading";
-import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
+import CartItemRow from "./CartItemRow";
+import { ICartItem } from '@/features/cart/types';
 
 interface BagProps {
     onMouseEnter?: () => void;
@@ -22,8 +23,11 @@ const Bag = memo(({ onMouseEnter, onMouseLeave, onClose }: BagProps) => {
     useLenisControl(true);
 
     // Fetch real cart data
-    const { data: cartData, isLoading } = useCart();
-    const cart = (cartData as any)?.data || { items: [], totalItems: 0, totalPrice: 0 };
+    const { data: cart, isLoading } = useCart();
+
+    // Default empty cart if undefined
+    const items = cart?.items || [];
+    const totalPrice = cart?.totalPrice || 0;
 
     // Trigger animation immediately on mount
     useEffect(() => {
@@ -33,68 +37,20 @@ const Bag = memo(({ onMouseEnter, onMouseLeave, onClose }: BagProps) => {
     }, []);
 
     const handleCheckout = useCallback(() => {
-        if (cart.items.length === 0) return;
+        if (items.length === 0) return;
         if (onClose) onClose();
         navigate("/checkout");
-    }, [cart.items.length, onClose, navigate]);
-
-    const handleProductClick = useCallback((variantId: string) => {
-        if (onClose) onClose();
-        navigate(`/product-detail?variant=${variantId}`);
-    }, [onClose, navigate]);
-
-    // Memoize cart items to prevent unnecessary re-renders
-    const cartItems = useMemo(() => {
-        return cart.items.map((item: any, index: number) => {
-            const variant = item.productVariant;
-            const productName = variant?.product_id?.name || 'Product';
-            const image = variant?.mainImage || '/images/placeholder.png';
-            const price = variant?.price || 0;
-            const size = variant?.size || '';
-            const color = variant?.color || '';
-            const variantId = variant?._id;
-
-            return (
-                <div
-                    key={variantId || index}
-                    className={styles.product}
-                >
-                    <img
-                        src={getOptimizedImageUrl(image)}
-                        alt={productName}
-                        onClick={() => handleProductClick(variantId)}
-                        style={{ cursor: 'pointer' }}
-                        loading="lazy"
-                    />
-                    <div className={styles.productInfo}>
-                        <div className={styles.nameAndQuanity}>
-                            <p
-                                className={styles.productName}
-                                onClick={() => handleProductClick(variantId)}
-                                style={{ cursor: 'pointer' }}
-                            >{productName}</p>
-                            <p className={styles.productQuantity}>
-                                {size && size !== 'Free Size' && `Size: ${size}`}
-                                {size && size !== 'Free Size' && color && ' | '}
-                                {color && `Color: ${color}`}
-                                {(size && size !== 'Free Size') || color ? ' | ' : ''}Qty: {item.quantity}
-                            </p>
-                        </div>
-                        <p className={styles.productPrice}>${(price * item.quantity).toFixed(2)}</p>
-                    </div>
-                </div>
-            );
-        });
-    }, [cart.items, handleProductClick]);
+    }, [items.length, onClose, navigate]);
 
     // Show loading while fetching data
-    const showLoading = isLoading;
+    const showLoading = isLoading && !cart; // Only show loading if we have no data at all (first load)
 
     return (
         <>
             <Backdrop
                 visible={isVisible}
                 style={{ top: `${headerHeight}px`, bottom: 0 }}
+                onClick={onClose} // Allow clicking backdrop to close
             />
             <div
                 className={`${styles.bag} ${isVisible ? styles.visible : ''}`}
@@ -106,15 +62,21 @@ const Bag = memo(({ onMouseEnter, onMouseLeave, onClose }: BagProps) => {
                     <div className={styles.loadingWrapper}>
                         <Loading size="md" />
                     </div>
-                ) : cart.items.length > 0 ? (
+                ) : items.length > 0 ? (
                     <div className={styles.bagContent}>
                         <div className={styles.productList} data-lenis-prevent>
-                            {cartItems}
+                            {items.map((item: ICartItem) => (
+                                <CartItemRow
+                                    key={item._id || item.productVariant?._id}
+                                    item={item}
+                                    onClose={onClose}
+                                />
+                            ))}
                         </div>
 
                         <div className={styles.totalPrice}>
                             <p>Sub total</p>
-                            <p>${cart.totalPrice.toFixed(2)}</p>
+                            <p>${totalPrice.toFixed(2)}</p>
                         </div>
 
                         <div className={styles.checkoutButton}>

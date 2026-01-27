@@ -1,25 +1,36 @@
 import apiClient from '@/core/api/apiClient';
+import { ChatPayload, ChatResponse, ChatMessage, ChatHistoryMessage } from '../types';
 
-// Session ID cho guest users
+// Session ID for guest users
+// Note: In a real app setup, this might be better managed in a Context or Store, 
+// but for a stateless service module, we rely on localStorage persistence.
 let guestSessionId = localStorage.getItem('chat_session_id') || null;
 
 /**
  * Send message to RAG chat API
- * @param {string} message - User message
- * @param {Array} conversationHistory - Previous messages
- * @param {boolean} isAuthenticated - Is user logged in
+ * @param message - User message
+ * @param conversationHistory - Previous messages
+ * @param isAuthenticated - Is user logged in
  */
-export const sendChatMessage = async (message: string, conversationHistory: any[] = [], isAuthenticated: boolean = false) => {
+export const sendChatMessage = async (
+    message: string,
+    conversationHistory: ChatMessage[] = [],
+    isAuthenticated: boolean = false
+): Promise<ChatResponse> => {
     const endpoint = isAuthenticated ? '/chat' : '/chat/guest';
 
-    const payload: any = {
-        message,
-        conversation_history: conversationHistory.slice(-50).map(msg => ({
+    const historyPayload: ChatHistoryMessage[] = conversationHistory
+        .slice(-50)
+        .map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.text,
-            // Include suggested products for context
+            // Include suggested products for context if they exist
             suggestedProducts: msg.suggestedProducts || []
-        }))
+        }));
+
+    const payload: ChatPayload = {
+        message,
+        conversation_history: historyPayload
     };
 
     // Add session_id for guest users
@@ -27,9 +38,13 @@ export const sendChatMessage = async (message: string, conversationHistory: any[
         payload.session_id = guestSessionId;
     }
 
-    const response = await apiClient.post(endpoint, payload) as any;
+    // We use 'unknown' first to safely cast, as apiClient response type isn't generic enough yet
+    const response = await apiClient.post(endpoint, payload) as unknown as ChatResponse;
 
-    // apiClient interceptor already returns response.data, so response is the actual data
+    // apiClient interceptor usually returns response.data. 
+    // If the API wrapper returns the full Axios response, we might need adjustments.
+    // Assuming apiClient returns the data object directly based on typical project setups.
+
     // Save session_id for guest users
     if (!isAuthenticated && response?.session_id) {
         guestSessionId = response.session_id;
@@ -41,30 +56,30 @@ export const sendChatMessage = async (message: string, conversationHistory: any[
 
 /**
  * Get chat history (requires auth)
- * @param {number} limit - Number of messages to fetch
+ * @param limit - Number of messages to fetch
  */
-export const getChatHistory = async (limit: number = 20) => {
+export const getChatHistory = async (limit: number = 20): Promise<any> => {
     return apiClient.get(`/chat/history?limit=${limit}`);
 };
 
 /**
  * Clear chat history (requires auth)
  */
-export const clearChatHistory = async () => {
+export const clearChatHistory = async (): Promise<any> => {
     return apiClient.delete('/chat/clear');
 };
 
 /**
  * Check RAG service health
  */
-export const checkChatHealth = async () => {
+export const checkChatHealth = async (): Promise<any> => {
     return apiClient.get('/chat/health');
 };
 
 /**
  * Clear guest session
  */
-export const clearGuestSession = () => {
+export const clearGuestSession = (): void => {
     guestSessionId = null;
     localStorage.removeItem('chat_session_id');
 };

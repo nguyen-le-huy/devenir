@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as shippingService from '@/features/checkout/api/shippingService';
-
 import { useAuthStore } from '@/core/stores/useAuthStore';
+import { ShippingAddress } from '../types';
 
 // Query keys for shipping
 export const shippingKeys = {
-    all: ['shipping'],
-    address: () => [...shippingKeys.all, 'address'],
+    all: ['shipping'] as const,
+    address: () => [...shippingKeys.all, 'address'] as const,
 };
 
 /**
@@ -32,8 +32,8 @@ export const useSaveShippingAddress = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (addressData: any) => shippingService.saveShippingAddress(addressData),
-        onSuccess: (_data: any) => {
+        mutationFn: (addressData: ShippingAddress) => shippingService.saveShippingAddress(addressData),
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: shippingKeys.all });
         },
         onError: (error: any) => {
@@ -49,8 +49,8 @@ export const useUpdateShippingAddress = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (addressData: any) => shippingService.updateShippingAddress(addressData),
-        onSuccess: (_data: any) => {
+        mutationFn: (addressData: ShippingAddress) => shippingService.updateShippingAddress(addressData),
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: shippingKeys.all });
         },
         onError: (error: any) => {

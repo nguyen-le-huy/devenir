@@ -38,15 +38,23 @@ const AuthPage = memo(() => {
 
     // ==================== LOGIN HANDLERS ====================
     const handleLogin = (data: LoginData) => {
-        loginMutation.mutate(data);
+        loginMutation.mutate(data, {
+            onSuccess: () => {
+                toast.success('Welcome back!');
+                navigate('/');
+            },
+            onError: (error) => {
+                toast.error(error.message || 'Login failed');
+            }
+        });
     };
 
     const handleGoogleLogin = (credential: string | undefined) => {
         if (!credential) return;
 
         googleAuthMutation.mutate(credential, {
-            onSuccess: (data) => {
-                loginToStore(data.token, data.user);
+            onSuccess: () => {
+                // Store update handled by hook
                 toast.success('Welcome back!');
                 navigate('/');
             },

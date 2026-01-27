@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { LoginData } from '@/features/auth/types';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/core/stores/useAuthStore';
+
 import LoginForm from '@/shared/components/form/LoginForm';
 import ForgotPasswordForm from '@/shared/components/form/ForgotPasswordForm';
 import { useLogin, useGoogleAuth, useForgotPassword } from '@/features/auth/hooks';
@@ -21,7 +21,7 @@ interface AuthModalProps {
  */
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const navigate = useNavigate();
-    const loginToStore = useAuthStore((state) => state.login);
+    // const loginToStore = useAuthStore((state) => state.login); // Handled by hooks now
     const [activeForm, setActiveForm] = useState<'login' | 'forgot'>('login');
     const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
 
@@ -37,9 +37,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         loginMutation.mutate(data, {
             onSuccess: () => {
                 onClose();
+                toast.success('Signed in successfully');
             },
-            onError: () => {
-                // Toast handled by hook
+            onError: (error) => {
+                toast.error(error.message || 'Login failed');
             }
         });
     };
@@ -49,12 +50,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         if (!credential) return;
 
         googleAuthMutation.mutate(credential, {
-            onSuccess: (response: any) => {
-                loginToStore(response.token, response.user);
+            onSuccess: (response) => {
+                // Store updated by hook
                 onClose();
                 toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
             },
-            onError: (err: any) => {
+            onError: (err) => {
                 toast.error(err?.message || 'Google login failed');
             }
         });

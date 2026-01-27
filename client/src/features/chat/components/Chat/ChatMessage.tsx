@@ -2,6 +2,8 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './ChatMessage.module.css';
 import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
+import { ChatMessage as ChatMessageType, SuggestedAction, ActionType } from '@/features/chat/types';
+import { DirectionsIcon } from './ChatIcons';
 
 interface StreamingTextProps {
     text: string;
@@ -79,8 +81,8 @@ const StreamingText = memo(({ text, onComplete, speed = 15 }: StreamingTextProps
 StreamingText.displayName = 'StreamingText';
 
 interface ChatMessageProps {
-    message: any;
-    onActionClick: (id: string, action: string, actionData?: any) => void;
+    message: ChatMessageType;
+    onActionClick: (id: string | number, action: ActionType, actionData?: SuggestedAction) => void;
     isLatest?: boolean;
     onStreamComplete?: () => void;
 }
@@ -161,7 +163,7 @@ const ChatMessage = memo(({ message, onActionClick, isLatest = false, onStreamCo
                 {/* Product Cards - animated entrance */}
                 {!isUser && message.suggestedProducts && message.suggestedProducts.length > 0 && showProducts && (
                     <div className={`${styles.products} ${styles.fadeIn}`}>
-                        {message.suggestedProducts.map((product: any) => (
+                        {message.suggestedProducts.map((product) => (
                             <Link
                                 to={`/product-detail?variant=${product.variantId || product._id}`}
                                 key={product._id}
@@ -214,9 +216,7 @@ const ChatMessage = memo(({ message, onActionClick, isLatest = false, onStreamCo
                             rel="noopener noreferrer"
                             className={styles.directionsButton}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 11l19-9-9 19-2-8-8-2z" />
-                            </svg>
+                            <DirectionsIcon width={16} height={16} />
                             Chỉ đường
                         </a>
                     </div>

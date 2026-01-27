@@ -6,9 +6,10 @@ import { useProductVariants } from '@/features/products/hooks/useProducts';
 import { useUpdateCartItem, useAddToCart, useRemoveFromCart } from '@/features/cart/hooks/useCart';
 import Backdrop from '@/shared/components/Backdrop/Backdrop';
 import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
+import { ICartItem, IProductVariant } from '@/features/cart/types';
 
 interface EditItemProps {
-    item: any;
+    item: ICartItem;
     onClose: () => void;
 }
 
@@ -18,14 +19,25 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
     // Lock scroll when EditItem is opened
     useLenisControl(true);
 
-    // Extract data from item
-    const variant = item?.productVariant;
-    const productId = variant?.product_id?._id || variant?.product_id;
-    const productName = variant?.product_id?.name || 'Product';
-    const image = variant?.mainImage || '/images/placeholder.png'; // Not price, it's image
-    const initialSize = variant?.size || '';
-    const color = variant?.color || '';
-    const initialQuantity = item?.quantity || 1;
+    // Defensive check
+    const variant = item.productVariant || item.variant;
+
+    // If invalid item, close immediately (or return null)
+    useEffect(() => {
+        if (!variant) {
+            onClose();
+        }
+    }, [variant, onClose]);
+
+    if (!variant) return null;
+
+    const product = variant.product_id;
+    const productId = product?._id;
+    const productName = product?.name || 'Product';
+    const image = variant.mainImage || '/images/placeholder.png';
+    const initialSize = variant.size || '';
+    const color = typeof variant.color === 'string' ? variant.color : variant.color?.name || '';
+    const initialQuantity = item.quantity || 1;
 
     // State for editing
     const [quantity, setQuantity] = useState(initialQuantity);
@@ -35,6 +47,8 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
     const isFreeSize = initialSize === 'Free Size' || !initialSize;
 
     // Fetch all variants of this product to check stock
+    // Note: useProductVariants might need to be typed properly in its own file, 
+    // here we assume it returns { data: IProductVariant[] } or similar
     const { data: variantsData } = useProductVariants(productId);
     const variants = (variantsData as any)?.data || [];
 
@@ -42,6 +56,8 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
     const updateCartMutation = useUpdateCartItem();
     const addToCartMutation = useAddToCart();
     const removeFromCartMutation = useRemoveFromCart();
+
+    const isPending = updateCartMutation.isPending || addToCartMutation.isPending || removeFromCartMutation.isPending;
 
     // Trigger animation after component mounts
     useEffect(() => {
@@ -58,9 +74,10 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
 
         return sizeList.map(size => {
             // Find variant with same color and this size
-            const sizeVariant = variants.find((v: any) =>
-                v.color === color && v.size === size
-            );
+            const sizeVariant = variants.find((v: IProductVariant) => {
+                const vColor = typeof v.color === 'string' ? v.color : v.color?.name;
+                return vColor === color && v.size === size;
+            });
 
             return {
                 size,
@@ -72,11 +89,11 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
 
     // Handlers with useCallback for performance
     const handleIncreaseQuantity = useCallback(() => {
-        setQuantity((prev: number) => prev + 1);
+        setQuantity((prev) => prev + 1);
     }, []);
 
     const handleDecreaseQuantity = useCallback(() => {
-        setQuantity((prev: number) => Math.max(1, prev - 1)); // Min = 1
+        setQuantity((prev) => Math.max(1, prev - 1)); // Min = 1
     }, []);
 
     const handleSizeClick = useCallback((size: string, inStock: boolean) => {
@@ -96,41 +113,35 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
         const quantityChanged = quantity !== initialQuantity;
 
         if (!sizeChanged && !quantityChanged) {
-            // No changes, just close
             handleClose();
             return;
         }
 
         if (sizeChanged) {
             // Size changed: Remove old variant and add new variant
-            const newVariant = variants.find((v: any) =>
-                v.color === color && v.size === selectedSize
-            );
+            const newVariant = variants.find((v: IProductVariant) => {
+                const vColor = typeof v.color === 'string' ? v.color : v.color?.name;
+                return vColor === color && v.size === selectedSize;
+            });
 
             if (!newVariant) {
                 toast.error('Selected size is not available');
                 return;
             }
 
-            // First remove old variant, then add new variant
+            // Chain: Remove -> Add
             removeFromCartMutation.mutate(variant._id, {
                 onSuccess: () => {
-                    // After removing, add new variant with new quantity
                     addToCartMutation.mutate(
                         { variantId: newVariant._id, quantity },
                         {
                             onSuccess: () => {
+                                // toast.success handled by hook
                                 handleClose();
                             },
-                            onError: (error) => {
-                                toast.error(error.message || 'Failed to add new size');
-                            }
                         }
                     );
                 },
-                onError: (error) => {
-                    toast.error(error.message || 'Failed to update item');
-                }
             });
         } else {
             // Only quantity changed: Just update
@@ -138,28 +149,40 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
                 { variantId: variant._id, quantity },
                 {
                     onSuccess: () => {
+                        // toast.success handled by hook
                         handleClose();
                     },
-                    onError: (error) => {
-                        toast.error(error.message || 'Failed to update quantity');
-                    }
                 }
             );
         }
     }, [
-        isFreeSize,
-        selectedSize,
-        initialSize,
-        quantity,
-        initialQuantity,
-        variants,
-        color,
-        variant?._id,
-        removeFromCartMutation,
-        addToCartMutation,
-        updateCartMutation,
+        isFreeSize, selectedSize, initialSize, quantity, initialQuantity,
+        variants, color, variant?._id,
+        removeFromCartMutation, addToCartMutation, updateCartMutation,
         handleClose
     ]);
+
+    // Render helper for Size Selector to avoid duplication
+    const renderSizeSelector = () => (
+        <div className={styles.selector}>
+            {availableSizes.map(({ size, inStock }) => (
+                <p
+                    key={size}
+                    className={`
+                        ${!inStock ? styles.outOfStock : ''}
+                        ${selectedSize === size ? styles.selected : ''}
+                    `}
+                    onClick={() => handleSizeClick(size, inStock)}
+                    style={{
+                        cursor: inStock ? 'pointer' : 'not-allowed',
+                        opacity: inStock ? 1 : 0.5
+                    }}
+                >
+                    {size}
+                </p>
+            ))}
+        </div>
+    );
 
     return (
         <div data-lenis-prevent>
@@ -203,39 +226,23 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
                                 </svg>
                             </div>
                         </div>
-                        {/* Desktop: selectSize & button in .info */}
+                        {/* Desktop & Mobile share usage of renderSizeSelector if structure differs slightly, 
+                            but keeping separate blocks with conditional classes to match original CSS structure exactly */}
                         {!isFreeSize && (
                             <div className={`${styles.selectSize} ${styles.desktopOnly}`}>
                                 <p>Select size:</p>
-                                <div className={styles.selector}>
-                                    {availableSizes.map(({ size, inStock }) => (
-                                        <p
-                                            key={size}
-                                            className={`
-                                                ${!inStock ? styles.outOfStock : ''}
-                                                ${selectedSize === size ? styles.selected : ''}
-                                            `}
-                                            onClick={() => handleSizeClick(size, inStock)}
-                                            style={{
-                                                cursor: inStock ? 'pointer' : 'not-allowed',
-                                                opacity: inStock ? 1 : 0.5
-                                            }}
-                                        >
-                                            {size}
-                                        </p>
-                                    ))}
-                                </div>
+                                {renderSizeSelector()}
                             </div>
                         )}
                         <div
                             className={`${styles.button} ${styles.desktopOnly}`}
                             onClick={handleSave}
                             style={{
-                                opacity: (updateCartMutation.isPending || addToCartMutation.isPending || removeFromCartMutation.isPending) ? 0.6 : 1,
-                                cursor: (updateCartMutation.isPending || addToCartMutation.isPending || removeFromCartMutation.isPending) ? 'not-allowed' : 'pointer'
+                                opacity: isPending ? 0.6 : 1,
+                                cursor: isPending ? 'not-allowed' : 'pointer'
                             }}
                         >
-                            {(updateCartMutation.isPending || addToCartMutation.isPending || removeFromCartMutation.isPending) ? 'Saving...' : 'Save'}
+                            {isPending ? 'Saving...' : 'Save'}
                         </div>
                     </div>
                 </div>
@@ -243,35 +250,18 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
                 {!isFreeSize && (
                     <div className={`${styles.selectSize} ${styles.mobileOnly}`}>
                         <p>Select size:</p>
-                        <div className={styles.selector}>
-                            {availableSizes.map(({ size, inStock }) => (
-                                <p
-                                    key={size}
-                                    className={`
-                                        ${!inStock ? styles.outOfStock : ''}
-                                        ${selectedSize === size ? styles.selected : ''}
-                                    `}
-                                    onClick={() => handleSizeClick(size, inStock)}
-                                    style={{
-                                        cursor: inStock ? 'pointer' : 'not-allowed',
-                                        opacity: inStock ? 1 : 0.5
-                                    }}
-                                >
-                                    {size}
-                                </p>
-                            ))}
-                        </div>
+                        {renderSizeSelector()}
                     </div>
                 )}
                 <div
                     className={`${styles.button} ${styles.mobileOnly}`}
                     onClick={handleSave}
                     style={{
-                        opacity: (updateCartMutation.isPending || addToCartMutation.isPending || removeFromCartMutation.isPending) ? 0.6 : 1,
-                        cursor: (updateCartMutation.isPending || addToCartMutation.isPending || removeFromCartMutation.isPending) ? 'not-allowed' : 'pointer'
+                        opacity: isPending ? 0.6 : 1,
+                        cursor: isPending ? 'not-allowed' : 'pointer'
                     }}
                 >
-                    {(updateCartMutation.isPending || addToCartMutation.isPending || removeFromCartMutation.isPending) ? 'Saving...' : 'Save'}
+                    {isPending ? 'Saving...' : 'Save'}
                 </div>
             </div>
         </div>

@@ -40,9 +40,9 @@ const Header = memo(() => {
     }, [categoriesData]);
 
     // Fetch real cart data for badge count
-    // TODO: Define strict types for useCart return
-    const { data: cartData } = useCart() as any;
-    const bagCount = cartData?.data?.totalItems || 0;
+    // Fetch real cart data for badge count
+    const { data: cart } = useCart();
+    const bagCount = cart?.totalItems || 0;
 
     // Preload Bag component to ensure instant open
     useEffect(() => {

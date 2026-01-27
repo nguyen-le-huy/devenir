@@ -50,15 +50,17 @@ export const validate = (schema) => (req, res, next) => {
 
         next();
     } catch (error) {
-        if (error instanceof z.ZodError) {
+        // Check for ZodError via instanceof OR duck typing (name property) 
+        // to handle potential ESM/CJS duplicate instance issues
+        if (error instanceof z.ZodError || error.name === 'ZodError') {
             // Return first meaningful error message or a summary
-            const firstError = error.errors[0];
+            const firstError = error.errors?.[0];
             const message = firstError ? `${firstError.path.slice(1).join('.')}: ${firstError.message}` : 'Validation failed';
 
             return res.status(400).json({
                 success: false,
                 message: message,
-                errors: error.errors.map(e => ({
+                errors: error.errors?.map(e => ({
                     path: e.path.slice(1).join('.'), // Remove 'body', 'query', etc from path
                     message: e.message,
                     code: e.code

@@ -8,8 +8,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { MotionPathHelper } from "gsap/MotionPathHelper";
-// @ts-ignore
 import { useLatestVariants } from '@/features/products/hooks/useProducts';
+import type { VariantData, NewArrivalProduct, SplitTextInstance } from '@/features/home/types';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, MotionPathPlugin, MotionPathHelper);
 
@@ -22,10 +22,10 @@ const NewArrivals = memo(() => {
     const { data: variantsData, isLoading } = useLatestVariants(4);
 
     // Transform variant data to match ScarfCard expected format
-    const products = useMemo(() => {
+    const products = useMemo<NewArrivalProduct[]>(() => {
         if (!variantsData || variantsData.length === 0) return [];
 
-        return variantsData.map((variant: any) => ({
+        return variantsData.map((variant: VariantData) => ({
             id: variant._id,
             name: variant.productInfo?.name || 'Unknown Product',
             price: variant.price,
@@ -44,8 +44,8 @@ const NewArrivals = memo(() => {
 
         if (!container || !titleElement || !linkElement) return;
 
-        let titleSplitInstance: any = null;
-        let linkSplitInstance: any = null;
+        let titleSplitInstance: SplitTextInstance | null = null;
+        let linkSplitInstance: SplitTextInstance | null = null;
 
         // Use refs instead of string selectors to ensure targets are found
         gsap.set([titleElement, linkElement], { opacity: 1 });
@@ -54,25 +54,25 @@ const NewArrivals = memo(() => {
             titleSplitInstance = new SplitText(titleElement, {
                 type: "words, lines",
                 linesClass: "line"
-            });
+            }) as unknown as SplitTextInstance;
 
             linkSplitInstance = new SplitText(linkElement, {
                 type: "words, lines",
                 linesClass: "line"
-            });
+            }) as unknown as SplitTextInstance;
 
             // Wrap lines for overflow hidden (như ChatWindow)
-            titleSplitInstance.lines.forEach((line: any) => {
+            titleSplitInstance.lines.forEach((line: Element) => {
                 const wrapper = document.createElement('div');
                 wrapper.style.overflow = 'hidden';
-                line.parentNode.insertBefore(wrapper, line);
+                line.parentNode?.insertBefore(wrapper, line);
                 wrapper.appendChild(line);
             });
 
-            linkSplitInstance.lines.forEach((line: any) => {
+            linkSplitInstance.lines.forEach((line: Element) => {
                 const wrapper = document.createElement('div');
                 wrapper.style.overflow = 'hidden';
-                line.parentNode.insertBefore(wrapper, line);
+                line.parentNode?.insertBefore(wrapper, line);
                 wrapper.appendChild(line);
             });
 
@@ -133,7 +133,7 @@ const NewArrivals = memo(() => {
             </div>
             <div className={styles.productList}>
                 {products.length > 0 ? (
-                    products.map((product: any) => (
+                    products.map((product: NewArrivalProduct) => (
                         <ScarfCard key={product.id} scarf={product} />
                     ))
                 ) : (

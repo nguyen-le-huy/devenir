@@ -2,6 +2,7 @@ import styles from './CategoryBox.module.css';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { useRef } from 'react';
+import type { Swiper as SwiperType } from 'swiper';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -9,7 +10,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 const CategoryBox = () => {
-    const swiperRef = useRef<any>(null);
+    const swiperRef = useRef<SwiperType | null>(null);
 
     const handlePrevClick = () => {
         if (swiperRef.current) {

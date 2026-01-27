@@ -4,61 +4,41 @@ import ProductCheckout from '@/features/products/components/ProductCard/ProductC
 import ProductCarousel from '@/features/products/components/ProductCarousel/ProductCarousel';
 import PageWrapper from '@/shared/components/PageWrapper/PageWrapper';
 import { useCart, useRemoveFromCart } from '@/features/cart/hooks/useCart';
-import { useLatestVariants } from '@/features/products/hooks/useProducts';
-import { useMemo, useState, memo } from "react";
+import { useRecommendedProducts } from '@/features/checkout/hooks/useRecommendedProducts';
+import { useState, memo } from "react";
 import EditItem from '@/features/cart/components/EditItem/EditItem';
 import { useNavigate } from "react-router-dom";
+import { ICartItem } from '@/features/cart/types';
 
 const Checkout = memo(() => {
     const navigate = useNavigate();
 
     // State for EditItem modal
     const [showEditItem, setShowEditItem] = useState(false);
-    const [editingItem, setEditingItem] = useState<any>(null);
+    const [editingItem, setEditingItem] = useState<ICartItem | null>(null);
 
     // Fetch real cart data
-    const { data: cartData, isLoading } = useCart();
-    const cart = (cartData as any)?.data || { items: [], totalItems: 0, totalPrice: 0 };
+    const { data: cartData, isLoading: isCartLoading } = useCart();
+    const cart = cartData || { items: [], totalItems: 0, totalPrice: 0 };
 
     // Remove from cart mutation
     const removeFromCartMutation = useRemoveFromCart();
 
-    // Fetch latest variants for "You May Also Like" carousel
-    const { data: variantsData } = useLatestVariants(20);
-
-    // Transform and shuffle variants to get 8 random products
-    const recommendedProducts = useMemo(() => {
-        const variants = (variantsData as any)?.data || variantsData || [];
-        if (!variants || variants.length === 0) return [];
-
-        // Shuffle array randomly
-        const shuffled = [...variants].sort(() => Math.random() - 0.5);
-
-        // Take first 8 and transform to product format
-        return shuffled.slice(0, 8).map((variant: any) => ({
-            id: variant._id,
-            name: variant.productInfo?.name || 'Product',
-            price: variant.price,
-            image: variant.mainImage || '/images/placeholder.png',
-            imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
-            color: variant.color,
-            size: variant.size,
-            sku: variant.sku,
-        }));
-    }, [variantsData]);
+    // Fetch recommended products
+    const { recommendedProducts, isLoading: isRecLoading } = useRecommendedProducts(8);
 
     const handleRemoveItem = (variantId: string) => {
         removeFromCartMutation.mutate(variantId, {
             onSuccess: () => {
                 // Item removed successfully
             },
-            onError: (error: any) => {
+            onError: (error: Error) => {
                 toast.error(error.message || 'Failed to remove item');
             }
         });
     };
 
-    const handleEditItem = (item: any) => {
+    const handleEditItem = (item: ICartItem) => {
         setEditingItem(item);
         setShowEditItem(true);
     };
@@ -80,7 +60,7 @@ const Checkout = memo(() => {
     };
 
     return (
-        <PageWrapper isLoading={isLoading}>
+        <PageWrapper isLoading={isCartLoading || isRecLoading}>
             <div className={styles.checkout}>
                 <div className={styles.header}>
                     <h3>Your Bag Total Is USD {cart.totalPrice.toFixed(2)}</h3>
@@ -89,7 +69,7 @@ const Checkout = memo(() => {
                 <div className={styles.body}>
                     <div className={styles.left}>
                         {cart.items.length > 0 ? (
-                            cart.items.map((item: any, index: number) => (
+                            cart.items.map((item: ICartItem, index: number) => (
                                 <ProductCheckout
                                     key={item.productVariant?._id || index}
                                     item={item}

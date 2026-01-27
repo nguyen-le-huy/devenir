@@ -58,9 +58,10 @@ const Hero = memo(() => {
                 }
             });
 
-            heroTexts?.forEach((text: any, index: number) => {
+            heroTexts?.forEach((text: Element, index: number) => {
                 // Đảm bảo revert split text cũ nếu có
-                if (text._split) text._split.revert();
+                const textEl = text as HTMLElement & { _split?: { revert: () => void } };
+                if (textEl._split) textEl._split.revert();
 
                 const split = new SplitText(text, {
                     type: "words,lines",
@@ -69,18 +70,18 @@ const Hero = memo(() => {
                 });
 
                 // Lưu reference để cleanup nếu cần
-                text._split = split;
+                textEl._split = split;
 
                 // Wrap lines for overflow hidden (như ChatWindow)
-                split.lines.forEach((line: any) => {
+                split.lines.forEach((line: Element) => {
                     const wrapper = document.createElement('div');
                     wrapper.style.overflow = 'hidden';
-                    line.parentNode.insertBefore(wrapper, line);
+                    line.parentNode?.insertBefore(wrapper, line);;
                     wrapper.appendChild(line);
                 });
 
                 // Set opacity 1 cho container cha bằng GSAP (override CSS opacity: 0 tạm thời)
-                gsap.set(text, { opacity: 1 });
+                gsap.set(textEl, { opacity: 1 });
 
                 tl.from(split.lines, {
                     delay: 0.5,
