@@ -30,12 +30,18 @@ src/
 │   └── types/               # Shared TypeScript types
 │
 └── features/                # Feature modules (Self-contained)
-    ├── [feature-name]/      # e.g., auth, products, cart
-    │   ├── api/             # API calls
-    │   ├── components/      # Feature-specific components
-    │   ├── hooks/           # Logic hooks (React Query + Stores)
-    │   ├── pages/           # Pages for this feature
-    │   └── types/           # Types specific to feature
+    ├── auth/
+    ├── products/
+    ├── cart/
+    ├── checkout/
+    ├── chat/                # AI Chat Widget (RAG)
+    │   ├── api/             # chatApi.ts - API calls
+    │   ├── components/      # ChatIcon, ChatWindow, ChatMessage, StreamingText
+    │   ├── hooks/           # useChat, useChatMessages, useChatActions, useChatSession
+    │   ├── store/           # useChatUIStore.ts - Zustand UI state
+    │   ├── utils/           # chatValidation, chatUtils, chatConstants
+    │   └── types/           # api.types, store.types, index
+    └── [other features]/
 ```
 
 ## 3. Chiến lược Quản lý State (State Management)

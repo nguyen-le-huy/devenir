@@ -167,12 +167,30 @@ devenir/
 │
 ├── client/                        # Customer Frontend
 │   ├── src/
-│   │   ├── components/            # UI components
-│   │   ├── pages/                 # Route pages
-│   │   ├── features/
-│   │   │   ├── chat/              # AI Chat widget
-│   │   │   └── nowpayments/       # Crypto payment
-│   │   └── services/              # API clients
+│   │   ├── core/                  # Core infrastructure
+│   │   │   ├── api/               # Axios client, interceptors
+│   │   │   ├── stores/            # Zustand global stores (auth, ui)
+│   │   │   └── lib/               # Third-party configs (queryClient, socket)
+│   │   ├── shared/                # Shared/reusable code
+│   │   │   ├── components/        # UI components (Button, Modal)
+│   │   │   ├── hooks/             # Shared hooks (useDebounce)
+│   │   │   ├── utils/             # Utility functions
+│   │   │   └── types/             # Shared TypeScript types
+│   │   ├── features/              # Feature modules (Feature-Based)
+│   │   │   ├── auth/              # Authentication
+│   │   │   ├── products/          # Product listing, detail
+│   │   │   ├── cart/              # Shopping cart
+│   │   │   ├── checkout/          # Checkout flow
+│   │   │   ├── chat/              # AI Chat widget (RAG)
+│   │   │   │   ├── api/           # chatApi.ts
+│   │   │   │   ├── components/    # ChatIcon, ChatWindow, ChatMessage, StreamingText
+│   │   │   │   ├── hooks/         # useChat, useChatMessages, useChatActions
+│   │   │   │   ├── store/         # useChatUIStore (Zustand)
+│   │   │   │   ├── utils/         # chatValidation, chatConstants
+│   │   │   │   └── types/         # Type definitions
+│   │   │   ├── nowpayments/       # Crypto payment integration
+│   │   │   └── [other features]/
+│   │   └── pages/                 # Top-level route pages
 │
 ├── admin/                         # Admin Dashboard
 │   ├── src/
@@ -364,6 +382,49 @@ Qdrant Similarity Search
     ↓
 Product Recommendations
 ```
+
+### Chat Feature Architecture (Feature-Based)
+
+Chat feature được tổ chức theo Feature-Based Architecture với các layer rõ ràng:
+
+```
+features/chat/
+├── api/                     # API Layer
+│   └── chatApi.ts           # HTTP calls (Axios)
+│
+├── hooks/                   # Business Logic Layer
+│   ├── useChat.ts           # Main orchestrator hook
+│   ├── useChatMessages.ts   # Message state (React Query)
+│   ├── useChatActions.ts    # Action handlers
+│   └── useChatSession.ts    # Session management
+│
+├── store/                   # UI State Layer (Zustand)
+│   └── useChatUIStore.ts    # Chat visibility, initial view state
+│
+├── components/              # Presentation Layer
+│   ├── ChatIcon.tsx         # Floating chat button
+│   ├── ChatWindow.tsx       # Chat container
+│   ├── ChatMessage.tsx      # Message bubble with products
+│   ├── StreamingText.tsx    # Streaming animation (RAF optimized)
+│   └── *.module.css         # CSS Modules (Google Sans Flex)
+│
+├── utils/                   # Utilities
+│   ├── chatValidation.ts    # Input validation, text parsing
+│   ├── chatUtils.ts         # Helper functions
+│   └── chatConstants.ts     # Constants (STREAMING_SPEED, etc.)
+│
+└── types/                   # TypeScript Definitions
+    ├── api.types.ts         # API request/response types
+    ├── store.types.ts       # Store state types
+    └── index.ts             # Barrel exports
+```
+
+**Design Principles:**
+- **Separation of Concerns:** API ↔ Hooks ↔ Components clearly separated
+- **State Management:** React Query (server state) + Zustand (UI state)
+- **Performance:** RAF-based streaming, memoization, lazy loading
+- **Type Safety:** Full TypeScript coverage
+- **Styling:** CSS Modules with Google Sans Flex font
 
 ### Data Ingestion
 
