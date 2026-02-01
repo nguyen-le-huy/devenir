@@ -22,8 +22,8 @@ const Bag = memo(({ onMouseEnter, onMouseLeave, onClose }: BagProps) => {
 
     useLenisControl(true);
 
-    // Fetch real cart data
-    const { data: cart, isLoading } = useCart();
+    // Fetch real cart data with error handling
+    const { data: cart, isLoading, isError, error, refetch } = useCart();
 
     // Default empty cart if undefined
     const items = cart?.items || [];
@@ -42,8 +42,8 @@ const Bag = memo(({ onMouseEnter, onMouseLeave, onClose }: BagProps) => {
         navigate("/checkout");
     }, [items.length, onClose, navigate]);
 
-    // Show loading while fetching data
-    const showLoading = isLoading && !cart; // Only show loading if we have no data at all (first load)
+    // Show loading while fetching data (only on first load)
+    const showLoading = isLoading && !cart;
 
     return (
         <>
@@ -61,6 +61,18 @@ const Bag = memo(({ onMouseEnter, onMouseLeave, onClose }: BagProps) => {
                 {showLoading ? (
                     <div className={styles.loadingWrapper}>
                         <Loading size="md" />
+                    </div>
+                ) : isError ? (
+                    <div className={styles.errorWrapper}>
+                        <p className={styles.errorText}>
+                            {error instanceof Error ? error.message : 'Failed to load cart'}
+                        </p>
+                        <button 
+                            className={styles.retryButton}
+                            onClick={() => refetch()}
+                        >
+                            Retry
+                        </button>
                     </div>
                 ) : items.length > 0 ? (
                     <div className={styles.bagContent}>

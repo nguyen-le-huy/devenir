@@ -49,6 +49,37 @@
     font-weight: 500;
 }
 
+.errorWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    gap: 16px;
+}
+
+.errorText {
+    font-size: 16px;
+    color: var(--black);
+    font-weight: 500;
+    text-align: center;
+}
+
+.retryButton {
+    padding: 10px 24px;
+    background-color: var(--black);
+    color: var(--white);
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+
+.retryButton:hover {
+    opacity: 0.8;
+}
+
 .loadingWrapper {
     display: flex;
     align-items: center;

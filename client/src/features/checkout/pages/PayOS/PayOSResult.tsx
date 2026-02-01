@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import styles from "./PayOSResult.module.css";
 import { fetchPayOSOrderStatus } from "@/features/payos";
-import { cartKeys } from '@/features/cart/hooks/useCart';
+import { queryKeys } from '@/core/lib/queryClient';
 import { logError, handleApiError } from '@/features/checkout/utils';
 
 const PayOSResult = () => {
@@ -45,7 +45,7 @@ const PayOSResult = () => {
             // Check payment status and redirect accordingly
             if (orderStatus?.status === "paid") {
                 // Clear cart cache so it refetches with empty cart
-                queryClient.invalidateQueries({ queryKey: cartKeys.all });
+                queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
 
                 // Navigate to success page with order details
                 navigate("/payment-successful", {

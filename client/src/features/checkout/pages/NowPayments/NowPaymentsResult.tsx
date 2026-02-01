@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import styles from "../PayOS/PayOSResult.module.css"; // Reuse PayOS styles
 import { fetchNowPaymentsStatus } from "@/features/nowpayments";
-import { cartKeys } from '@/features/cart/hooks/useCart';
+import { queryKeys } from '@/core/lib/queryClient';
 import { DELIVERY_TIME_LABELS } from '@/features/checkout/constants';
 import { logError, handleApiError } from '@/features/checkout/utils';
 import type { PaymentOrderStatus } from '@/features/checkout/types';
@@ -68,7 +68,7 @@ const NowPaymentsResult = () => {
     // Invalidate cart when payment is successful
     useEffect(() => {
         if (orderStatus?.status === "paid") {
-            queryClient.invalidateQueries({ queryKey: cartKeys.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.all });
             setCountdown((prev) => (prev === null ? 8 : prev));
         }
     }, [orderStatus, queryClient]);

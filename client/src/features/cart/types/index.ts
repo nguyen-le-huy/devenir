@@ -1,33 +1,19 @@
-// Product Interface (Core product info)
-export interface IProduct {
-    _id: string;
-    name: string;
-    description?: string;
-    basePrice: number;
-    slug?: string;
-    category?: string;
-    brand?: string;
-    gender?: 'Male' | 'Female' | 'Unisex';
-    images?: string[];
-}
+import { IProduct, IVariant } from '@/features/products/types';
 
-// Product Variant Interface (Specific Size/Color/Stock)
-export interface IProductVariant {
-    _id: string;
+// Re-export for convenience
+export type { IProduct };
+
+/**
+ * Product Variant Interface - Extended from products feature
+ * Added cart-specific fields
+ */
+export interface IProductVariant extends IVariant {
     product_id: IProduct; // Populated product reference
-    size: string;
     color: {
         _id?: string;
         name: string;
         code?: string;
     } | string; // Handle both populated object or string ID/name
-    price: number;
-    stock: number;
-    sku?: string;
-    mainImage: string;
-    // Computed/Virtual fields likely from backend or frontend calculation
-    salePrice?: number;
-    basePrice?: number; // Sometimes variants override basePrice
 }
 
 // Cart Item Interface

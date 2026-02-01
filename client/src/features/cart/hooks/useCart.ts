@@ -5,12 +5,11 @@ import { useAuthStore } from '@/core/stores/useAuthStore';
 import { ICart, ICartResponse } from '../types';
 import { toast } from 'sonner';
 import { logger } from '@/shared/utils/logger';
+import { queryKeys } from '@/core/lib/queryClient';
+import { CART_CONFIG, TOAST_MESSAGES } from '../utils/constants';
 
-// Query keys for cart - unified
-export const cartKeys = {
-    all: ['cart'] as const,
-    detail: () => [...cartKeys.all, 'detail'] as const,
-};
+// Use centralized cart keys from queryClient
+const cartKeys = queryKeys.cart;
 
 /**
  * Hook to fetch current user's cart
@@ -24,13 +23,14 @@ export const useCart = () => {
         queryKey: cartKeys.detail(),
         queryFn: cartService.getCart,
         enabled: isAuthenticated && !!token,
-        staleTime: 30 * 1000, // 30 seconds
+        staleTime: CART_CONFIG.STALE_TIME,
         select: (response) => response.data,
     });
 };
 
 /**
- * Hook to add item to cart with Optimistic Updates
+ * Hook to add item to cart
+ * Relies on fast API response (<200ms target) instead of complex optimistic updates
  */
 export const useAddToCart = () => {
     const queryClient = useQueryClient();
@@ -38,28 +38,6 @@ export const useAddToCart = () => {
     return useMutation({
         mutationFn: ({ variantId, quantity = 1 }: { variantId: string; quantity?: number }) =>
             cartService.addToCart(variantId, quantity),
-
-        onMutate: async () => {
-            // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-            await queryClient.cancelQueries({ queryKey: cartKeys.detail() });
-
-            // Snapshot the previous value
-            const previousCart = queryClient.getQueryData<ICart>(cartKeys.detail());
-
-            // Optimistically update to the new value
-            if (previousCart) {
-                // This is a simplified optimistic update. 
-                // A full one would need product details which we might not have here without fetching.
-                // For "Add", we often just rely on "fast server response" or complex logic if we have product data handy.
-                // However, let's at least protect the UI from feeling broken.
-                // Ideally we would push a temp item, but without product info (image, name) it looks bad.
-                // Strategy: We will rely on loading states or fast invalidation mostly for Add, 
-                // UNLESS we pass full product object to this hook (which is better).
-                // For now, let's keep it simple: invalidate is safer for ADD unless we refactor to pass full product.
-            }
-
-            return { previousCart };
-        },
 
         onSuccess: (response, variables) => {
             const data = response.data;
@@ -83,17 +61,13 @@ export const useAddToCart = () => {
                     }
                 }
             }
-            toast.success('Added to cart');
-            // Always refetch after error or success to ensure server state sync
+            toast.success(TOAST_MESSAGES.ADD_SUCCESS);
+            // Invalidate to refetch fresh data from server
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
         },
-        onError: (error, _, context) => {
+        onError: (error) => {
             logger.error('Failed to add item to cart', error);
-            toast.error('Failed to add item to cart');
-            // Rollback
-            if (context?.previousCart) {
-                queryClient.setQueryData(cartKeys.detail(), context.previousCart);
-            }
+            toast.error(TOAST_MESSAGES.ADD_ERROR);
         },
     });
 };
@@ -144,7 +118,7 @@ export const useUpdateCartItem = () => {
         },
         onError: (error, _, context) => {
             logger.error('Failed to update cart item', error);
-            toast.error('Failed to update quantity');
+            toast.error(TOAST_MESSAGES.UPDATE_ERROR);
             if (context?.previousCart) {
                 queryClient.setQueryData(cartKeys.detail(), context.previousCart);
             }
@@ -189,11 +163,11 @@ export const useRemoveFromCart = () => {
 
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
-            toast.success('Item removed');
+            toast.success(TOAST_MESSAGES.REMOVE_SUCCESS);
         },
         onError: (error, _, context) => {
             logger.error('Failed to remove item from cart', error);
-            toast.error('Failed to remove item');
+            toast.error(TOAST_MESSAGES.REMOVE_ERROR);
             if (context?.previousCart) {
                 queryClient.setQueryData(cartKeys.detail(), context.previousCart);
             }
@@ -229,7 +203,7 @@ export const useClearCart = () => {
         },
         onError: (error, _, context) => {
             logger.error('Failed to clear cart', error);
-            toast.error('Failed to clear cart');
+            toast.error(TOAST_MESSAGES.CLEAR_ERROR);
             if (context?.previousCart) {
                 queryClient.setQueryData(cartKeys.detail(), context.previousCart);
             }

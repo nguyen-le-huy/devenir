@@ -7,6 +7,7 @@ import { useUpdateCartItem, useAddToCart, useRemoveFromCart } from '@/features/c
 import Backdrop from '@/shared/components/Backdrop/Backdrop';
 import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
 import { ICartItem, IProductVariant } from '@/features/cart/types';
+import { SIZE_OPTIONS, TOAST_MESSAGES } from '@/features/cart/utils/constants';
 
 interface EditItemProps {
     item: ICartItem;
@@ -76,9 +77,7 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
     const availableSizes = useMemo(() => {
         if (isFreeSize) return [];
 
-        const sizeList = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
-
-        return sizeList.map(size => {
+        return SIZE_OPTIONS.map(size => {
             // Find variant with same color and this size
             const sizeVariant = variants.find((v: IProductVariant) => {
                 const vColor = typeof v.color === 'string' ? v.color : v.color?.name;
@@ -131,7 +130,7 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
             });
 
             if (!newVariant) {
-                toast.error('Selected size is not available');
+                toast.error(TOAST_MESSAGES.ERROR);
                 return;
             }
 

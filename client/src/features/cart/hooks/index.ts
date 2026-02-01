@@ -2,7 +2,6 @@
  * Cart Hooks - Barrel Export
  */
 export {
-    cartKeys,
     useCart,
     useAddToCart,
     useUpdateCartItem,
@@ -10,4 +9,3 @@ export {
     useClearCart,
 } from './useCart';
 
-export { useCartTracking, trackCartEvent } from './useCartTracking';
