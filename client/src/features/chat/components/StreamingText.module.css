@@ -1,5 +1,8 @@
-.streamingText {
+.streamingText,
+.streamingText span,
+.streamingText strong {
   display: inline;
+  font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 .cursor {
@@ -8,6 +11,7 @@
   margin-left: 2px;
   font-weight: 400;
   opacity: 0.7;
+  font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 @keyframes blink {

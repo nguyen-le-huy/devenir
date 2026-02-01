@@ -159,7 +159,7 @@
     border: none;
     font-size: 15px;
     flex: auto;
-    font-family: 'Google Sans Flex', sans-serif;
+    font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
     font-weight: 400;
 }
 

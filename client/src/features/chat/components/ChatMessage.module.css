@@ -40,9 +40,15 @@
     margin: 0;
     font-size: 14px;
     line-height: 1.5;
-    font-family: 'Google Sans Flex', sans-serif !important;
+    font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
     font-weight: 400;
     white-space: pre-wrap;
+}
+
+.messageBubble p,
+.messageBubble p span,
+.messageBubble p strong {
+    font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 /* Product Cards */
@@ -182,9 +188,11 @@
 }
 
 /* Streaming text styles */
-.streamingText {
+.streamingText,
+.streamingText span,
+.streamingText strong {
     display: inline;
-    font-family: 'Google Sans Flex', sans-serif !important;
+    font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 .cursor {
@@ -219,7 +227,7 @@
     font-weight: 500;
     margin-bottom: 10px;
     color: var(--dark-gray);
-    font-family: 'Google Sans Flex', sans-serif !important;
+    font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
 .buttonGroup {
@@ -234,7 +242,7 @@
     border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
-    font-family: 'Google Sans Flex', sans-serif !important;
+    font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
@@ -310,7 +318,7 @@
     border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
-    font-family: 'Google Sans Flex', sans-serif !important;
+    font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, sans-serif !important;
     transition: all 0.2s ease;
 }
 
