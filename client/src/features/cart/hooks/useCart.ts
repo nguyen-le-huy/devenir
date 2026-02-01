@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as cartService from '@/features/cart/api/cartService';
-import { trackingService } from '@/features/orders/api/trackingService';
+import { trackingService } from '@/core/services/trackingService';
 import { useAuthStore } from '@/core/stores/useAuthStore';
 import { ICart, ICartResponse } from '../types';
 import { toast } from 'sonner';
+import { logger } from '@/shared/utils/logger';
 
 // Query keys for cart - unified
 export const cartKeys = {
@@ -87,7 +88,7 @@ export const useAddToCart = () => {
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
         },
         onError: (error, _, context) => {
-            console.error('Error adding to cart:', error);
+            logger.error('Failed to add item to cart', error);
             toast.error('Failed to add item to cart');
             // Rollback
             if (context?.previousCart) {
@@ -142,7 +143,7 @@ export const useUpdateCartItem = () => {
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
         },
         onError: (error, _, context) => {
-            console.error('Error updating cart item:', error);
+            logger.error('Failed to update cart item', error);
             toast.error('Failed to update quantity');
             if (context?.previousCart) {
                 queryClient.setQueryData(cartKeys.detail(), context.previousCart);
@@ -191,7 +192,7 @@ export const useRemoveFromCart = () => {
             toast.success('Item removed');
         },
         onError: (error, _, context) => {
-            console.error('Error removing from cart:', error);
+            logger.error('Failed to remove item from cart', error);
             toast.error('Failed to remove item');
             if (context?.previousCart) {
                 queryClient.setQueryData(cartKeys.detail(), context.previousCart);
@@ -227,7 +228,7 @@ export const useClearCart = () => {
             queryClient.invalidateQueries({ queryKey: cartKeys.all });
         },
         onError: (error, _, context) => {
-            console.error('Error clearing cart:', error);
+            logger.error('Failed to clear cart', error);
             toast.error('Failed to clear cart');
             if (context?.previousCart) {
                 queryClient.setQueryData(cartKeys.detail(), context.previousCart);

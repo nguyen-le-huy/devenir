@@ -1,20 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import authService from '@/features/auth/api/authService';
+import type { User } from '@/features/auth/types';
 
-// Define types for User and AuthState
-// Start with basic types, refine later as we migrate User feature
-export interface User {
-    _id: string;
-    email: string;
-    role: 'user' | 'admin';
-    name?: string;
-    username?: string;
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    birthday?: string;
-}
+// Re-export User type for convenience
+export type { User };
 
 interface AuthState {
     user: User | null;
@@ -84,7 +74,7 @@ export const useAuthStore = create<AuthState>()(
                 user: state.user,
                 token: state.token,
                 isAuthenticated: state.isAuthenticated,
-            }) as any, // Cast to any or Partial<AuthState> to avoid TS complexity with partialize return type
+            }),
             onRehydrateStorage: () => (state) => {
                 // After rehydration, set loading to false
                 if (state) {

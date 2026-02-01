@@ -173,6 +173,8 @@ const OurPartners = memo(() => {
                         <img
                             src={partner.src}
                             alt={partner.alt}
+                            loading="lazy"
+                            decoding="async"
                         />
                     </div>
                 ))}

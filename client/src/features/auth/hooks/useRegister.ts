@@ -1,14 +1,15 @@
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import authService from '../api/authService';
-import { RegisterData } from '../types';
+import { AuthResponse, RegisterData } from '../types';
+import { ApiError } from '@/shared/types';
+import { AUTH_MESSAGES } from '../constants';
 
 export const useRegister = () => {
-    return useMutation({
-        mutationFn: (data: RegisterData) => authService.register(data),
-        onError: (error: any) => {
-            const message = error?.message || 'Registration failed';
-            toast.error(message);
+    return useMutation<AuthResponse, ApiError, RegisterData>({
+        mutationFn: authService.register,
+        onError: (error) => {
+            toast.error(error.message || AUTH_MESSAGES.REGISTER_FAILED);
         }
     });
 };

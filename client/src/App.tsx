@@ -7,20 +7,20 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 
 // @ts-ignore
 import ScrollToTop from '@/shared/components/ScrollToTop/ScrollToTop';
-import ChatIcon from '@/features/chat/components/Chat/ChatIcon';
-import ChatWindow from '@/features/chat/components/Chat/ChatWindow';
+import ChatIcon from '@/features/chat/components/ChatIcon';
+import ChatWindow from '@/features/chat/components/ChatWindow';
 import PayOSResult from '@/features/checkout/pages/PayOS/PayOSResult';
 import NowPaymentsResult from '@/features/checkout/pages/NowPayments/NowPaymentsResult';
 import PaymentSuccessful from '@/features/checkout/pages/PaymentStatus/PaymentSuccessful';
 import PaymentFailed from '@/features/checkout/pages/PaymentStatus/PaymentFailed';
 import VisuallySimilar from '@/features/products/pages/VisuallySimilar/VisuallySimilar';
-import PaymentSuccessfulPreview from '@/features/checkout/pages/PaymentStatus/PaymentSuccessfulPreview'
+
 import AllCategories from '@/features/products/pages/AllCategories/AllCategories';
 import ErrorBoundary from '@/shared/components/ErrorBoundary/ErrorBoundary';
 import Loading from '@/shared/components/Loading/Loading';
 import Preloader from '@/shared/components/Preloader/Preloader';
-import { useTracking } from '@/features/orders/hooks/useTracking';
-import { trackingService } from '@/features/orders/api/trackingService';
+import { useTracking } from '@/core/hooks/useTracking';
+import { trackingService } from '@/core/services/trackingService';
 import useLenis from '@/shared/hooks/useLenis';
 
 const Layout = lazy(() => import('@/shared/components/layout/Layout'));
@@ -120,12 +120,6 @@ function App() {
                                     path="/payment-failed"
                                     element={
                                         <PaymentFailed />
-                                    }
-                                />
-                                <Route
-                                    path="/payment-successful-preview"
-                                    element={
-                                        <PaymentSuccessfulPreview />
                                     }
                                 />
                                 <Route

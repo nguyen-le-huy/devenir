@@ -1,12 +1,14 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./PaymentSuccessful.module.css";
+import type { PaymentFailedState } from '@/features/checkout/types';
 
 const PaymentFailed = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const errorData = location.state || {};
+    const errorData = (location.state as PaymentFailedState) || {} as PaymentFailedState;
 
     const { orderCode, paymentMethod } = errorData;
+
 
     const handleRetryPayment = () => {
         // Navigate back to shipping/checkout to retry payment

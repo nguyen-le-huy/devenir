@@ -1,44 +1,56 @@
-export interface ShippingAddressDTO {
-    fullName: string;
-    phone: string;
-    street: string;
-    city: string;
-    district: string;
-    postalCode: string;
-}
+/**
+ * Checkout Types
+ * Central export point for all checkout type definitions
+ */
 
-export interface ShippingAddress {
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-    address: string;
-    city: string;
-    district: string;
-    zipCode: string;
-}
+// API Types
+export type {
+    ApiError,
+    ApiResponse,
+    ShippingAddressDTO,
+    ShippingAddressResponse,
+    GiftCodeValidationRequest,
+    GiftCodeValidationResponse,
+    PaymentSessionRequest,
+    PaymentSessionResponse,
+    OrderStatusResponse,
+    ProductVariantDTO,
+    RecommendedProductsResponse,
+    PaymentOrderStatus,
+    PaymentStatusResponse,
+    PaymentSuccessState,
+    PaymentFailedState,
+} from './api';
 
-export interface AddressResponse {
-    success: boolean;
-    data: ShippingAddressDTO;
-}
 
-export interface RecommendedProduct {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    imageHover: string;
-    color: string;
-    size: string;
-    sku: string;
-}
+// Form Types
+export type {
+    ShippingAddress,
+    ShippingAddressField,
+    FormValidationErrors,
+    FormValidationResult,
+    ShippingMethod,
+    DeliveryTime,
+    PaymentMethodType,
+    GiftCodeState,
+    CheckoutFormState,
+} from './form';
 
-export type ShippingMethod = 'home' | 'store' | '';
-export type DeliveryTime = 'standard' | 'next' | 'nominated' | '';
-export type PaymentMethodType = 'payos' | 'nowpayments' | '';
+export {
+    DEFAULT_SHIPPING_ADDRESS,
+    DEFAULT_GIFT_CODE_STATE,
+    DEFAULT_CHECKOUT_FORM_STATE,
+} from './form';
 
-export interface GiftCodeStatus {
-    code: string;
-    applied: boolean;
-    error: string;
-}
+// Payment Types
+export type {
+    PaymentAmount,
+    PaymentProcessingState,
+    PaymentSession,
+    PaymentResult,
+    RecommendedProduct,
+} from './payment';
+
+// Legacy exports for backward compatibility
+// TODO: Remove these after migration is complete
+export type { ShippingAddressDTO as AddressResponse } from './api';

@@ -4,6 +4,7 @@ import FormInput from '@/shared/components/form/FormInput';
 import FormButton from '@/shared/components/form/FormButton';
 import FormError from '@/shared/components/form/FormError';
 import { useResetPassword } from '@/features/auth/hooks';
+import { AUTH_MESSAGES } from '@/features/auth/constants';
 import styles from './ResetPasswordPage.module.css';
 
 /**
@@ -105,7 +106,11 @@ const ResetPasswordPage = () => {
                 <h1 className={styles.title}>Đặt lại mật khẩu</h1>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    {resetMutation.error && <FormError message={(resetMutation.error as any).message || 'Reset mật khẩu thất bại'} />}
+                    {resetMutation.error && (
+                        <FormError
+                            message={resetMutation.error.message || AUTH_MESSAGES.PASSWORD_RESET_FAILED}
+                        />
+                    )}
 
                     <FormInput
                         label="Mật khẩu mới"

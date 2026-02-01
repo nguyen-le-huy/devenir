@@ -13,6 +13,11 @@ interface EditItemProps {
     onClose: () => void;
 }
 
+// Type for variants API response
+interface VariantsApiResponse {
+    data?: IProductVariant[];
+}
+
 const EditItem = ({ item, onClose }: EditItemProps) => {
     const [isVisible, setIsVisible] = useState(false);
 
@@ -50,7 +55,8 @@ const EditItem = ({ item, onClose }: EditItemProps) => {
     // Note: useProductVariants might need to be typed properly in its own file, 
     // here we assume it returns { data: IProductVariant[] } or similar
     const { data: variantsData } = useProductVariants(productId);
-    const variants = (variantsData as any)?.data || [];
+    const variantsResponse = variantsData as VariantsApiResponse | undefined;
+    const variants: IProductVariant[] = variantsResponse?.data || [];
 
     // Mutations
     const updateCartMutation = useUpdateCartItem();

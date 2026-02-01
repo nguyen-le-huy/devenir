@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
-import { trackingService } from '@/features/orders/api/trackingService'
+import { trackingService } from '@/core/services/trackingService'
+import { logger } from '@/shared/utils/logger'
 
 interface CartItem {
   _id?: string
@@ -32,7 +33,7 @@ export function useCartTracking() {
     const price = item.product?.basePrice || item.price || 0
 
     if (!productId) {
-      console.warn('Cannot track cart action: missing product ID')
+      logger.warn('Cannot track cart action: missing product ID')
       return
     }
 
@@ -103,7 +104,7 @@ export function useCartTracking() {
    */
   const trackCartChanges = useCallback((cartItems: CartItem[]) => {
     const currentCart = new Map<string, number>()
-    
+
     cartItems.forEach(item => {
       const key = `${item.product?._id || item.productId}_${item.size}_${item.color}`
       currentCart.set(key, item.quantity)
@@ -116,7 +117,7 @@ export function useCartTracking() {
     currentCart.forEach((quantity, key) => {
       const prevQuantity = previousCart.get(key) || 0
       if (quantity > prevQuantity) {
-        const item = cartItems.find(i => 
+        const item = cartItems.find(i =>
           `${i.product?._id || i.productId}_${i.size}_${i.color}` === key
         )
         if (item) {
@@ -172,14 +173,25 @@ export function useCartTracking() {
 }
 
 /**
+ * Tracking event data interface for cart events
+ */
+interface TrackingEventData {
+  itemCount?: number;
+  totalValue?: number;
+  source?: string;
+  timestamp?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
+/**
  * Simple wrapper for manual cart tracking
  */
-export function trackCartEvent(action: 'view' | 'open' | 'close', data?: Record<string, any>) {
+export function trackCartEvent(action: 'view' | 'open' | 'close', data?: TrackingEventData) {
   const eventMap = {
     view: 'cart_viewed',
     open: 'cart_opened',
     close: 'cart_closed',
-  }
+  } as const;
 
   trackingService.trackEvent(eventMap[action], data)
 }

@@ -1,8 +1,23 @@
+/**
+ * Domain types for Chat feature
+ * Core business logic types used across the feature
+ */
+
+// Type Aliases
 export type ChatSender = 'user' | 'bot';
 export type ActionType = 'yes' | 'no';
 export type ActionResult = 'added' | 'dismissed' | 'error';
-export type ChatIntent = 'size-help' | 'product-recommendation' | 'styling-advice' | 'order-inquiry' | 'consultation' | 'general';
+export type ChatIntent =
+    | 'size-help'
+    | 'product-recommendation'
+    | 'styling-advice'
+    | 'order-inquiry'
+    | 'consultation'
+    | 'general';
 
+/**
+ * Suggested product from chat response
+ */
 export interface SuggestedProduct {
     _id: string;
     variantId?: string;
@@ -13,12 +28,18 @@ export interface SuggestedProduct {
     inStock: boolean;
 }
 
+/**
+ * Store location information
+ */
 export interface StoreLocation {
     address: string;
     googleMapsEmbedUrl: string;
     directionsUrl: string;
 }
 
+/**
+ * Suggested action (e.g., add to cart)
+ */
 export interface SuggestedAction {
     type: string;
     prompt: string;
@@ -29,6 +50,9 @@ export interface SuggestedAction {
     };
 }
 
+/**
+ * Chat message (UI representation)
+ */
 export interface ChatMessage {
     id: number | string;
     text: string;
@@ -46,24 +70,19 @@ export interface ChatMessage {
     actionResult?: ActionResult;
 }
 
-export interface ChatHistoryMessage {
-    role: 'user' | 'assistant';
-    content: string;
-    suggestedProducts?: SuggestedProduct[];
-}
+// Re-export API types for convenience
+export type {
+    ChatMessagePayload,
+    ChatApiResponse,
+    ChatHistoryMessage,
+    ChatHistoryResponse,
+    ChatHealthResponse,
+    ApiResponse,
+    ApiError,
+} from './api.types';
 
-export interface ChatPayload {
-    message: string;
-    conversation_history: ChatHistoryMessage[];
-    session_id?: string;
-}
-
-export interface ChatResponse {
-    answer: string;
-    intent?: ChatIntent;
-    suggested_products?: SuggestedProduct[];
-    suggested_action?: SuggestedAction;
-    store_location?: StoreLocation;
-    session_id?: string;
-    data?: ChatResponse; // Handle nested data structure from some API wrappers
-}
+// Re-export store types
+export type {
+    ChatUIState,
+    ChatSessionState,
+} from './store.types';

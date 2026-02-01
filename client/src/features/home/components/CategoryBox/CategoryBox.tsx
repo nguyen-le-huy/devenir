@@ -33,6 +33,7 @@ const CategoryBox = () => {
                     loop
                     muted
                     playsInline
+                    aria-label="New in jackets collection showcase"
                 >
                     <source src="/videos/TheGiftGuide.webm" type="video/webm" />
                 </video>
@@ -57,6 +58,7 @@ const CategoryBox = () => {
                     autoPlay
                     loop
                     muted
+                    aria-label="New in sweaters collection showcase"
                     playsInline
                 >
                     <source src="/videos/customShop.webm" type="video/webm" />
@@ -98,13 +100,28 @@ const CategoryBox = () => {
                             <img src="/images/prd3.png" alt="Product 3" />
                         </SwiperSlide>
                         <SwiperSlide className={styles.swiperSlide}>
-                            <img src="/images/prd1.png" alt="Product 1" />
+                            <img 
+                                src="/images/prd1.png" 
+                                alt="Featured product 1" 
+                                loading="lazy"
+                                decoding="async"
+                            />
                         </SwiperSlide>
                         <SwiperSlide className={styles.swiperSlide}>
-                            <img src="/images/prd2.png" alt="Product 2" />
+                            <img 
+                                src="/images/prd2.png" 
+                                alt="Featured product 2" 
+                                loading="lazy"
+                                decoding="async"
+                            />
                         </SwiperSlide>
                         <SwiperSlide className={styles.swiperSlide}>
-                            <img src="/images/prd3.png" alt="Product 3" />
+                            <img 
+                                src="/images/prd3.png" 
+                                alt="Featured product 3" 
+                                loading="lazy"
+                                decoding="async"
+                            />
                         </SwiperSlide>
                     </Swiper>
 

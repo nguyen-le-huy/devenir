@@ -2,70 +2,99 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import authService from '../api/authService';
-import { ResetPasswordData } from '../types';
+import { ResetPasswordData, ChangePasswordData, UserProfileData, User } from '../types';
 import { useAuthStore } from '@/core/stores/useAuthStore';
+import { ApiError } from '@/shared/types';
+import { AUTH_MESSAGES } from '../constants';
+
+/**
+ * Reset Password Mutation
+ */
+interface ResetPasswordPayload {
+    token: string;
+    data: ResetPasswordData;
+}
 
 export const useResetPassword = () => {
     const navigate = useNavigate();
 
-    return useMutation({
-        mutationFn: ({ token, data }: { token: string; data: ResetPasswordData }) =>
-            authService.resetPassword(token, data),
+    return useMutation<void, ApiError, ResetPasswordPayload>({
+        mutationFn: ({ token, data }) => authService.resetPassword(token, data),
         onSuccess: () => {
-            toast.success('Password reset successful! Please login.');
+            toast.success(AUTH_MESSAGES.PASSWORD_RESET_SUCCESS);
             navigate('/auth');
         },
-        onError: (error: any) => {
-            toast.error(error?.message || 'Failed to reset password');
+        onError: (error) => {
+            toast.error(error.message || AUTH_MESSAGES.PASSWORD_RESET_FAILED);
         }
     });
 };
 
+/**
+ * Verify Email Mutation
+ */
 export const useVerifyEmail = () => {
-    return useMutation({
-        mutationFn: (token: string) => authService.verifyEmail(token),
-        // Success/Error handling usually done in the component for Verification Page to show UI states
+    return useMutation<void, ApiError, string>({
+        mutationFn: authService.verifyEmail,
+        // Success/Error handling done in component for Verification Page UI states
     });
 };
+
+/**
+ * Update Profile Mutation
+ */
+interface UpdateProfileResponse {
+    user: User;
+}
 
 export const useUpdateProfile = () => {
     const updateUser = useAuthStore((state) => state.updateUser);
 
-    return useMutation({
+    return useMutation<UpdateProfileResponse, ApiError, UserProfileData>({
         mutationFn: authService.updateProfile,
         onSuccess: (data) => {
             updateUser(data.user);
-            toast.success('Profile updated successfully');
+            toast.success(AUTH_MESSAGES.PROFILE_UPDATED);
         },
-        onError: (error: any) => {
-            toast.error(error?.message || 'Failed to update profile');
+        onError: (error) => {
+            toast.error(error.message || AUTH_MESSAGES.PROFILE_UPDATE_FAILED);
         }
     });
 };
 
+/**
+ * Change Password Mutation
+ */
 export const useChangePassword = () => {
-    return useMutation({
+    return useMutation<void, ApiError, ChangePasswordData>({
         mutationFn: authService.changePassword,
         onSuccess: () => {
-            toast.success('Password changed successfully');
+            toast.success(AUTH_MESSAGES.PASSWORD_CHANGE_SUCCESS);
         },
-        onError: (error: any) => {
-            toast.error(error?.message || 'Failed to change password');
+        onError: (error) => {
+            toast.error(error.message || AUTH_MESSAGES.PASSWORD_CHANGE_FAILED);
         }
     });
 };
+
+/**
+ * Update Preferences Mutation
+ */
+interface UpdatePreferencesResponse {
+    user: User;
+}
 
 export const useUpdatePreferences = () => {
     const updateUser = useAuthStore((state) => state.updateUser);
 
-    return useMutation({
+    return useMutation<UpdatePreferencesResponse, ApiError, Partial<User["preferences"]>>({
         mutationFn: authService.updatePreferences,
         onSuccess: (data) => {
             updateUser(data.user);
-            toast.success('Preferences updated');
+            toast.success(AUTH_MESSAGES.PREFERENCES_UPDATED);
         },
-        onError: (error: any) => {
-            toast.error(error?.message || 'Failed to update preferences');
+        onError: (error) => {
+            toast.error(error.message || AUTH_MESSAGES.PREFERENCES_UPDATE_FAILED);
         }
     });
 };

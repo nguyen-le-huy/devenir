@@ -1,60 +1,89 @@
 import apiClient from '@/core/api/apiClient';
 
 /**
- * Find visually similar products using an uploaded image
- * @param {string} base64Image - Base64 encoded image (with or without data URL prefix)
- * @param {number} topK - Number of results to return (default: 12)
- * @returns {Promise<{success: boolean, data: Array, count: number}>}
+ * Image Search Service
+ * API calls for visual product search functionality
  */
-export const findSimilarProducts = async (base64Image: string, topK = 12) => {
-    try {
-        // Use longer timeout for image search (60s) - large images need more time
-        const data: any = await apiClient.post('/image-search/find-similar', {
-            image: base64Image,
-            topK
-        }, {
-            timeout: 60000 // 60 seconds for large image uploads
-        });
 
-        return data;
-    } catch (error: any) {
-        console.error('❌ Image search error:', error);
+// ============================================
+// Types
+// ============================================
 
-        // Check if error might be due to adblocker
-        if (error.message === 'Network Error' || error.plugin === 'blocked') {
-            console.warn('⚠️ Visual Search request might be blocked by an AdBlocker. Please try disabling it.');
-        }
+interface ImageSearchResult {
+    success: boolean;
+    data: unknown[];
+    count: number;
+}
 
-        throw error;
-    }
+interface HealthCheckResult {
+    success: boolean;
+    status: string;
+    checks: Record<string, unknown>;
+}
+
+// ============================================
+// Constants
+// ============================================
+
+const TIMEOUTS = {
+    IMAGE_SEARCH: 60000, // 60 seconds for large image uploads
+} as const;
+
+const IMAGE_COMPRESSION = {
+    MAX_SIZE_PX: 1024,
+    QUALITY: 0.85,
+    SMALL_FILE_THRESHOLD: 500 * 1024, // 500KB
+} as const;
+
+// ============================================
+// API Functions
+// ============================================
+
+/**
+ * Find visually similar products using an uploaded image
+ * @param base64Image - Base64 encoded image (with or without data URL prefix)
+ * @param topK - Number of results to return (default: 12)
+ */
+export const findSimilarProducts = async (
+    base64Image: string,
+    topK = 12
+): Promise<ImageSearchResult> => {
+    const data = await apiClient.post<ImageSearchResult>(
+        '/image-search/find-similar',
+        { image: base64Image, topK },
+        { timeout: TIMEOUTS.IMAGE_SEARCH }
+    );
+
+    return data as unknown as ImageSearchResult;
 };
 
 /**
  * Check health of image search service
- * @returns {Promise<{success: boolean, status: string, checks: object}>}
  */
-export const getImageSearchHealth = async () => {
-    try {
-        const data = await apiClient.get('/image-search/health');
-        return data;
-    } catch (error) {
-        console.error('Image search health check error:', error);
-        throw error;
-    }
+export const getImageSearchHealth = async (): Promise<HealthCheckResult> => {
+    const data = await apiClient.get<HealthCheckResult>('/image-search/health');
+    return data as unknown as HealthCheckResult;
 };
+
+// ============================================
+// Utility Functions
+// ============================================
 
 /**
  * Convert File to base64 with optional compression
  * Large images are resized to max 1024px for faster upload
- * @param {File} file - Image file
- * @param {number} maxSize - Max dimension in pixels (default: 1024)
- * @param {number} quality - JPEG quality 0-1 (default: 0.85)
- * @returns {Promise<string>} - Base64 data URL
+ * @param file - Image file
+ * @param maxSize - Max dimension in pixels (default: 1024)
+ * @param quality - JPEG quality 0-1 (default: 0.85)
  */
-export const fileToBase64 = (file: File, maxSize = 1024, quality = 0.85): Promise<string> => {
+export const fileToBase64 = (
+    file: File,
+    maxSize = IMAGE_COMPRESSION.MAX_SIZE_PX,
+    quality = IMAGE_COMPRESSION.QUALITY
+): Promise<string> => {
     return new Promise((resolve, reject) => {
-        // For small files (< 500KB), just convert directly
-        if (file.size < 500 * 1024) {
+        // For small files, just convert directly
+        if (file.size < IMAGE_COMPRESSION.SMALL_FILE_THRESHOLD) {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
             reader.onerror = (error) => reject(error);
@@ -94,11 +123,12 @@ export const fileToBase64 = (file: File, maxSize = 1024, quality = 0.85): Promis
                     const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
                     resolve(compressedBase64);
                 } else {
-                    reject(new Error("Canvas context is null"));
+                    reject(new Error('Canvas context is null'));
                 }
             };
 
             img.onerror = () => reject(new Error('Failed to load image'));
+
             if (typeof e.target?.result === 'string') {
                 img.src = e.target.result;
             }

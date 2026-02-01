@@ -3,10 +3,11 @@ import { toast } from 'sonner';
 import { useNavigate } from "react-router-dom";
 import { useShippingAddress, useSaveShippingAddress, useUpdateShippingAddress } from '@/features/checkout/hooks/useShipping';
 import { useCart } from '@/features/cart/hooks/useCart';
-import { checkGiftCode } from '@/features/checkout/api/shippingService';
+import { validateGiftCode } from '@/features/checkout/api/giftCodeService';
 import { createPayOSPaymentSession } from "@/features/payos";
 import { createNowPaymentsSession } from "@/features/nowpayments";
 import { ShippingAddress, ShippingMethod, DeliveryTime, PaymentMethodType } from '@/features/checkout/types';
+
 
 export const useShippingPage = () => {
     const navigate = useNavigate();
@@ -126,8 +127,8 @@ export const useShippingPage = () => {
         }
 
         try {
-            const { valid } = await checkGiftCode(giftCode);
-            if (valid) {
+            const result = await validateGiftCode(giftCode);
+            if (result.valid) {
                 setGiftCodeApplied(true);
                 toast.success("Gift code applied!");
             } else {
@@ -138,6 +139,7 @@ export const useShippingPage = () => {
             setGiftCodeError("Error checking gift code");
         }
     };
+
 
     const handleRemoveGiftCode = () => {
         setGiftCode("");

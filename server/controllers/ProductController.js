@@ -212,7 +212,7 @@ export const getProductVariants = asyncHandler(async (req, res) => {
  */
 export const getVariantById = asyncHandler(async (req, res) => {
   try {
-    const { variant, product } = await productService.getVariantById(req.params.id);
+    const { variant, product, siblingVariants } = await productService.getVariantById(req.params.id);
     const variantObj = variant.toObject();
 
     res.status(200).json({
@@ -223,7 +223,8 @@ export const getVariantById = asyncHandler(async (req, res) => {
           quantity: variantObj.quantity ?? 0,
           stock: variantObj.quantity ?? 0,
         },
-        product
+        product,
+        siblingVariants: siblingVariants || []
       }
     });
   } catch (error) {

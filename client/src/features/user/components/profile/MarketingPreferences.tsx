@@ -1,14 +1,18 @@
 import { useState, FormEvent } from 'react';
-import { useUpdatePreferences } from '@/features/auth/hooks';
+import { useUpdatePreferences } from '@/features/user/hooks';
+import type { MarketingPreferencesProps } from '@/features/user/types';
+import type { ApiError } from '@/shared/types';
 import styles from './MarketingPreferences.module.css';
-
-interface MarketingPreferencesProps {
-    user: any; // Specify user type if available
-}
 
 /**
  * Marketing Preferences Component
  * Allows users to manage communication preferences
+ * 
+ * Features:
+ * - Channel selection (email, phone, messaging, post)
+ * - Interest preferences (menswear, womenswear, both)
+ * - Optimistic updates via React Query
+ * - Loading states with visual feedback
  */
 export default function MarketingPreferences({ user }: MarketingPreferencesProps) {
     const updatePreferencesMutation = useUpdatePreferences();
@@ -19,9 +23,9 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
             phone: false,
             messaging: false,
             post: false,
-            ...(user?.preferences?.channels || {})
+            ...(user?.preferences?.channels || {}),
         },
-        interests: user?.preferences?.interests || 'menswear',
+        interests: user?.preferences?.interests || 'menswear' as const,
     });
 
     const handleChannelChange = (channel: keyof typeof preferences.channels) => {
@@ -34,7 +38,7 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
         }));
     };
 
-    const handleInterestChange = (interest: string) => {
+    const handleInterestChange = (interest: 'menswear' | 'womenswear' | 'both') => {
         setPreferences((prev) => ({
             ...prev,
             interests: interest,
@@ -58,9 +62,11 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
 
     return (
         <div className={styles.preferences}>
-            {/* Error/Success Messages handled by Toast mostly */}
+            {/* Error Message - Display inline error from API */}
             {updatePreferencesMutation.isError && (
-                <div className={styles.errorMessage}>{(updatePreferencesMutation.error as any).message || 'Failed to update preferences'}</div>
+                <div className={styles.errorMessage}>
+                    {(updatePreferencesMutation.error as ApiError)?.message || 'Failed to update preferences'}
+                </div>
             )}
 
             <form onSubmit={handleSavePreferences} className={styles.form}>
@@ -153,13 +159,20 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
                     </p>
                 </div>
 
-                {/* Save Button */}
+                {/* Save Button with Loading State */}
                 <button
                     type="submit"
                     disabled={updatePreferencesMutation.isPending}
                     className={styles.saveBtn}
                 >
-                    {updatePreferencesMutation.isPending ? 'Saving...' : 'Save Changes'}
+                    {updatePreferencesMutation.isPending ? (
+                        <>
+                            <span className={styles.spinner} />
+                            Saving...
+                        </>
+                    ) : (
+                        'Save Changes'
+                    )}
                 </button>
             </form>
         </div>

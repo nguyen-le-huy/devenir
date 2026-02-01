@@ -1,100 +1,138 @@
+/**
+ * Shipping API Service
+ * Handles all shipping-related API calls
+ */
+
 import apiClient from '@/core/api/apiClient';
-import { ShippingAddress, ShippingAddressDTO, AddressResponse } from '../types';
+import type {
+    ShippingAddress,
+    ShippingAddressDTO,
+} from '../types';
+import { handleApiError, parseFullName } from '../utils';
+
+/**
+ * Transform frontend address format to backend request format
+ * Backend expects: firstName, lastName, phoneNumber, address, city, district, zipCode
+ * @param address - Frontend address format
+ * @returns Backend request format
+ */
+const transformToBackendRequest = (address: ShippingAddress) => {
+    return {
+        firstName: address.firstName,
+        lastName: address.lastName,
+        phoneNumber: address.phoneNumber,
+        address: address.address,
+        city: address.city,
+        district: address.district,
+        zipCode: address.zipCode,
+    };
+};
+
+/**
+ * Transform backend DTO to frontend address format
+ * Backend returns: fullName, phone, street, postalCode, city, district
+ * @param dto - Backend DTO format
+ * @returns Frontend address format
+ */
+const transformFromDTO = (dto: ShippingAddressDTO): ShippingAddress => {
+    const { firstName, lastName } = parseFullName(dto.fullName);
+
+    return {
+        firstName,
+        lastName,
+        phoneNumber: dto.phone,
+        address: dto.street,
+        city: dto.city,
+        district: dto.district,
+        zipCode: dto.postalCode,
+    };
+};
 
 /**
  * Save shipping address for the user
  * @param addressData - Address data to save (Frontend format)
+ * @returns Saved address in frontend format
+ * @throws Error if save fails
  */
-export const saveShippingAddress = async (addressData: ShippingAddress): Promise<ShippingAddressDTO> => {
+export const saveShippingAddress = async (
+    addressData: ShippingAddress
+): Promise<ShippingAddress> => {
     try {
-        // Adapt Data: Frontend -> Backend
-        const payload: ShippingAddressDTO = {
-            fullName: `${addressData.firstName} ${addressData.lastName}`.trim(),
-            phone: addressData.phoneNumber,
-            street: addressData.address,
-            city: addressData.city,
-            district: addressData.district,
-            postalCode: addressData.zipCode
-        };
+        const payload = transformToBackendRequest(addressData);
 
-        const response = await apiClient.post('/auth/shipping-address', payload) as unknown as AddressResponse;
-        return response.data; // Usually apiClient interceptor handles the .data access, but let's assume it returns standard Axios response structure or specific based on setup.
-        // Based on previous files, it seems apiClient might return response directly or we need to access .data.
-        // Assuming apiClient.post returns the response body directly in this project's convention (common in some setups), but let's stick to valid type casting.
-    } catch (error: any) {
-        throw new Error(error.response?.data?.message || 'Failed to save shipping address');
+        // Backend returns { success: true, data: { fullName, phone, street, ... } }
+        const response = await apiClient.post('/auth/shipping-address', payload);
+
+        // Extract data from response
+        const data = (response as { data?: ShippingAddressDTO }).data || response;
+
+        return transformFromDTO(data as ShippingAddressDTO);
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, 'Failed to save shipping address'));
     }
 };
 
 /**
  * Get user's shipping address
+ * @returns User's address or null if not found
+ * @throws Error if fetch fails
  */
-export const getShippingAddress = async (): Promise<{ data: ShippingAddress | null }> => {
+export const getShippingAddress = async (): Promise<ShippingAddress | null> => {
     try {
-        // We use 'unknown' casting first as typical apiClient return type might be generic
-        const response = await apiClient.get('/auth/shipping-address') as unknown as AddressResponse;
+        const response = await apiClient.get('/auth/shipping-address');
 
-        if (response.data) {
-            // Adapt Data: Backend -> Frontend
-            const dto = response.data;
-            const [firstName, ...lastNameParts] = dto.fullName.split(' ');
+        // Extract data from response
+        const data = (response as { data?: ShippingAddressDTO }).data || response;
 
-            const address: ShippingAddress = {
-                firstName: firstName || '',
-                lastName: lastNameParts.join(' ') || '',
-                phoneNumber: dto.phone,
-                address: dto.street,
-                city: dto.city,
-                district: dto.district,
-                zipCode: dto.postalCode
-            };
-
-            return { data: address };
+        if (data) {
+            return transformFromDTO(data as ShippingAddressDTO);
         }
 
-        return { data: null };
-    } catch (error: any) {
-        throw new Error(error.response?.data?.message || 'Failed to get shipping address');
+        return null;
+    } catch (error: unknown) {
+        // If 404, return null (no address saved yet)
+        if (typeof error === 'object' && error !== null) {
+            const err = error as { response?: { status?: number } };
+            if (err.response?.status === 404) {
+                return null;
+            }
+        }
+
+        throw new Error(handleApiError(error, 'Failed to get shipping address'));
     }
 };
 
 /**
  * Update shipping address
  * @param addressData - Updated address data (Frontend format)
+ * @returns Updated address in frontend format
+ * @throws Error if update fails
  */
-export const updateShippingAddress = async (addressData: ShippingAddress): Promise<ShippingAddressDTO> => {
+export const updateShippingAddress = async (
+    addressData: ShippingAddress
+): Promise<ShippingAddress> => {
     try {
-        // Adapt Data: Frontend -> Backend
-        const payload: ShippingAddressDTO = {
-            fullName: `${addressData.firstName} ${addressData.lastName}`.trim(),
-            phone: addressData.phoneNumber,
-            street: addressData.address,
-            city: addressData.city,
-            district: addressData.district,
-            postalCode: addressData.zipCode
-        };
+        const payload = transformToBackendRequest(addressData);
 
-        const response = await apiClient.put('/auth/shipping-address', payload) as unknown as AddressResponse;
-        return response.data;
-    } catch (error: any) {
-        throw new Error(error.response?.data?.message || 'Failed to update shipping address');
+        const response = await apiClient.put('/auth/shipping-address', payload);
+
+        // Extract data from response
+        const data = (response as { data?: ShippingAddressDTO }).data || response;
+
+        return transformFromDTO(data as ShippingAddressDTO);
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, 'Failed to update shipping address'));
     }
 };
 
 /**
- * Check if gift code is valid
- * @param code - Gift code to check
+ * Delete shipping address
+ * @throws Error if delete fails
  */
-export const checkGiftCode = async (code: string): Promise<{ valid: boolean }> => {
-    // MOCK IMPLEMENTATION: Replace with actual API call to backend
-    // Simulating API latency
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            if (code.toLowerCase() === 'emanhhuy') {
-                resolve({ valid: true });
-            } else {
-                resolve({ valid: false });
-            }
-        }, 500);
-    });
+export const deleteShippingAddress = async (): Promise<void> => {
+    try {
+        await apiClient.delete('/auth/shipping-address');
+    } catch (error: unknown) {
+        throw new Error(handleApiError(error, 'Failed to delete shipping address'));
+    }
 };

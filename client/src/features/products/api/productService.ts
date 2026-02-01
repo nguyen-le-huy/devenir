@@ -1,291 +1,278 @@
 import apiClient from '@/core/api/apiClient';
+import type {
+    IProduct,
+    IVariant,
+    IEnrichedVariant,
+    IProductInfo,
+    IProductListParams,
+    IApiResponse,
+    IVariantDetailResponse,
+    ICategory,
+} from '@/features/products/types';
 
 /**
  * Product Service - API calls for product operations
- * Simple functions delegate directly to apiClient
- * Complex functions with data transformation handle errors appropriately
+ * All functions use proper TypeScript types and follow best practices
  */
 
+// ============================================
+// Constants
+// ============================================
+
+const FETCH_LIMITS = {
+    ALL_VARIANTS: 1000,
+    LATEST_POOL: 50,
+    RANDOM_POOL: 100,
+} as const;
+
+// ============================================
+// Helper Functions
+// ============================================
+
 /**
- * Lấy tất cả products với pagination và filtering
- * @param {Object} params - Query parameters (page, limit, category, brand, status, search)
- * @returns {Promise} Response data from API
+ * Extract product info for embedding in variants
  */
-export const getAllProducts = (params = {}) =>
+const extractProductInfo = (product: IProduct): IProductInfo => ({
+    _id: product._id,
+    name: product.name,
+    description: product.description,
+    category: product.category,
+    brand: product.brand,
+    averageRating: product.averageRating,
+});
+
+/**
+ * Enrich variants with product information
+ */
+const enrichVariantsWithProductInfo = (
+    variants: IVariant[],
+    product: IProduct
+): IEnrichedVariant[] => {
+    const productInfo = extractProductInfo(product);
+    return variants.map((variant) => ({
+        ...variant,
+        productInfo,
+    }));
+};
+
+/**
+ * Fetch variants for multiple products in parallel
+ * Handles errors gracefully with fallback to empty arrays
+ */
+const fetchVariantsForProducts = async (
+    products: IProduct[]
+): Promise<IEnrichedVariant[]> => {
+    const variantPromises = products.map((product) =>
+        apiClient
+            .get<IApiResponse<IVariant[]>>(`/products/${product._id}/variants`)
+            .then((response) => ({
+                product,
+                variants: (response as unknown as IApiResponse<IVariant[]>).data || [],
+            }))
+            .catch(() => ({ product, variants: [] as IVariant[] }))
+    );
+
+    const results = await Promise.all(variantPromises);
+
+    return results.flatMap(({ product, variants }) =>
+        enrichVariantsWithProductInfo(variants, product)
+    );
+};
+
+/**
+ * Filter to keep only one variant per product+color combination
+ */
+const filterUniqueByProductColor = (
+    variants: IEnrichedVariant[]
+): IEnrichedVariant[] => {
+    const uniqueMap = new Map<string, boolean>();
+
+    return variants.filter((variant) => {
+        const productId = variant.productInfo?._id || variant.product_id;
+        const key = `${productId}_${variant.color}`;
+
+        if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, true);
+            return true;
+        }
+        return false;
+    });
+};
+
+// ============================================
+// API Functions - Simple Delegates
+// ============================================
+
+/**
+ * Get all products with pagination and filtering
+ */
+export const getAllProducts = (
+    params: IProductListParams = {}
+): Promise<IApiResponse<IProduct[]>> =>
     apiClient.get('/products', { params });
 
 /**
- * Lấy product theo ID kèm variants
- * @param {string} id - Product ID
- * @returns {Promise} Response data from API
+ * Get product by ID with variants
  */
-export const getProductById = (id: string) =>
+export const getProductById = (id: string): Promise<IApiResponse<IProduct>> =>
     apiClient.get(`/products/${id}`);
 
 /**
- * Lấy variants của một product
- * @param {string} productId - Product ID
- * @returns {Promise} Response data from API
+ * Get variants for a specific product
  */
-export const getProductVariants = (productId: string) =>
+export const getProductVariants = (
+    productId: string
+): Promise<IApiResponse<IVariant[]>> =>
     apiClient.get(`/products/${productId}/variants`);
 
 /**
- * Lấy tất cả variants (có thể filter theo product, size, color)
- * @param {Object} params - Query parameters
- * @returns {Promise} Response data from API
+ * Get all variants with optional filtering
  */
-export const getAllVariants = (params = {}) =>
+export const getAllVariants = (
+    params: Record<string, unknown> = {}
+): Promise<IApiResponse<IVariant[]>> =>
     apiClient.get('/variants', { params });
 
+// ============================================
+// API Functions - Complex with Data Transformation
+// ============================================
+
 /**
- * Lấy tất cả variants của một category
- * Mỗi variant được coi như một product riêng
- * @param {string} categoryId - Category ID
- * @returns {Promise} Array of variants với thông tin product
+ * Get all variants for a category
+ * Each variant is enriched with product information
  */
-export const getVariantsByCategory = async (categoryId: string) => {
-    try {
-        // Đầu tiên lấy tất cả products thuộc category
-        const productsResponse: any = await apiClient.get('/products', {
-            params: {
-                category: categoryId,
-                limit: 1000, // Lấy hết products
-            }
-        });
+export const getVariantsByCategory = async (
+    categoryId: string
+): Promise<IEnrichedVariant[]> => {
+    const productsResponse = await apiClient.get<IApiResponse<IProduct[]>>('/products', {
+        params: {
+            category: categoryId,
+            limit: FETCH_LIMITS.ALL_VARIANTS,
+        },
+    });
 
-        // apiClient interceptor đã unwrap response.data
-        // Nên productsResponse = { success: true, data: [...], pagination: {...} }
-        const products = productsResponse.data || [];
+    const products = (productsResponse as unknown as IApiResponse<IProduct[]>).data || [];
 
-        if (!products || products.length === 0) {
-            return [];
-        }
-
-        // Fetch variants cho tất cả products cùng lúc (parallel) thay vì tuần tự
-        const variantPromises = products.map((product: any) =>
-            apiClient.get(`/products/${product._id}/variants`)
-                .then((response: any) => ({ product, variants: response.data || [] }))
-                .catch(() => ({ product, variants: [] })) // Graceful fallback
-        );
-        const variantResults = await Promise.all(variantPromises);
-
-        // Enrich variants với thông tin product
-        const allVariants = variantResults.flatMap(({ product, variants }: any) =>
-            variants.map((variant: any) => ({
-                ...variant,
-                productInfo: {
-                    _id: product._id,
-                    name: product.name,
-                    description: product.description,
-                    category: product.category,
-                    brand: product.brand,
-                    averageRating: product.averageRating,
-                }
-            }))
-        );
-
-        return allVariants;
-    } catch (error) {
-        console.error('Error fetching variants by category:', error);
-        throw error;
+    if (products.length === 0) {
+        return [];
     }
+
+    return fetchVariantsForProducts(products);
 };
 
 /**
- * Lấy tất cả variants của một category VÀ các subcategories của nó
- * @param {string} parentCategoryId - Parent Category ID
- * @param {Array} allCategories - Tất cả categories (để tìm subcategories)
- * @returns {Promise} Array of variants với thông tin product
+ * Get variants for a category AND its subcategories
  */
-export const getVariantsByCategoryWithChildren = async (parentCategoryId: string, allCategories: any[] = []) => {
-    try {
-        // Tìm tất cả subcategory IDs
-        const subcategories = allCategories.filter(cat =>
-            cat.parentCategory === parentCategoryId ||
-            cat.parentCategory?._id === parentCategoryId ||
-            String(cat.parentCategory) === String(parentCategoryId)
-        );
+export const getVariantsByCategoryWithChildren = async (
+    parentCategoryId: string,
+    allCategories: ICategory[] = []
+): Promise<IEnrichedVariant[]> => {
+    // Find all subcategory IDs
+    const subcategories = allCategories.filter((cat) => {
+        const parentId =
+            typeof cat.parentCategory === 'object'
+                ? cat.parentCategory?._id
+                : cat.parentCategory;
+        return String(parentId) === String(parentCategoryId);
+    });
 
-        // Tạo danh sách tất cả category IDs (parent + children)
-        const allCategoryIds = [parentCategoryId, ...subcategories.map(sub => sub._id)];
+    // Collect all category IDs (parent + children)
+    const allCategoryIds = [parentCategoryId, ...subcategories.map((sub) => sub._id)];
 
-        // Fetch variants từ tất cả categories
-        // Fetch variants from all categories in parallel
-        const results = await Promise.allSettled(
-            allCategoryIds.map(categoryId => getVariantsByCategory(categoryId))
-        );
+    // Fetch variants from all categories in parallel
+    const results = await Promise.allSettled(
+        allCategoryIds.map((categoryId) => getVariantsByCategory(categoryId))
+    );
 
-        const allVariants: any[] = [];
-        results.forEach(result => {
-            if (result.status === 'fulfilled' && Array.isArray(result.value)) {
-                allVariants.push(...result.value);
-            }
-        });
+    const allVariants: IEnrichedVariant[] = [];
+    results.forEach((result) => {
+        if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+            allVariants.push(...result.value);
+        }
+    });
 
-        return allVariants;
-    } catch (error) {
-        console.error('Error fetching variants by category with children:', error);
-        throw error;
-    }
+    return allVariants;
 };
 
 /**
- * Lấy thông tin chi tiết của một variant theo ID
- * Bao gồm thông tin product cha và tất cả variants cùng cha
- * @param {string} variantId - Variant ID
- * @returns {Promise} Object chứa variant detail, product info, và sibling variants
+ * Get variant by ID with detailed info
+ * Returns variant, parent product, and sibling variants
  */
-export const getVariantById = async (variantId: string) => {
-    try {
-        // Gọi single endpoint từ backend
-        // apiClient đã unwrap response.data, nên response ở đây chính là body từ backend
-        const response: any = await apiClient.get(`/variants/${variantId}`);
+export const getVariantById = async (
+    variantId: string
+): Promise<IVariantDetailResponse> => {
+    const response = await apiClient.get<IApiResponse<IVariantDetailResponse>>(
+        `/variants/${variantId}`
+    );
 
-        // Backend trả về: { success: true, data: { variant, product, siblingVariants } }
-        if (response.success && response.data) {
-            return response.data;
-        }
+    const data = response as unknown as IApiResponse<IVariantDetailResponse>;
 
-        return response;
-    } catch (error) {
-        console.error('Error fetching variant detail:', error);
-        throw error;
+    if (data.success && data.data) {
+        return data.data;
     }
+
+    return data as unknown as IVariantDetailResponse;
 };
 
 /**
- * Lấy các variants mới nhất (sorted by createdAt)
- * Chỉ lấy 1 variant cho mỗi product+color combination (tránh trùng màu)
- * @param {number} limit - Số lượng variants cần lấy
- * @returns {Promise} Array of latest variants với thông tin product
+ * Get latest variants (sorted by createdAt)
+ * Returns unique variants per product+color combination
  */
-export const getLatestVariants = async (limit = 4) => {
-    try {
-        // Lấy tất cả products mới nhất
-        const productsResponse: any = await apiClient.get('/products', {
-            params: {
-                limit: 50, // Lấy 50 products gần nhất
-                sort: '-createdAt'
-            }
-        });
+export const getLatestVariants = async (
+    limit = 4
+): Promise<IEnrichedVariant[]> => {
+    const productsResponse = await apiClient.get<IApiResponse<IProduct[]>>('/products', {
+        params: {
+            limit: FETCH_LIMITS.LATEST_POOL,
+            sort: '-createdAt',
+        },
+    });
 
-        const products = productsResponse.data || [];
+    const products = (productsResponse as unknown as IApiResponse<IProduct[]>).data || [];
 
-        if (!products || products.length === 0) {
-            return [];
-        }
-
-        // Fetch variants parallel thay vì tuần tự
-        const variantPromises = products.map((product: any) =>
-            apiClient.get(`/products/${product._id}/variants`)
-                .then((response: any) => ({ product, variants: response.data || [] }))
-                .catch(() => ({ product, variants: [] }))
-        );
-        const variantResults = await Promise.all(variantPromises);
-
-        const allVariants = variantResults.flatMap(({ product, variants }: any) =>
-            variants.map((variant: any) => ({
-                ...variant,
-                productInfo: {
-                    _id: product._id,
-                    name: product.name,
-                    description: product.description,
-                    category: product.category,
-                    brand: product.brand,
-                    averageRating: product.averageRating,
-                }
-            }))
-        );
-
-        // Sort by createdAt (newest first)
-        const sortedVariants = allVariants.sort((a, b) => {
-            const dateA = new Date(a.createdAt || a._id).getTime();
-            const dateB = new Date(b.createdAt || b._id).getTime();
-            return dateB - dateA;
-        });
-
-        // Filter unique by product+color combination
-        const uniqueMap = new Map();
-        const uniqueVariants = sortedVariants.filter(variant => {
-            const productId = variant.productInfo?._id || variant.product_id;
-            const key = `${productId}_${variant.color}`;
-
-            if (!uniqueMap.has(key)) {
-                uniqueMap.set(key, true);
-                return true;
-            }
-            return false;
-        });
-
-        return uniqueVariants.slice(0, limit);
-    } catch (error) {
-        console.error('Error fetching latest variants:', error);
-        throw error;
+    if (products.length === 0) {
+        return [];
     }
+
+    const allVariants = await fetchVariantsForProducts(products);
+
+    // Sort by createdAt (newest first)
+    const sortedVariants = allVariants.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a._id).getTime();
+        const dateB = new Date(b.createdAt || b._id).getTime();
+        return dateB - dateA;
+    });
+
+    // Filter unique and slice to limit
+    return filterUniqueByProductColor(sortedVariants).slice(0, limit);
 };
 
 /**
- * Lấy các variants ngẫu nhiên để gợi ý sản phẩm
- * @param {number} limit - Số lượng variants cần lấy
- * @returns {Promise} Array of random variants với thông tin product
+ * Get random variants for product suggestions
+ * Returns unique variants per product+color combination
  */
-export const getRandomVariants = async (limit = 8) => {
-    try {
-        // Lấy tất cả products
-        const productsResponse: any = await apiClient.get('/products', {
-            params: {
-                limit: 100, // Lấy 100 products để có đủ dữ liệu random
-            }
-        });
+export const getRandomVariants = async (
+    limit = 8
+): Promise<IEnrichedVariant[]> => {
+    const productsResponse = await apiClient.get<IApiResponse<IProduct[]>>('/products', {
+        params: {
+            limit: FETCH_LIMITS.RANDOM_POOL,
+        },
+    });
 
-        const products = productsResponse.data || [];
+    const products = (productsResponse as unknown as IApiResponse<IProduct[]>).data || [];
 
-        if (!products || products.length === 0) {
-            return [];
-        }
-
-        // Fetch variants parallel thay vì tuần tự
-        const variantPromises = products.map((product: any) =>
-            apiClient.get(`/products/${product._id}/variants`)
-                .then((response: any) => ({ product, variants: response.data || [] }))
-                .catch(() => ({ product, variants: [] }))
-        );
-        const variantResults = await Promise.all(variantPromises);
-
-        const allVariants = variantResults.flatMap(({ product, variants }: any) =>
-            variants.map((variant: any) => ({
-                ...variant,
-                productInfo: {
-                    _id: product._id,
-                    name: product.name,
-                    description: product.description,
-                    category: product.category,
-                    brand: product.brand,
-                    averageRating: product.averageRating,
-                }
-            }))
-        );
-
-        // Filter unique by product+color combination
-        const uniqueMap = new Map();
-        const uniqueVariants = allVariants.filter(variant => {
-            const productId = variant.productInfo?._id || variant.product_id;
-            const key = `${productId}_${variant.color}`;
-
-            if (!uniqueMap.has(key)) {
-                uniqueMap.set(key, true);
-                return true;
-            }
-            return false;
-        });
-
-        // Shuffle array để random
-        const shuffled = uniqueVariants.sort(() => Math.random() - 0.5);
-
-        return shuffled.slice(0, limit);
-    } catch (error) {
-        console.error('Error fetching random variants:', error);
-        throw error;
+    if (products.length === 0) {
+        return [];
     }
+
+    const allVariants = await fetchVariantsForProducts(products);
+
+    // Filter unique
+    const uniqueVariants = filterUniqueByProductColor(allVariants);
+
+    // Shuffle array for randomness
+    const shuffled = uniqueVariants.sort(() => Math.random() - 0.5);
+
+    return shuffled.slice(0, limit);
 };

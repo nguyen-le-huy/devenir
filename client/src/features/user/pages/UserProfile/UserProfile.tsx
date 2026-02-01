@@ -1,7 +1,6 @@
 import { useState, useEffect, memo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/core/stores/useAuthStore';
-import { useNavigate } from 'react-router-dom';
 import ProfileOverview from '@/features/user/components/profile/ProfileOverview';
 import PersonalDetails from '@/features/user/components/profile/PersonalDetails';
 import MarketingPreferences from '@/features/user/components/profile/MarketingPreferences';
@@ -11,8 +10,16 @@ import styles from './UserProfile.module.css';
 
 /**
  * User Profile Page
- * Desktop: Sidebar navigation left + Content right
- * Mobile: Horizontal tabs navigation + Content
+ * 
+ * Layout:
+ * - Desktop: Sidebar navigation (left) + Content (right)
+ * - Mobile: Horizontal tabs navigation + Content
+ * 
+ * Features:
+ * - Tab-based navigation with URL sync
+ * - Responsive design (mobile/desktop)
+ * - Protected route (redirects to /auth if not logged in)
+ * - Role-based admin dashboard access
  */
 const navItems = [
     { id: 'overview', label: 'Overview' },
@@ -22,19 +29,21 @@ const navItems = [
 ];
 
 const UserProfile = memo(() => {
-    // Atomic selectors
-    const user = useAuthStore((state) => state.user);
-    const logout = useAuthStore((state) => state.logout);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    
+    // Atomic selectors - only subscribe to needed state
+    const user = useAuthStore((state) => state.user);
+    const logout = useAuthStore((state) => state.logout);
+    
     const initialTab = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(initialTab);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-    // Check authentication
+    // Protected route - redirect if not authenticated
     useEffect(() => {
         if (!user) {
-            navigate('/auth');
+            navigate('/auth', { replace: true });
         }
     }, [user, navigate]);
 
@@ -60,11 +69,7 @@ const UserProfile = memo(() => {
 
     const handleTabChange = (id: string) => {
         setActiveTab(id);
-        setSearchParams((prev) => {
-            const next = new URLSearchParams(prev);
-            next.set('tab', id);
-            return next;
-        });
+        setSearchParams({ tab: id });
     };
 
     const renderContent = () => {
@@ -73,24 +78,21 @@ const UserProfile = memo(() => {
                 return (
                     <ProfileOverview
                         user={user}
-                        onEditProfile={() => setActiveTab('personal')}
+                        onEditProfile={() => handleTabChange('personal')}
                     />
                 );
             case 'personal':
-                return (
-                    <PersonalDetails user={user} />
-                );
+                return <PersonalDetails user={user} />;
             case 'orders':
                 return <ProfileOrders />;
             case 'preferences':
-                return (
-                    <MarketingPreferences user={user} />
-                );
+                return <MarketingPreferences user={user} />;
             default:
                 return null;
         }
     };
 
+    // Early return if not authenticated
     if (!user) {
         return null;
     }

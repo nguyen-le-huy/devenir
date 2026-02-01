@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import styles from "./PayOSResult.module.css";
 import { fetchPayOSOrderStatus } from "@/features/payos";
 import { cartKeys } from '@/features/cart/hooks/useCart';
+import { logError, handleApiError } from '@/features/checkout/utils';
 
 const PayOSResult = () => {
     const navigate = useNavigate();
@@ -71,22 +72,24 @@ const PayOSResult = () => {
                 // Still pending - stay on this page and show loading
                 setIsLoading(false);
             }
-        } catch (error: any) {
-            console.error("Failed to load PayOS order status:", error);
-            setErrorMessage(error.message || "Unable to verify payment status.");
+        } catch (error: unknown) {
+            logError(error, 'loading PayOS status');
+            const errorMsg = handleApiError(error, 'Unable to verify payment status');
+            setErrorMessage(errorMsg);
             setIsLoading(false);
 
             // Navigate to failed page on error
             navigate("/payment-failed", {
                 state: {
                     orderCode: orderCode,
-                    errorMessage: error.message || "Unable to verify payment status.",
+                    errorMessage: errorMsg,
                     paymentMethod: "PayOS"
                 },
                 replace: true
             });
         }
     }, [orderCode, navigate, queryClient]);
+
 
     useEffect(() => {
         loadStatus();

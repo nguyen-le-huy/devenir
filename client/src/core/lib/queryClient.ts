@@ -67,10 +67,12 @@ export const queryKeys = {
     // Variants
     variants: {
         all: ['variants'] as const,
-        lists: () => [...['variants'], 'list'] as const,
-        list: (params: Record<string, any>) => [...['variants'], 'list', params] as const,
-        latest: (limit: number) => [...['variants'], 'latest', limit] as const,
-        random: (limit: number) => [...['variants'], 'random', limit] as const,
+        lists: () => [...queryKeys.variants.all, 'list'] as const,
+        list: (params: Record<string, unknown>) => [...queryKeys.variants.lists(), params] as const,
+        detail: (id: string) => [...queryKeys.variants.all, 'detail', id] as const,
+        latest: (limit: number) => [...queryKeys.variants.all, 'latest', limit] as const,
+        random: (limit: number) => [...queryKeys.variants.all, 'random', limit] as const,
+        categoryWithChildren: (categoryId: string) => [...queryKeys.variants.all, 'categoryWithChildren', categoryId] as const,
     },
 
     // Orders

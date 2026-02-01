@@ -65,7 +65,7 @@ const ProductDetail = memo(() => {
 
     // Colors
     const { data: colorsData } = useColors();
-    const colorMap = useMemo(() => createColorMap((colorsData as any)?.data || colorsData || []), [colorsData]);
+    const colorMap = useMemo(() => createColorMap(colorsData || []), [colorsData]);
 
     // Derived Logic
     const colorCount = useMemo(() => new Set(siblingVariants.map((v: any) => v.color)).size, [siblingVariants]);

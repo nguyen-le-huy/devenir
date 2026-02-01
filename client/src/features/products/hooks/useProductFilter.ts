@@ -1,17 +1,62 @@
 import { useMemo } from 'react';
+import type { IEnrichedVariant } from '@/features/products/types';
 
-export const useProductFilter = (variants: any[], selectedSort: string, selectedColors: string[]) => {
+/**
+ * Product Filter Hook
+ * Handles filtering, deduplication, and sorting of product variants
+ */
+
+// ============================================
+// Types
+// ============================================
+
+interface UseProductFilterResult {
+    /** List of unique colors available in the variants */
+    availableColors: string[];
+    /** Count of products for each color */
+    colorCounts: Record<string, number>;
+    /** Filtered and sorted variants */
+    filteredVariants: IEnrichedVariant[];
+}
+
+type SortOption = 'Price High' | 'Price Low' | 'New In' | string;
+
+// ============================================
+// Sort Functions
+// ============================================
+
+const sortByPriceHigh = (a: IEnrichedVariant, b: IEnrichedVariant): number =>
+    b.price - a.price;
+
+const sortByPriceLow = (a: IEnrichedVariant, b: IEnrichedVariant): number =>
+    a.price - b.price;
+
+const sortByNewest = (a: IEnrichedVariant, b: IEnrichedVariant): number => {
+    const dateA = a.createdAt || a._id;
+    const dateB = b.createdAt || b._id;
+    return dateB > dateA ? 1 : -1;
+};
+
+// ============================================
+// Hook Implementation
+// ============================================
+
+export const useProductFilter = (
+    variants: IEnrichedVariant[],
+    selectedSort: SortOption,
+    selectedColors: string[]
+): UseProductFilterResult => {
     return useMemo(() => {
         // Extract unique colors from variants
-        const availableColors = [...new Set(variants.map(v => v.color))].filter(Boolean);
+        const availableColors = [...new Set(variants.map((v) => v.color))].filter(Boolean);
 
         // Count unique product + color combinations
         const colorCounts: Record<string, number> = {};
-        const countedProductColors = new Set();
+        const countedProductColors = new Set<string>();
 
-        variants.forEach(variant => {
+        variants.forEach((variant) => {
             if (variant.color) {
-                const productId = variant.productInfo?._id || variant.product;
+                const productId = variant.productInfo?._id || (variant as any).product;
                 const key = `${productId}_${variant.color}`;
 
                 if (!countedProductColors.has(key)) {
@@ -26,13 +71,13 @@ export const useProductFilter = (variants: any[], selectedSort: string, selected
 
         // 1. Color filter
         if (selectedColors.length > 0) {
-            filtered = filtered.filter(v => selectedColors.includes(v.color));
+            filtered = filtered.filter((v) => selectedColors.includes(v.color));
         }
 
         // 2. Remove duplicates (keep one variant per product-color)
-        const uniqueMap = new Map();
-        filtered = filtered.filter(variant => {
-            const productId = variant.productInfo?._id || variant.product;
+        const uniqueMap = new Map<string, boolean>();
+        filtered = filtered.filter((variant) => {
+            const productId = variant.productInfo?._id || (variant as any).product;
             const key = `${productId}_${variant.color}`;
 
             if (!uniqueMap.has(key)) {
@@ -45,19 +90,16 @@ export const useProductFilter = (variants: any[], selectedSort: string, selected
         // 3. Apply sorting
         switch (selectedSort) {
             case 'Price High':
-                filtered.sort((a, b) => b.price - a.price);
+                filtered.sort(sortByPriceHigh);
                 break;
             case 'Price Low':
-                filtered.sort((a, b) => a.price - b.price);
+                filtered.sort(sortByPriceLow);
                 break;
             case 'New In':
-                filtered.sort((a, b) => {
-                    const dateA = a.createdAt || a._id;
-                    const dateB = b.createdAt || b._id;
-                    return dateB > dateA ? 1 : -1;
-                });
+                filtered.sort(sortByNewest);
                 break;
             default:
+                // Keep original order
                 break;
         }
 

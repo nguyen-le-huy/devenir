@@ -1,16 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useVerifyEmail } from '@/features/auth/hooks';
+import { AUTH_MESSAGES } from '@/features/auth/constants';
 import styles from './EmailVerificationPage.module.css';
 
 export default function EmailVerificationPage() {
     const { token } = useParams();
     const navigate = useNavigate();
+    const hasCalledRef = useRef(false);
 
     const verifyMutation = useVerifyEmail();
 
     useEffect(() => {
-        if (token) {
+        // Prevent double-call in StrictMode and on re-renders
+        if (token && !hasCalledRef.current) {
+            hasCalledRef.current = true;
             verifyMutation.mutate(token, {
                 onSuccess: () => {
                     // Redirect to login after 3 seconds
@@ -20,7 +24,7 @@ export default function EmailVerificationPage() {
                 }
             });
         }
-    }, [token, navigate]); // Removed verifyMutation from deps to avoid loop 
+    }, [token, navigate, verifyMutation]);
 
     return (
         <div className={styles.container}>
@@ -49,7 +53,9 @@ export default function EmailVerificationPage() {
                     <div className={styles.error}>
                         <div className={styles.errorIcon}>✕</div>
                         <h1 className={styles.title}>Verification Failed</h1>
-                        <p className={styles.message}>{(verifyMutation.error as any)?.message || 'Email verification failed. Please try again.'}</p>
+                        <p className={styles.message}>
+                            {verifyMutation.error?.message || AUTH_MESSAGES.EMAIL_VERIFICATION_FAILED}
+                        </p>
                         <button
                             onClick={() => navigate('/auth')}
                             className={styles.button}

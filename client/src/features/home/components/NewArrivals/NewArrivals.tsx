@@ -1,4 +1,4 @@
-import { memo, useRef, useMemo } from 'react';
+import { memo, useRef } from 'react';
 import styles from './NewArrivals.module.css';
 import ScarfCard from '@/features/products/components/ProductCard/ScarfCard';
 import Loading from '@/shared/components/Loading/Loading';
@@ -8,8 +8,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { MotionPathHelper } from "gsap/MotionPathHelper";
-import { useLatestVariants } from '@/features/products/hooks/useProducts';
-import type { VariantData, NewArrivalProduct, SplitTextInstance } from '@/features/home/types';
+import { useNewArrivals } from '@/features/home/hooks/useHomeProducts';
+import type { NewArrivalProduct, SplitTextInstance } from '@/features/home/types';
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, MotionPathPlugin, MotionPathHelper);
 
@@ -18,24 +18,8 @@ const NewArrivals = memo(() => {
     const titleRef = useRef<HTMLHeadingElement>(null);
     const linkRef = useRef<HTMLAnchorElement>(null);
 
-    // Fetch 4 latest variants
-    const { data: variantsData, isLoading } = useLatestVariants(4);
-
-    // Transform variant data to match ScarfCard expected format
-    const products = useMemo<NewArrivalProduct[]>(() => {
-        if (!variantsData || variantsData.length === 0) return [];
-
-        return variantsData.map((variant: VariantData) => ({
-            id: variant._id,
-            name: variant.productInfo?.name || 'Unknown Product',
-            price: variant.price,
-            image: variant.mainImage || '/images/placeholder.png',
-            imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
-            color: variant.color,
-            size: variant.size,
-            sku: variant.sku,
-        }));
-    }, [variantsData]);
+    // Use custom hook for data fetching
+    const { products, isLoading, isError } = useNewArrivals(4);
 
     useGSAP(() => {
         const container = newArrContainerRef.current;
@@ -115,6 +99,7 @@ const NewArrivals = memo(() => {
 
     }, { scope: newArrContainerRef, dependencies: [products] });
 
+    // Loading state
     if (isLoading) {
         return (
             <div className={`${styles.newArrivals} container`}>
@@ -123,24 +108,36 @@ const NewArrivals = memo(() => {
         );
     }
 
+    // Error state - graceful fallback
+    if (isError) {
+        return null; // Silently fail on home page to not break UX
+    }
+
+    // Empty state
+    if (!products || products.length === 0) {
+        return null;
+    }
+
     return (
-        <div className={`${styles.newArrivals} container`} ref={newArrContainerRef}>
+        <section 
+            className={`${styles.newArrivals} container`} 
+            ref={newArrContainerRef}
+            aria-labelledby="new-arrivals-title"
+        >
             <div className="titleSection">
-                <h3 className="titleSplit" ref={titleRef}>New Arrivals, new journeys</h3>
-                <a href="#" className="viewAllLinkSplit" ref={linkRef}>
+                <h3 id="new-arrivals-title" className="titleSplit" ref={titleRef}>
+                    New Arrivals, new journeys
+                </h3>
+                <a href="/products?filter=new" className="viewAllLinkSplit" ref={linkRef}>
                     View All
                 </a>
             </div>
             <div className={styles.productList}>
-                {products.length > 0 ? (
-                    products.map((product: NewArrivalProduct) => (
-                        <ScarfCard key={product.id} scarf={product} />
-                    ))
-                ) : (
-                    <p>No new arrivals yet.</p>
-                )}
+                {products.map((product: NewArrivalProduct) => (
+                    <ScarfCard key={product.id} scarf={product} />
+                ))}
             </div>
-        </div>
+        </section>
     );
 });
 

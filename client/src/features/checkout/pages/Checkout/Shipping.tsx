@@ -5,6 +5,8 @@ import ShippingMethodSelector from '@/features/checkout/components/Shipping/Ship
 import AddressForm from '@/features/checkout/components/Shipping/AddressForm';
 import ShippingSummary from '@/features/checkout/components/Shipping/ShippingSummary';
 import ReviewAndPay from '@/features/checkout/components/Shipping/ReviewAndPay';
+import { SHIPPING_METHODS } from '@/features/checkout/constants';
+import { formatShippingCost } from '@/features/checkout/utils';
 
 const Shipping = memo(() => {
     const {
@@ -23,7 +25,6 @@ const Shipping = memo(() => {
         setGiftCodeError,
         formData,
         formattedCartTotal,
-        shippingCharge,
         formattedTotalWithShipping,
 
         handleShippingMethodChange,
@@ -38,11 +39,13 @@ const Shipping = memo(() => {
         isProcessingPayment
     } = useShippingPage();
 
-    const shippingCostLabel = shippingCharge > 0 ? `USD ${shippingCharge.toFixed(2)}` : "Free";
+
+    const shippingCostLabel = formatShippingCost(deliveryTime);
 
     // Derived state for button disabled
     const canProceedToPayment = Boolean(deliveryTime && savedAddress && !showAddressForm);
     const payButtonDisabled = isProcessingPayment || !paymentMethod || !canProceedToPayment;
+
 
     return (
         <>
@@ -63,13 +66,14 @@ const Shipping = memo(() => {
                             onTimeChange={handleDeliveryTimeChange}
                         />
 
-                        {shippingMethod === "home" && deliveryTime && showAddressForm && (
+                        {shippingMethod === SHIPPING_METHODS.HOME && deliveryTime && showAddressForm && (
                             <AddressForm
                                 formData={formData}
                                 onChange={handleInputChange}
                                 onConfirm={handleConfirmAddress}
                             />
                         )}
+
                     </div>
                     <div className={`${styles.right} ${styles.rightShipping}`}>
                         <ShippingSummary

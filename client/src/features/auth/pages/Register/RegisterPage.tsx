@@ -4,6 +4,7 @@ import { useAuthStore } from '@/core/stores/useAuthStore';
 import RegisterForm from '@/shared/components/form/RegisterForm';
 import { useRegister, useGoogleAuth } from '@/features/auth/hooks';
 import { RegisterData, AuthResponse } from '@/features/auth/types';
+import { AUTH_MESSAGES } from '@/features/auth/constants';
 import styles from './RegisterPage.module.css';
 
 /**
@@ -27,12 +28,9 @@ export default function RegisterPage() {
                     toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
                 } else {
                     // Verification flow
-                    toast.success('Registration successful! Please check your email to verify your account.');
-                    navigate('/auth'); // Redirect to login
+                    toast.success(AUTH_MESSAGES.REGISTER_SUCCESS);
+                    navigate('/auth');
                 }
-            },
-            onError: () => {
-                // Toast handled by hook usually
             }
         });
     };
@@ -41,13 +39,13 @@ export default function RegisterPage() {
         if (!credential) return;
 
         googleAuthMutation.mutate(credential, {
-            onSuccess: (response: any) => {
+            onSuccess: (response: AuthResponse) => {
                 loginToStore(response.token, response.user);
                 navigate('/');
                 toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
             },
-            onError: (err: any) => {
-                toast.error(err?.message || 'Google registration failed');
+            onError: (error) => {
+                toast.error(error.message || AUTH_MESSAGES.GOOGLE_REGISTER_FAILED);
             }
         });
     };
@@ -71,7 +69,7 @@ export default function RegisterPage() {
                         onSubmit={handleRegister}
                         onGoogleLogin={handleGoogleLogin}
                         loading={registerMutation.isPending || googleAuthMutation.isPending}
-                        error={registerMutation.error ? (registerMutation.error as any).message : ''}
+                        error={registerMutation.error?.message ?? ''}
                         onBack={handleSwitchToLogin}
                     />
                     <div className={styles.switchForm}>

@@ -4,12 +4,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import styles from "../PayOS/PayOSResult.module.css"; // Reuse PayOS styles
 import { fetchNowPaymentsStatus } from "@/features/nowpayments";
 import { cartKeys } from '@/features/cart/hooks/useCart';
-
-const deliveryWindowCopy: Record<string, string> = {
-    standard: "Standard delivery",
-    next: "Next day delivery",
-    nominated: "Nominated day delivery"
-};
+import { DELIVERY_TIME_LABELS } from '@/features/checkout/constants';
+import { logError, handleApiError } from '@/features/checkout/utils';
+import type { PaymentOrderStatus } from '@/features/checkout/types';
 
 const NowPaymentsResult = () => {
     const navigate = useNavigate();
@@ -17,7 +14,7 @@ const NowPaymentsResult = () => {
     const [searchParams] = useSearchParams();
     const orderId = searchParams.get("orderId");
 
-    const [orderStatus, setOrderStatus] = useState<any>(null);
+    const [orderStatus, setOrderStatus] = useState<PaymentOrderStatus | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -49,10 +46,11 @@ const NowPaymentsResult = () => {
 
             setOrderStatus(response.data);
             setErrorMessage("");
-        } catch (error: any) {
-            console.error("Failed to load NowPayments order status:", error);
+        } catch (error: unknown) {
+            logError(error, 'loading NowPayments status');
+            const errorMsg = handleApiError(error, 'Unable to verify payment status');
             setOrderStatus(null);
-            setErrorMessage(error.message || "Unable to verify payment status.");
+            setErrorMessage(errorMsg);
         } finally {
             if (showLoader) {
                 setIsLoading(false);
@@ -61,6 +59,7 @@ const NowPaymentsResult = () => {
             }
         }
     }, [orderId]);
+
 
     useEffect(() => {
         loadStatus(true);
@@ -131,7 +130,7 @@ const NowPaymentsResult = () => {
             },
             {
                 label: "Shipping",
-                value: deliveryWindowCopy[orderStatus.deliveryWindow] || "Home delivery"
+                value: DELIVERY_TIME_LABELS[orderStatus.deliveryWindow] || "Home delivery"
             },
             {
                 label: "Payment method",
@@ -139,6 +138,7 @@ const NowPaymentsResult = () => {
             }
         ];
     }, [orderStatus]);
+
 
     return (
         <section className={styles.wrapper}>

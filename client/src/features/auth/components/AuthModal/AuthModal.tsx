@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import LoginForm from '@/shared/components/form/LoginForm';
 import ForgotPasswordForm from '@/shared/components/form/ForgotPasswordForm';
 import { useLogin, useGoogleAuth, useForgotPassword } from '@/features/auth/hooks';
+import { AUTH_MESSAGES } from '@/features/auth/constants';
 import styles from './AuthModal.module.css';
 import Backdrop from '@/shared/components/Backdrop/Backdrop';
 
@@ -21,7 +22,6 @@ interface AuthModalProps {
  */
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const navigate = useNavigate();
-    // const loginToStore = useAuthStore((state) => state.login); // Handled by hooks now
     const [activeForm, setActiveForm] = useState<'login' | 'forgot'>('login');
     const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
 
@@ -37,10 +37,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         loginMutation.mutate(data, {
             onSuccess: () => {
                 onClose();
-                toast.success('Signed in successfully');
+                toast.success(AUTH_MESSAGES.LOGIN_SUCCESS);
             },
             onError: (error) => {
-                toast.error(error.message || 'Login failed');
+                toast.error(error.message || AUTH_MESSAGES.LOGIN_FAILED);
             }
         });
     };
@@ -51,12 +51,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         googleAuthMutation.mutate(credential, {
             onSuccess: (response) => {
-                // Store updated by hook
                 onClose();
                 toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
             },
-            onError: (err) => {
-                toast.error(err?.message || 'Google login failed');
+            onError: (error) => {
+                toast.error(error.message || AUTH_MESSAGES.GOOGLE_LOGIN_FAILED);
             }
         });
     };
@@ -66,9 +65,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         forgotPasswordMutation.mutate(data, {
             onSuccess: () => {
                 setForgotPasswordSubmitted(true);
-            },
-            onError: () => {
-                // Toast handled by hook
             }
         });
     };
@@ -120,7 +116,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                 onGoogleLogin={handleGoogleLogin}
                                 onSwitchToRegister={switchToRegister}
                                 loading={loginMutation.isPending || googleAuthMutation.isPending}
-                                error={loginMutation.error ? (loginMutation.error as any).message : ''}
+                                error={loginMutation.error?.message ?? ''}
                             />
                         </div>
                     )}
@@ -133,7 +129,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                         onSubmit={handleForgotPassword}
                                         onBack={switchToLogin}
                                         loading={forgotPasswordMutation.isPending}
-                                        error={forgotPasswordMutation.error ? (forgotPasswordMutation.error as any).message : ''}
+                                        error={forgotPasswordMutation.error?.message ?? ''}
                                     />
                                 </>
                             ) : (

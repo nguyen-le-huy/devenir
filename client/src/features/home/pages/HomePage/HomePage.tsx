@@ -1,23 +1,31 @@
-import { memo } from 'react';
+import { memo, lazy, Suspense } from 'react';
 import Hero from '@/features/home/components/Hero/Hero';
-import Introduction from '@/features/home/components/Introduction/Introduction';
-import NewArrivals from '@/features/home/components/NewArrivals/NewArrivals';
-import CategoryBox from '@/features/home/components/CategoryBox/CategoryBox';
-import SmallTreasures from '@/features/home/components/SmallTreasures/SmallTreasures';
-import Scarves from '@/features/home/components/Scarves/Scarves';
-import OurPartners from '@/features/home/components/OurPartners/OurPartners';
+import Loading from '@/shared/components/Loading/Loading';
+
+// Lazy load components below the fold for performance
+const Introduction = lazy(() => import('@/features/home/components/Introduction/Introduction'));
+const NewArrivals = lazy(() => import('@/features/home/components/NewArrivals/NewArrivals'));
+const SmallTreasures = lazy(() => import('@/features/home/components/SmallTreasures/SmallTreasures'));
+const CategoryBox = lazy(() => import('@/features/home/components/CategoryBox/CategoryBox'));
+const Scarves = lazy(() => import('@/features/home/components/Scarves/Scarves'));
+const OurPartners = lazy(() => import('@/features/home/components/OurPartners/OurPartners'));
 
 const HomePage = memo(() => {
     return (
-        <>
+        <main>
+            {/* Hero is above the fold - load immediately */}
             <Hero />
-            <Introduction />
-            <NewArrivals />
-            <SmallTreasures />
-            <CategoryBox />
-            <Scarves />
-            <OurPartners />
-        </>
+            
+            {/* Below fold components - lazy load with Suspense */}
+            <Suspense fallback={<Loading />}>
+                <Introduction />
+                <NewArrivals />
+                <SmallTreasures />
+                <CategoryBox />
+                <Scarves />
+                <OurPartners />
+            </Suspense>
+        </main>
     );
 });
 

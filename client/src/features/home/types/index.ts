@@ -42,20 +42,6 @@ export interface NewArrivalProduct {
     sku: string;
 }
 
-// Variant data from API
-export interface VariantData {
-    _id: string;
-    productInfo?: {
-        name: string;
-    };
-    price: number;
-    mainImage: string;
-    hoverImage?: string;
-    color?: string;
-    size?: string;
-    sku: string;
-}
-
 // Category data
 export interface CategoryData {
     _id: string;

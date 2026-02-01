@@ -1,6 +1,5 @@
 import { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/core/stores/useAuthStore';
 import LoginForm from '@/shared/components/form/LoginForm';
 import RegisterForm from '@/shared/components/form/RegisterForm';
 import ForgotPasswordForm from '@/shared/components/form/ForgotPasswordForm';
@@ -12,7 +11,8 @@ import {
     useAddPhone,
     useForgotPassword
 } from '@/features/auth/hooks';
-import { LoginData, RegisterData } from '@/features/auth/types';
+import { LoginData, RegisterData, AuthResponse } from '@/features/auth/types';
+import { AUTH_MESSAGES } from '@/features/auth/constants';
 import styles from './AuthPage.module.css';
 import { toast } from 'sonner';
 
@@ -23,11 +23,10 @@ import { toast } from 'sonner';
  */
 const AuthPage = memo(() => {
     const navigate = useNavigate();
-    const loginToStore = useAuthStore((state) => state.login);
 
     // Form state: 'benefits', 'register', 'forgot', 'phone'
     const [rightForm, setRightForm] = useState<'benefits' | 'register' | 'forgot' | 'phone'>('benefits');
-    const [googleCredential, setGoogleCredential] = useState<string | null>(null); // Store credential for phone verification
+    const [googleCredential, setGoogleCredential] = useState<string | null>(null);
 
     // Hooks
     const loginMutation = useLogin();
@@ -40,11 +39,11 @@ const AuthPage = memo(() => {
     const handleLogin = (data: LoginData) => {
         loginMutation.mutate(data, {
             onSuccess: () => {
-                toast.success('Welcome back!');
+                toast.success(AUTH_MESSAGES.LOGIN_SUCCESS);
                 navigate('/');
             },
             onError: (error) => {
-                toast.error(error.message || 'Login failed');
+                toast.error(error.message || AUTH_MESSAGES.LOGIN_FAILED);
             }
         });
     };
@@ -54,18 +53,11 @@ const AuthPage = memo(() => {
 
         googleAuthMutation.mutate(credential, {
             onSuccess: () => {
-                // Store update handled by hook
-                toast.success('Welcome back!');
+                toast.success(AUTH_MESSAGES.LOGIN_SUCCESS);
                 navigate('/');
             },
-            onError: (err: any) => {
-                const errorMessage = err?.message || '';
-                if (errorMessage.includes('Google login failed')) {
-                    // Consider it might be a signup if API strictly separates them, 
-                    // but usually backend handles "get or create".
-                    // If backend throws generic error, display it.
-                }
-                toast.error(errorMessage || 'Google login failed');
+            onError: (error) => {
+                toast.error(error.message || AUTH_MESSAGES.GOOGLE_LOGIN_FAILED);
             }
         });
     };
@@ -74,12 +66,8 @@ const AuthPage = memo(() => {
     const handleRegister = (data: RegisterData) => {
         registerMutation.mutate(data, {
             onSuccess: () => {
-                // Registration successful but email verification required
-                toast.success('Registration successful! Please check your email to verify your account.');
-                setRightForm('benefits'); // Reset form
-
-                // Optional: redirect to login view context if needed, 
-                // but here we just reset right form, user can use left form to login if verified
+                toast.success(AUTH_MESSAGES.REGISTER_SUCCESS);
+                setRightForm('benefits');
             }
         });
     };
@@ -87,52 +75,21 @@ const AuthPage = memo(() => {
     const handleGoogleRegister = (credential: string | undefined) => {
         if (!credential) return;
 
-        // Reuse Google Auth Logic -> Backend should handle "Register if New, Login if Exists" OR separate endpoints
-        // Assuming /auth/google handles both or we try login first.
-        // Based on original code logic:
-
         googleAuthMutation.mutate(credential, {
-            onSuccess: (response: any) => {
+            onSuccess: (response: AuthResponse) => {
                 if (response.user && response.token) {
-                    loginToStore(response.token, response.user);
-                    toast.success('Welcome!');
+                    toast.success(AUTH_MESSAGES.REGISTER_SUCCESS_IMMEDIATE);
                     navigate('/');
-                } else {
-                    // If backend indicates new user needs phone, hook logic might differ
-                    // For now assuming success returns token.
                 }
             },
-            onError: (err: any) => {
-                // Logic from original code: check if new account needs phone
-                // BUT: typical Google Auth returns user/token immediately.
-                // Only if backend specifically requires Phone, we handle it.
-                // Let's assume strict flow:
-
-                // If error indicates "Process incomplete" or similar, handle it.
-                // For now, mirroring original catch logic is hard without specific error codes.
-                // We will simply display error.
-
-                // However, original code had logic for "New Account -> Phone Form".
-                // If your backend returns 200 OK but with flag "needs_phone", handle that in success.
-                // If backend throws 4xx for "Needs Phone", handle here.
-
-                // Re-implementing logic: If "User already exists", try login.
-                if (err?.message?.includes('already exists')) {
-                    // Since we reused Mutation, this is unlikely if Mutation calls "Google Login" endpoint which handles both.
-                    // But if register endpoint was called, then yes.
-                    // The passed prop is `onGoogleLogin` which usually implies "Start OAuth Flow".
+            onError: (error) => {
+                if (error.message?.includes('already exists')) {
+                    // User already exists scenario
                 }
-
-                // New logic: Just set credential and show phone form if needed (manual trigger for now if API supports it)
-                // Or better yet, trust backend to return specific error code.
-
-                toast.error(err?.message || 'Google registration failed');
+                toast.error(error.message || AUTH_MESSAGES.GOOGLE_REGISTER_FAILED);
             }
         });
     };
-
-    // Custom wrapper to handle specific flow where backend might return "incomplete" status
-    // Not fully implemented on backend side in this snippet, so keeping it standard.
 
     // ==================== FORGOT PASSWORD ====================
     const handleForgotPassword = (data: { email: string }) => {
@@ -159,15 +116,12 @@ const AuthPage = memo(() => {
     const handleSkipPhone = () => {
         if (googleCredential) {
             googleAuthMutation.mutate(googleCredential, {
-                onSuccess: (data) => {
-                    loginToStore(data.token, data.user);
+                onSuccess: () => {
                     navigate('/');
                 }
             });
         }
     };
-
-
 
     return (
         <div className={styles.authContainer}>
@@ -175,8 +129,6 @@ const AuthPage = memo(() => {
                 {/* LEFT COLUMN - LOGIN */}
                 <div className={styles.leftColumn}>
                     <h2 className={styles.title}>Sign In</h2>
-                    {/* Error handled by Toast mostly, but can show inline if desired. 
-                        Original showed inline. Keeping it clean. */}
 
                     <div style={rightForm !== 'benefits' ? { opacity: 0.5, pointerEvents: 'none' } : {}}>
                         <LoginForm
@@ -185,7 +137,7 @@ const AuthPage = memo(() => {
                             onForgotPassword={() => setRightForm('forgot')}
                             onSwitchToRegister={() => setRightForm('register')}
                             loading={loginMutation.isPending || (googleAuthMutation.isPending && !googleCredential)}
-                            error={loginMutation.error ? (loginMutation.error as any).message : ''}
+                            error={loginMutation.error?.message ?? ''}
                         />
                     </div>
                 </div>
@@ -237,7 +189,7 @@ const AuthPage = memo(() => {
                                 onGoogleLogin={handleGoogleRegister}
                                 onBack={() => setRightForm('benefits')}
                                 loading={registerMutation.isPending}
-                                error={registerMutation.error ? (registerMutation.error as any).message : ''}
+                                error={registerMutation.error?.message ?? ''}
                             />
                         </div>
                     )}
@@ -249,7 +201,7 @@ const AuthPage = memo(() => {
                                 onSubmit={handleForgotPassword}
                                 onBack={handleBackToLogin}
                                 loading={forgotPasswordMutation.isPending}
-                                error={forgotPasswordMutation.error ? (forgotPasswordMutation.error as any).message : ''}
+                                error={forgotPasswordMutation.error?.message ?? ''}
                                 submitted={forgotPasswordMutation.isSuccess}
                             />
                         </div>
@@ -262,7 +214,7 @@ const AuthPage = memo(() => {
                                 onSubmit={handleAddPhone}
                                 onSkip={handleSkipPhone}
                                 loading={addPhoneMutation.isPending}
-                                error={addPhoneMutation.error ? (addPhoneMutation.error as any).message : ''}
+                                error={addPhoneMutation.error?.message ?? ''}
                                 onBack={handleBackToLogin}
                             />
                         </div>

@@ -455,20 +455,26 @@ class ProductService {
         const variant = await ProductVariant.findById(id);
         if (!variant) throw new Error('Variant not found');
 
-        const product = await Product.findOne({
-            _id: variant.product_id,
-            isActive: true, // Only published? Original code had isActive=true status=published check
-            status: 'published'
-        })
-            .populate({
-                path: 'category',
-                populate: { path: 'parentCategory', select: 'name' }
+        const [product, siblingVariants] = await Promise.all([
+            Product.findOne({
+                _id: variant.product_id,
+                isActive: true,
+                status: 'published'
             })
-            .populate('brand');
+                .populate({
+                    path: 'category',
+                    populate: { path: 'parentCategory', select: 'name' }
+                })
+                .populate('brand'),
+            // Fetch all variants of the same product (siblings)
+            ProductVariant.find({ product_id: variant.product_id })
+                .select('_id sku color size price quantity mainImage hoverImage images')
+                .lean()
+        ]);
 
         if (!product) throw new Error('Product not found for this variant');
 
-        return { variant, product };
+        return { variant, product, siblingVariants };
     }
 
     /**

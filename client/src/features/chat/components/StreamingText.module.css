@@ -1,0 +1,20 @@
+.streamingText {
+  display: inline;
+}
+
+.cursor {
+  display: inline-block;
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}

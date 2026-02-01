@@ -4,9 +4,9 @@ Tài liệu này định nghĩa các tiêu chuẩn, nguyên tắc và hướng d
 
 ## 1. Tầm nhìn & Quy mô (Scope)
 
-**Devenir** là nền tảng E-commerce thời trang nam cao cấp, Visual-First, tích hợp AI (RAG, Visual Search) và Tự động hóa (n8n).
+**Devenir** là nền tảng E-commerce thời trang cao cấp, Visual-First, tích hợp AI (RAG, Visual Search) và Tự động hóa (n8n).
 *   **Tech Stack:** MERN (MongoDB, Express, React, Node.js) + Vite + Pinecone/Qdrant.
-*   **Architecture:** Client (React), Admin (React + Typescript), Server (Node.js).
+*   **Architecture:** Client (React + Typescript), Admin (React + Typescript), Server (Node.js).
 
 ---
 

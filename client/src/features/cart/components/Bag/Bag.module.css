@@ -11,6 +11,7 @@
     will-change: opacity;
     /* Smooth transition */
     transition: opacity 0.3s ease-out;
+    min-width: 450px;
 }
 
 .bag.visible {

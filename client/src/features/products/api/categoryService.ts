@@ -1,60 +1,80 @@
 import apiClient from '@/core/api/apiClient';
+import type { ICategory, IApiResponse } from '@/features/products/types';
 
 /**
- * Lấy tất cả categories
- * @param {Object} params - Query parameters (page, limit, parentCategory, isActive)
- * @returns {Promise} Response data from API
+ * Category Service
+ * API calls for category operations
  */
-export const getAllCategories = async (params: any = {}) => {
-    try {
-        const response = await apiClient.get('/categories', { params });
-        return response;
-    } catch (error) {
-        console.error('Error fetching categories:', error);
-        throw error;
-    }
+
+// ============================================
+// Constants
+// ============================================
+
+const FETCH_LIMITS = {
+    MAX_CATEGORIES: 50,
+} as const;
+
+// ============================================
+// Types
+// ============================================
+
+interface CategoryListParams {
+    page?: number;
+    limit?: number;
+    parentCategory?: string;
+    isActive?: boolean;
+}
+
+// ============================================
+// API Functions
+// ============================================
+
+/**
+ * Get all categories with optional filtering
+ */
+export const getAllCategories = async (
+    params: CategoryListParams = {}
+): Promise<IApiResponse<ICategory[]>> => {
+    const response = await apiClient.get<IApiResponse<ICategory[]>>('/categories', {
+        params,
+    });
+    return response as unknown as IApiResponse<ICategory[]>;
 };
 
 /**
- * Lấy category theo ID
- * @param {string} id - Category ID
- * @returns {Promise} Response data from API
+ * Get category by ID
  */
-export const getCategoryById = async (id: string) => {
-    try {
-        const response = await apiClient.get(`/categories/${id}`);
-        return response;
-    } catch (error) {
-        console.error('Error fetching category:', error);
-        throw error;
-    }
+export const getCategoryById = async (
+    id: string
+): Promise<IApiResponse<ICategory>> => {
+    const response = await apiClient.get<IApiResponse<ICategory>>(
+        `/categories/${id}`
+    );
+    return response as unknown as IApiResponse<ICategory>;
 };
 
 /**
- * Lấy danh sách categories chính (top-level) đang active
- * @returns {Promise} Response data from API
+ * Get main (top-level) active categories
+ * Filters out categories with parent
  */
-export const getMainCategories = async () => {
-    try {
-        const response: any = await apiClient.get('/categories', {
-            params: {
-                isActive: true,
-                limit: 50, // Giới hạn 50 categories
-            }
-        });
+export const getMainCategories = async (): Promise<IApiResponse<ICategory[]>> => {
+    const response = await apiClient.get<IApiResponse<ICategory[]>>('/categories', {
+        params: {
+            isActive: true,
+            limit: FETCH_LIMITS.MAX_CATEGORIES,
+        },
+    });
 
-        // Filter chỉ lấy categories chính (không có parentCategory)
-        if (response.data) {
-            const mainCategories = response.data.filter((cat: any) => !cat.parentCategory);
-            return {
-                ...response,
-                data: mainCategories
-            };
-        }
+    const data = response as unknown as IApiResponse<ICategory[]>;
 
-        return response;
-    } catch (error) {
-        console.error('Error fetching main categories:', error);
-        throw error;
+    // Filter to keep only top-level categories (no parent)
+    if (data.data) {
+        const mainCategories = data.data.filter((cat) => !cat.parentCategory);
+        return {
+            ...data,
+            data: mainCategories,
+        };
     }
+
+    return data;
 };

@@ -147,7 +147,12 @@ const Introduction = memo(() => {
             <div className={styles.introCards} ref={cardsContainerRef}>
                 {introCards.map((card, index) => (
                     <div key={index} className={styles.introCard}>
-                        <img src={card.src} alt={card.alt} loading="lazy" decoding="async" />
+                        <img 
+                            src={card.src} 
+                            alt={card.alt} 
+                            loading="lazy" 
+                            decoding="async"
+                        />
                     </div>
                 ))}
             </div>

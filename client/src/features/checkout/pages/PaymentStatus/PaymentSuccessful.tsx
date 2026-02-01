@@ -1,17 +1,15 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./PaymentSuccessful.module.css";
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD"
-});
+import { formatPrice } from '@/features/checkout/utils';
+import type { PaymentSuccessState } from '@/features/checkout/types';
 
 const PaymentSuccessful = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const orderData = location.state || {};
+    const orderData = (location.state as PaymentSuccessState) || {} as PaymentSuccessState;
 
     const { orderCode, totalPrice, paymentMethod } = orderData;
+
 
     const handleContinueShopping = () => {
         navigate("/");
@@ -34,10 +32,11 @@ const PaymentSuccessful = () => {
                     {orderCode && (
                         <p className={styles.orderInfo}>
                             Order #{orderCode}
-                            {totalPrice && ` • ${currencyFormatter.format(totalPrice)}`}
+                            {totalPrice && ` • ${formatPrice(totalPrice, 'USD')}`}
                             {paymentMethod && ` • ${paymentMethod}`}
                         </p>
                     )}
+
                     <p>Thank you for your purchase! A confirmation email has been sent to you. <span onClick={handleTrackOrder}>Track your order here.</span></p>
                 </div>
                 <div className={styles.buttonContainer}>

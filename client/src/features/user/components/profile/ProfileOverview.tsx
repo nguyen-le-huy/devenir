@@ -1,13 +1,16 @@
+import { formatDate } from '@/features/user/utils';
+import type { ProfileOverviewProps } from '@/features/user/types';
 import styles from './ProfileOverview.module.css';
-
-interface ProfileOverviewProps {
-    user: any;
-    onEditProfile: () => void;
-}
 
 /**
  * Profile Overview Component
  * Displays user profile summary and welcome message
+ * 
+ * Features:
+ * - Welcome banner with logo
+ * - Profile details display
+ * - Communication preferences summary
+ * - Recommendations placeholder
  */
 export default function ProfileOverview({ user, onEditProfile }: ProfileOverviewProps) {
     return (
@@ -54,7 +57,9 @@ export default function ProfileOverview({ user, onEditProfile }: ProfileOverview
 
                     <div className={styles.detailRow}>
                         <span className={styles.label}>Birthday</span>
-                        <span className={styles.value}>{user?.birthday ? new Date(user.birthday).toLocaleDateString() : 'Not set'}</span>
+                        <span className={styles.value}>
+                            {user?.birthday ? formatDate(user.birthday) : 'Not set'}
+                        </span>
                     </div>
                 </div>
             </div>
