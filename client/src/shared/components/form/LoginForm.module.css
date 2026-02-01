@@ -1,0 +1,152 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.forgotPasswordLink {
+    align-self: flex-end;
+    padding: 0;
+    background: none;
+    border: none;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    color: var(--brown);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    margin-bottom: 8px;
+}
+
+.forgotPasswordLink:hover {
+    color: #4a3530;
+    text-decoration: underline;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0;
+    color: #999;
+    font-size: 15px;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #e0e0e0;
+}
+
+.googleButtonWrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+}
+
+.googleButtonWrapper :global(.g_id_signin) {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+.googleButtonWrapper :global(.g_id_signin div) {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+.googleButtonWrapper :global(.g_id_signin iframe) {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.registerLink {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 15px;
+    color: #666;
+    text-align: center;
+}
+
+.switchButton {
+    background: none;
+    border: none;
+    color: var(--brown);
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+
+.switchButton:hover {
+    text-decoration: underline;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    .form {
+        gap: 16px;
+    }
+
+    .forgotPasswordLink {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .form {
+        gap: 14px;
+    }
+
+    .divider {
+        margin: 8px 0;
+        font-size: 12px;
+    }
+
+    .googleButtonWrapper :global(.g_id_signin) {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .form {
+        gap: 12px;
+    }
+
+    .forgotPasswordLink {
+        font-size: 11px;
+        margin-top: -6px;
+        margin-bottom: 6px;
+    }
+
+    .divider {
+        margin: 4px 0;
+        font-size: 11px;
+        gap: 8px;
+    }
+
+    .registerLink {
+        font-size: 12px;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .switchButton {
+        font-size: 12px;
+    }
+
+    .googleButtonWrapper :global(.g_id_signin) {
+        width: 100% !important;
+    }
+}

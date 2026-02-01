@@ -91,26 +91,19 @@ export class ConversationManager {
                 role: message.role,
                 content: message.content,
                 timestamp: message.timestamp || new Date(),
-                // Store extra metadata in a way that doesn't break schema validation if strict
-                // Schema has 'analytics' field at root, not message level? 
-                // Wait, schema says messages: [{ role, content, timestamp }]
-                // It doesn't seem to support metadata inside message array in strict mode?
-                // Checking ChatLogModel.js... 
-                // message schema: role, content, timestamp. NO metadata.
-                // WE NEED TO FIX MODEL IF WE WANT METADATA IN MESSAGES.
-                // For now, we just save content. 
+                metadata: {
+                    intent: message.intent,
+                    suggested_products: message.metadata?.suggested_products,
+                    ...message.metadata
+                }
             };
-
-            // If we want to save intent/metadata, we might need to update the session's root analytics 
-            // OR update the schema. The User Rules say "Create/Update Mongoose models".
-            // I will update the schema in next step. For now, let's just push what we can.
 
             await ChatLog.findByIdAndUpdate(
                 session._id,
                 {
                     $push: { messages: dbMessage },
                     $set: {
-                        'analytics.intent': message.intent, // Update latest intent
+                        'analytics.intent': message.intent,
                         'analytics.timestamp': new Date()
                     }
                 }

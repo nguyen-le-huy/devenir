@@ -1,5 +1,7 @@
 import express from 'express';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validate.js';
+import { shipmentIdParamSchema, startShipmentSchema, shipmentListSchema } from '../validators/shipment.validator.js';
 import {
   startShipment,
   markDelivered,
@@ -12,10 +14,10 @@ const router = express.Router();
 
 router.use(authenticate, isAdmin);
 
-router.get('/', getShipmentsList);
-router.post('/:id/start', startShipment);
-router.post('/:id/deliver', markDelivered);
-router.post('/:id/simulate', simulateDelivery);
-router.post('/:id/cancel', cancelShipment);
+router.get('/', validate(shipmentListSchema), getShipmentsList);
+router.post('/:id/start', validate(startShipmentSchema), startShipment);
+router.post('/:id/deliver', validate(shipmentIdParamSchema), markDelivered);
+router.post('/:id/simulate', validate(shipmentIdParamSchema), simulateDelivery);
+router.post('/:id/cancel', validate(shipmentIdParamSchema), cancelShipment);
 
 export default router;

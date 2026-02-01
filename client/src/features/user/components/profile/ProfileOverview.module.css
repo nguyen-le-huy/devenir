@@ -1,0 +1,240 @@
+.overview {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+/* ============= WELCOME BANNER ============= */
+.welcomeBanner {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background-color: #f5f5f0;
+    border-radius: 4px;
+    align-items: flex-start;
+}
+
+.bannerIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.bannerIcon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.bannerContent {
+    flex: 1;
+}
+
+.bannerTitle {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 4px 0;
+}
+
+.bannerSubtitle {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    color: #666;
+    margin: 0;
+}
+
+/* ============= SECTIONS ============= */
+.section {
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.sectionTitle {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #000;
+    margin: 0;
+}
+
+.editBtn {
+    background: none;
+    border: none;
+    color: #0066ff;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.editBtn:hover {
+    color: #0052cc;
+    text-decoration: underline;
+}
+
+/* ============= PROFILE DETAILS ============= */
+.profileDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detailRow {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 20px;
+    padding: 12px 0;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+}
+
+.label {
+    color: #666;
+    font-weight: 500;
+}
+
+.value {
+    color: #000;
+    font-weight: 500;
+}
+
+/* ============= PREFERENCES ============= */
+.preferences {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.prefItem {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin: 0;
+    padding: 8px 0;
+}
+
+.placeholderText {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: #999;
+    margin: 0;
+    font-style: italic;
+}
+
+/* ============= RESPONSIVE ============= */
+@media (max-width: 768px) {
+    .overview {
+        gap: 24px;
+    }
+
+    .welcomeBanner {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .bannerIcon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .bannerTitle {
+        font-size: 14px;
+    }
+
+    .bannerSubtitle {
+        font-size: 12px;
+    }
+
+    .sectionTitle {
+        font-size: 15px;
+    }
+
+    .editBtn {
+        font-size: 13px;
+    }
+
+    .section {
+        padding-bottom: 24px;
+    }
+
+    .detailRow {
+        grid-template-columns: 100px 1fr;
+        gap: 12px;
+        font-size: 13px;
+    }
+
+    .prefItem {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .overview {
+        gap: 16px;
+    }
+
+    .welcomeBanner {
+        padding: 12px;
+        flex-direction: column;
+    }
+
+    .bannerIcon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .bannerTitle {
+        font-size: 13px;
+    }
+
+    .bannerSubtitle {
+        font-size: 12px;
+    }
+
+    .sectionTitle {
+        font-size: 14px;
+    }
+
+    .section {
+        padding-bottom: 16px;
+    }
+
+    .sectionHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .editBtn {
+        align-self: flex-end;
+    }
+
+    .detailRow {
+        grid-template-columns: 80px 1fr;
+        gap: 8px;
+        font-size: 12px;
+        padding: 8px 0;
+    }
+
+    .prefItem {
+        font-size: 12px;
+    }
+}

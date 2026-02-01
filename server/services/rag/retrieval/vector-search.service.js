@@ -60,6 +60,22 @@ export async function searchByBrand(query, brandName) {
 }
 
 /**
+ * Search Knowledge Base
+ */
+export async function searchKnowledgeBase(query, options = {}) {
+    const filter = {
+        type: { $eq: 'knowledge_base' },
+        ...options.filter
+    };
+
+    return vectorStore.search(query, {
+        topK: options.topK || 5, // Fetch top 5 relevant sections
+        filter,
+        includeMetadata: true
+    });
+}
+
+/**
  * General vector search (for custom queries)
  */
 export async function vectorSearch(query, options = {}) {

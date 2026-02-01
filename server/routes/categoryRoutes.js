@@ -9,18 +9,18 @@ import {
 } from '../controllers/CategoryController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
 import { cacheMiddleware, clearCache } from '../middleware/cacheMiddleware.js';
+import { validate } from '../middleware/validate.js';
 import {
-    validateObjectId,
-    validateCategoryInput,
-    validatePagination,
-    rateLimiter,
-} from '../middleware/validationMiddleware.js';
+    categoryIdParamSchema,
+    createCategorySchema,
+    updateCategorySchema,
+} from '../validators/category.validator.js';
 import logger from '../config/logger.js';
 
 const router = express.Router();
 
 // Apply rate limiting to all routes
-router.use(rateLimiter);
+// router.use(rateLimiter); // Use global or re-import if specific needed
 
 // ============ PUBLIC ROUTES ============
 
@@ -37,13 +37,13 @@ router.get('/tree', cacheMiddleware(600), getCategoriesTree);
  * Query params: page, limit, parentCategory, isActive
  * CACHED: 5 minutes
  */
-router.get('/', validatePagination, cacheMiddleware(300), getAllCategories);
+router.get('/', cacheMiddleware(300), getAllCategories);
 
 /**
  * GET /api/categories/:id
  * Get single category with children
  */
-router.get('/:id', validateObjectId('id'), getCategoryById);
+router.get('/:id', validate(categoryIdParamSchema), getCategoryById);
 
 // ============ ADMIN ROUTES ============
 
@@ -52,10 +52,10 @@ const clearCategoryCache = (req, res, next) => {
     res.on('finish', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
             clearCache('__express__/api/categories');
-            logger.info('Category cache cleared after mutation', { 
-                method: req.method, 
+            logger.info('Category cache cleared after mutation', {
+                method: req.method,
                 path: req.path,
-                status: res.statusCode 
+                status: res.statusCode
             });
         }
     });
@@ -67,18 +67,18 @@ const clearCategoryCache = (req, res, next) => {
  * Create new category (Admin only)
  * Body: { name, description, thumbnailUrl, parentCategory, isActive }
  */
-router.post('/admin', authenticate, isAdmin, validateCategoryInput, clearCategoryCache, createCategory);
+router.post('/admin', authenticate, isAdmin, validate(createCategorySchema), clearCategoryCache, createCategory);
 
 /**
  * PUT /api/categories/admin/:id
  * Update category (Admin only)
  */
-router.put('/admin/:id', authenticate, isAdmin, validateObjectId('id'), validateCategoryInput, clearCategoryCache, updateCategory);
+router.put('/admin/:id', authenticate, isAdmin, validate(updateCategorySchema), clearCategoryCache, updateCategory);
 
 /**
  * DELETE /api/categories/admin/:id
  * Delete category (Admin only)
  */
-router.delete('/admin/:id', authenticate, isAdmin, validateObjectId('id'), clearCategoryCache, deleteCategory);
+router.delete('/admin/:id', authenticate, isAdmin, validate(categoryIdParamSchema), clearCategoryCache, deleteCategory);
 
 export default router;

@@ -1,0 +1,339 @@
+/* ============= PROFILE CONTAINER ============= */
+.profileContainer {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #fafafa;
+    padding: 40px 0;
+}
+
+.profileContent {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 60px;
+    padding: 0 20px;
+}
+
+/* ============= SIDEBAR (DESKTOP) ============= */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+.sidebarNav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.navLink {
+    background: none;
+    border: none;
+    padding: 12px 0;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 16px;
+    color: #666;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+}
+
+.navLink:hover {
+    color: var(--brown);
+}
+
+.navLinkActive {
+    color: var(--brown);
+    font-weight: 600;
+}
+
+.navLinkActive::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--brown);
+}
+
+/* Sidebar Footer */
+.sidebarFooter {
+    margin-top: 60px;
+    padding-top: 40px;
+}
+
+.helpSection {
+    margin-bottom: 40px;
+}
+
+.helpTitle {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: #000;
+    margin: 0 0 8px 0;
+}
+
+.helpText {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    color: #666;
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+}
+
+.helpLinks {
+    display: flex;
+    gap: 12px;
+}
+
+.helpLink {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 14px;
+    color: var(--brown);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-bottom: 1px solid transparent;
+}
+
+.helpLink:hover {
+    border-bottom-color: var(--brown);
+}
+
+.adminBtn {
+    width: 100%;
+    background: var(--brown);
+    border: none;
+    padding: 12px 16px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.adminBtn:hover {
+    background: #8b6f47;
+    box-shadow: 0 4px 8px rgba(139, 111, 71, 0.2);
+}
+
+.adminBtn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.logoutBtn {
+    width: 100%;
+    background: none;
+    border: 1px solid #e0e0e0;
+    padding: 12px 16px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.logoutBtn:hover {
+    color: var(--brown);
+    border-color: var(--brown);
+    background-color: #fff8f5;
+}
+
+.logoutBtn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ============= MOBILE TABS NAVIGATION ============= */
+.mobileTabsNav {
+    display: none;
+    width: 100%;
+    overflow-x: auto;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tabsWrapper {
+    display: flex;
+    gap: 0;
+    min-width: min-content;
+}
+
+.tab {
+    background: none;
+    border: none;
+    padding: 12px 20px;
+    font-family: 'Satoshi', sans-serif;
+    font-size: 15px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: var(--brown);
+}
+
+.tabActive {
+    color: var(--brown);
+    border-bottom-color: var(--brown);
+    font-weight: 600;
+}
+
+/* ============= MAIN CONTENT AREA ============= */
+.mainContent {
+    flex: 1;
+    background: #fff;
+    padding: 40px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.greeting {
+    margin-bottom: 40px;
+}
+
+.greeting h1 {
+    font-family: 'Satoshi', sans-serif;
+    font-size: 33px;
+    font-weight: 600;
+    color: #000;
+    margin: 0;
+}
+
+.contentSection {
+    width: 100%;
+}
+
+/* ============= RESPONSIVE ============= */
+@media (max-width: 1024px) {
+    .profileContent {
+        gap: 40px;
+        padding: 0 24px;
+    }
+
+    .sidebar {
+        top: 80px;
+    }
+
+    .mainContent {
+        padding: 32px;
+    }
+
+    .greeting h1 {
+        font-size: 29px;
+    }
+}
+
+@media (max-width: 768px) {
+    .profileContainer {
+        padding: 20px 0;
+    }
+
+    .profileContent {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 0 16px;
+    }
+
+    .sidebar {
+        display: none;
+    }
+
+    .mobileTabsNav {
+        display: block;
+    }
+
+    .mainContent {
+        padding: 24px 16px;
+        box-shadow: none;
+        border-top: 1px solid #e0e0e0;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .greeting h1 {
+        font-size: 25px;
+        margin-bottom: 24px;
+    }
+
+    .helpSection {
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #f9f9f9;
+    }
+
+    .logoutBtn {
+        margin-top: 16px;
+    }
+
+    /* Mobile tabs styling */
+    .tab {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    .tabsWrapper {
+        border-bottom: 1px solid #e0e0e0;
+    }
+}
+
+@media (max-width: 480px) {
+    .profileContainer {
+        padding: 12px 0;
+    }
+
+    .profileContent {
+        padding: 0 12px;
+    }
+
+    .mainContent {
+        padding: 16px 12px;
+    }
+
+    .greeting h1 {
+        font-size: 21px;
+        margin-bottom: 16px;
+    }
+
+    .contentSection {
+        width: 100%;
+    }
+
+    .tab {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .mobileTabsNav {
+        margin-bottom: 16px;
+    }
+}

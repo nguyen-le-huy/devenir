@@ -1,4 +1,5 @@
 import http from 'http';
+// Touch to force restart 2
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -34,6 +35,7 @@ import customerIntelligenceRoutes from './routes/customerIntelligenceRoutes.js';
 import EventLog from './models/EventLogModel.js';
 import { handlePayOSWebhook } from './controllers/PaymentController.js';
 import { initImageSearchServices } from './controllers/ImageSearchController.js';
+import { setIO } from './lib/socket.js';
 
 
 dotenv.config();
@@ -228,6 +230,7 @@ const io = new SocketIOServer(server, {
 });
 
 app.set('io', io);
+setIO(io);
 
 io.use((socket, next) => {
   const authToken = socket.handshake.auth?.token
@@ -293,6 +296,7 @@ io.on('connection', (socket) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error'

@@ -5,6 +5,8 @@ import {
     selfHostHealth
 } from '../controllers/ImageSearchController.js';
 import { authenticate, isAdmin } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validate.js';
+import { findSimilarSchema } from '../validators/imageSearch.validator.js';
 
 const router = express.Router();
 
@@ -21,7 +23,7 @@ const router = express.Router();
  * - First request: ~350ms (CLIP encode + Qdrant search)
  * - Cached request: ~10ms (Redis hit)
  */
-router.post('/find-similar', findSimilarProductsSelfHost);
+router.post('/find-similar', validate(findSimilarSchema), findSimilarProductsSelfHost);
 
 /**
  * GET /api/image-search/health

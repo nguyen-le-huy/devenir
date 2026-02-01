@@ -73,7 +73,8 @@ export function quickIntentDetection(message) {
     if (lowerMessage.startsWith('thông tin ') || lowerMessage.startsWith('info ') || lowerMessage.startsWith('tìm ')) {
         const productIndicators = [
             'sản phẩm', 'product', 'áo', 'quần', 'váy', 'đầm', 'giày', 'túi', 'khăn', 'nước hoa',
-            'size', 'màu', 'giá', 'chất liệu', 'shop', 'cửa hàng'
+            'size', 'màu', 'giá', 'chất liệu', 'shop', 'cửa hàng',
+            'chi tiết', 'về nó', 'thêm', 'bảo quản', 'giặt', 'sử dụng'
         ];
         const isProductQuery = productIndicators.some(k => lowerMessage.includes(k));
 

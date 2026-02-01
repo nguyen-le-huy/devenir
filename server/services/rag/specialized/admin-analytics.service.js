@@ -144,8 +144,8 @@ async function classifyAdminIntent(query, history = []) {
     }
 
     // Priority 3: Inventory Export (Generic "export" or "inventory export")
-    // Improved detection: "csv", "export", "xuất file", OR "xuất báo cáo"
-    else if (lowerQuery.includes('csv') || lowerQuery.includes('export') || lowerQuery.includes('xuất file') || lowerQuery.includes('xuất báo cáo') || (lowerQuery.includes('báo cáo') && lowerQuery.includes('kho'))) {
+    // Improved detection: "csv", "export", "xuất file", "xuất báo cáo", "tải", "download"
+    else if (lowerQuery.includes('csv') || lowerQuery.includes('export') || lowerQuery.includes('xuất file') || lowerQuery.includes('xuất báo cáo') || lowerQuery.includes('tải') || lowerQuery.includes('download') || (lowerQuery.includes('báo cáo') && lowerQuery.includes('kho'))) {
         let scope = 'all';
 
         // A. Explicit scope in current query
@@ -172,8 +172,19 @@ async function classifyAdminIntent(query, history = []) {
     }
 
     const now = new Date();
+    // Build History Context
+    let historyContext = "";
+    if (history && history.length > 0) {
+        // Take last 3 messages for context
+        const recentMessages = history.slice(-3);
+        historyContext = recentMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+    }
+
     const prompt = `
     Current Date: ${now.toISOString()}
+    
+    Conversation History:
+    ${historyContext}
     
     Phân loại yêu cầu của admin thành các loại sau:
     - revenue (doanh thu, doanh số...) 
@@ -184,17 +195,19 @@ async function classifyAdminIntent(query, history = []) {
     - customer_lookup (tìm khách, info khách, lịch sử mua...) 
       -> extract metadata: target (email, phone, or name). If name is messy, take the most likely name part.
       -> example: "tìm khách tên Huy" -> target: "Huy"
+      -> IMPORTANT: If user says "user đó", "khách này", "nó", "họ" (refers to previous context), look at Conversation History to find the user email/phone/name mentioned previously.
     - customer_stats (số lượng user, bao nhiêu khách hàng, thống kê user...)
       -> extract metadata: none
     - customer_export (tải danh sách user, xuất excel khách hàng, danh sách người dùng...)
       -> extract metadata: none
     - order_status (đơn hàng...) -> extract metadata: target (order code, order id)
+      -> Check history if user refers to "đơn hàng đó".
     - product_inventory (kho hàng, tồn kho, check stock, sắp hết, hết hàng) 
       -> extract metadata: 
          - target (product name, sku)
-         - status: 'all', 'low_stock', 'out_of_stock' (detect from keywords like "sắp hết", "hết")
-         - threshold: number (default 10 if "sắp hết" or "low_stock", extract explicit number if present like "dưới 5")
-    - inventory_export (xuất file, export csv, báo cáo tồn kho...)
+         - status: 'all', 'low_stock', 'out_of_stock' (detect from keywords like "sắp hết", "hết", "cảnh báo")
+         - threshold: number (default 10 if "sắp hết" or "low_stock" or "cảnh báo", extract explicit number if present like "dưới 5")
+    - inventory_export (xuất file, export csv, báo cáo tồn kho, tải danh sách...)
       -> extract metadata: 
          - scope: 'all', 'low_stock', 'out_of_stock', 'category'
          - category: string (if scope is category)
@@ -206,7 +219,7 @@ async function classifyAdminIntent(query, history = []) {
     
     Query: "${query}"
     
-    Return JSON only: { "type": "...", "target": "...", "period": "...", "startDate": "...", "endDate": "...", "status": "...", "threshold": ... }
+    Return JSON only: { "type": "...", "target": "...", "period": "...", "scope": "...", "status": "...", "threshold": ... }
     `;
 
     try {
@@ -318,16 +331,39 @@ async function getCustomerData(target) {
     // Normalize target
     const searchTarget = target.trim();
 
+    // Build query conditions
+    const conditions = [
+        { email: { $regex: searchTarget, $options: 'i' } },
+        { phone: { $regex: searchTarget, $options: 'i' } },
+        { username: { $regex: searchTarget, $options: 'i' } },
+        { firstName: { $regex: searchTarget, $options: 'i' } },
+        { lastName: { $regex: searchTarget, $options: 'i' } }
+    ];
+
+    // If query contains space, attempt to match Full Name (First+Last or Last+First)
+    if (searchTarget.includes(' ')) {
+        conditions.push({
+            $expr: {
+                $regexMatch: {
+                    input: { $concat: [{ $ifNull: ["$lastName", ""] }, " ", { $ifNull: ["$firstName", ""] }] },
+                    regex: searchTarget,
+                    options: "i"
+                }
+            }
+        });
+        conditions.push({
+            $expr: {
+                $regexMatch: {
+                    input: { $concat: [{ $ifNull: ["$firstName", ""] }, " ", { $ifNull: ["$lastName", ""] }] },
+                    regex: searchTarget,
+                    options: "i"
+                }
+            }
+        });
+    }
+
     // Find users (could be multiple if searching by name)
-    const users = await User.find({
-        $or: [
-            { email: { $regex: searchTarget, $options: 'i' } },
-            { phone: { $regex: searchTarget, $options: 'i' } },
-            { username: { $regex: searchTarget, $options: 'i' } },
-            { firstName: { $regex: searchTarget, $options: 'i' } },
-            { lastName: { $regex: searchTarget, $options: 'i' } }
-        ]
-    }).limit(5); // Limit to 5 matches
+    const users = await User.find({ $or: conditions }).limit(5); // Limit to 5 matches
 
     if (!users || users.length === 0) return { found: false, message: `Không tìm thấy khách hàng nào khớp với "${searchTarget}".` };
 
@@ -350,7 +386,7 @@ async function getCustomerData(target) {
 
     // Get stats for the single user found
     const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 }) || [];
-    const totalSpent = orders.reduce((sum, ord) => sum + (ord.status === 'paid' || ord.status === 'delivered' ? (ord.totalPrice || 0) : 0), 0);
+    const totalSpent = orders.reduce((sum, ord) => sum + (['paid', 'shipped', 'delivered'].includes(ord.status) ? (ord.totalPrice || 0) : 0), 0);
 
     return {
         type: 'detail',
@@ -371,7 +407,10 @@ async function getCustomerData(target) {
         recentOrders: orders.slice(0, 3).map(o => ({
             id: o._id,
             total: o.totalPrice,
-            status: o.status,
+            status: (o.status === 'shipped' ? 'Đang giao hàng' :
+                o.status === 'delivered' ? 'Đã giao thành công' :
+                    o.status === 'paid' ? 'Đã thanh toán' :
+                        o.status === 'pending' ? 'Chờ thanh toán' : o.status),
             date: o.createdAt
         }))
     };

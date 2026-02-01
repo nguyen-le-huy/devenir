@@ -1,0 +1,249 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "fd7c4bfe-0766-4203-8dd7-3e6e6857b41c",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "d6cbd8c3-e84b-45ce-8070-21cde1e4abad",
+            "name": "Webhook",
+            "webhookId": "fd7c4bfe-0766-4203-8dd7-3e6e6857b41c"
+        },
+        {
+            "parameters": {
+                "operation": "aggregate",
+                "collection": "products",
+                "query": "=[\n  {\n    \"$match\": {\n      \"$expr\": {\n        \"$eq\": [\"$_id\", { \"$toObjectId\": \"{{ $('Webhook').item.json.body.productId }}\" }]\n      }\n    }\n  },\n  {\n    \"$lookup\": {\n      \"from\": \"productvariants\",\n      \"let\": { \"pid\": \"$_id\" },\n      \"pipeline\": [\n        { \"$match\": { \"$expr\": { \"$eq\": [\"$product_id\", \"$$pid\"] } } },\n        { \"$sort\": { \"price\": 1 } }\n      ],\n      \"as\": \"variants\"\n    }\n  }\n]"
+            },
+            "type": "n8n-nodes-base.mongoDb",
+            "typeVersion": 1.2,
+            "position": [
+                208,
+                0
+            ],
+            "id": "41ab7613-f9f3-41fa-b6f1-ae8284784939",
+            "name": "Aggregate documents",
+            "credentials": {
+                "mongoDb": {
+                    "id": "gYNdnt8ZWFTNOZiV",
+                    "name": "MongoDB account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// --- LOGIC GHÉP BÀI ĐĂNG TẠI ĐÂY ĐỂ KIỂM SOÁT HOÀN TOÀN --- \nconst product = $('Aggregate documents').first().json; \nlet aiContent = $input.first().json.output[0].content[0].text; \n\n// 1. CLEAN AI CONTENT (Xóa hết markdown)\naiContent = aiContent\n  .replace(/\\*\\*/g, '')\n  .replace(/__/g, '')\n  .replace(/###/g, '')\n  .replace(/^#\\s+/gm, '')\n  .replace(/`/g, '')\n  .trim();\n\n// 2. LẤY GIÁ CHÍNH XÁC TỪ DB (Không dùng AI)\nconst firstVariant = product.variants && product.variants.length > 0 ? product.variants[0] : null;\nconst priceRaw = firstVariant ? firstVariant.price : 0;\n\n// Format giá (VND)\nconst priceFormatted = new Intl.NumberFormat('vi-VN', { \n    style: 'currency', \n    currency: 'VND'\n}).format(priceRaw);\n\n// 3. TẠO TIÊU ĐỀ CHUẨN\nconst title = product.name ? product.name.toUpperCase() : 'NEW ARRIVAL';\n\nconst webhookData = $('Webhook').first().json.body;\nconst variantId = firstVariant ? firstVariant._id : \"\";\nconst domain = \"https://www.devenir.shop\"; \nconst productLink = variantId ? `${domain}/product-detail?id=${product._id}` : `${domain}/home`;\n\n// 4. GHÉP MESSAGE CUỐI CÙNG\n// Cấu trúc cố định, AI chỉ điền phần thân\nconst finalMessage = `✨ ${title} ✨\n\n${aiContent}\n\n━━━━━━━━━━━━━━━━━━━━\n💎 Giá ưu đãi: ${priceFormatted}\n👉 MUA NGAY: ${productLink}\n━━━━━━━━━━━━━━━━━━━━\n\n#Devenir #Luxury #Fashion`;\n\n// --- XỬ LÝ ẢNH ---\nlet imageUrls = [];\nif (product.images && Array.isArray(product.images)) {\n     product.images.forEach(img => {\n         if (typeof img === 'string') imageUrls.push(img);\n         else if (img.url) imageUrls.push(img.url);\n     });\n}\nif (firstVariant) {\n    if (firstVariant.mainImage) imageUrls.unshift(firstVariant.mainImage); \n    if (firstVariant.images && Array.isArray(firstVariant.images)) {\n        imageUrls.push(...firstVariant.images);\n    }\n}\nimageUrls = [...new Set(imageUrls)].filter(url => url && url.startsWith('http')).slice(0, 10);\n\nreturn imageUrls.map(url => ({\n    json: {\n        pageId: webhookData.pageId,\n        message: finalMessage, \n        imageUrl: url \n    }\n}));"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                624,
+                0
+            ],
+            "id": "76306c46-57f1-458f-a46d-16f726eee6dc",
+            "name": "Code in JavaScript"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/905478369317354/photos",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "url",
+                            "value": "={{ $json.imageUrl }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $json.message }}"
+                        },
+                        {
+                            "name": "published",
+                            "value": "false"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                832,
+                0
+            ],
+            "id": "de9754a6-2431-4a4e-809c-20899f622f97",
+            "name": "HTTP Request",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "omuKcOhglT3iz5jg",
+                    "name": "Header Auth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-4.0-mini",
+                    "mode": "list",
+                    "cachedResultName": "GPT-4.1-MINI"
+                },
+                "responses": {
+                    "values": [
+                        {
+                            "content": "=Nhiệm vụ: Viết 2-3 câu mô tả ngắn gọn, sang trọng cho sản phẩm thời trang này. KHÔNG viết giá tiền. KHÔNG viết tiêu đề. Chỉ viết phần thân bài (Body copy).\n\nTên SP: {{ $json.name }}\nMô tả gốc: {{ $json.description }}\n\nYêu cầu:\n- Tiếng Việt\n- Văn phong cao cấp, quyến rũ\n- Bắt đầu bằng 1 emoji phù hợp (🌹, 🧥, 👠...)\n- Không dùng Markdown (**)."
+                        }
+                    ]
+                },
+                "builtInTools": {},
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 2,
+            "position": [
+                352,
+                0
+            ],
+            "id": "be535abe-5e13-4379-ba70-d519b6e7a005",
+            "name": "Message a model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "UVqEw119x1GbD95g",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Gom tất cả ID ảnh đã upload\nconst mediaIds = items.map(item => ({\n    media_fbid: item.json.id\n}));\n\n// Lấy message và pageId từ node Code đầu tiên\nconst firstCodeData = $('Code in JavaScript').first().json;\n\nreturn {\n    json: {\n        pageId: firstCodeData.pageId,\n        message: firstCodeData.message,\n        attached_media: mediaIds\n    }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1040,
+                0
+            ],
+            "id": "80371148-1658-45c1-b7a4-1ac6fa462629",
+            "name": "Aggregate IDs"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/{{ $json.pageId }}/feed",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "message",
+                            "value": "={{ $json.message }}"
+                        },
+                        {
+                            "name": "attached_media",
+                            "value": "={{ JSON.stringify($json.attached_media) }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                1264,
+                0
+            ],
+            "id": "6650b1f2-467a-4bc3-9134-f27ce255a829",
+            "name": "HTTP Request1",
+            "credentials": {
+                "httpHeaderAuth": {
+                    "id": "omuKcOhglT3iz5jg",
+                    "name": "Header Auth account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate documents",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate documents": {
+            "main": [
+                [
+                    {
+                        "node": "Message a model",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Code in JavaScript": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "HTTP Request": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate IDs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Message a model": {
+            "main": [
+                [
+                    {
+                        "node": "Code in JavaScript",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate IDs": {
+            "main": [
+                [
+                    {
+                        "node": "HTTP Request1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "fe2169d4b44c72baa3b147b70fc0000eeff440c5e6839cb32e590e7c1126112c"
+    }
+}

@@ -4,27 +4,27 @@ Tài liệu này định nghĩa các tiêu chuẩn, nguyên tắc và hướng d
 
 ## 1. Tầm nhìn & Quy mô (Scope)
 
-**Devenir** là nền tảng E-commerce thời trang nam cao cấp, Visual-First, tích hợp AI (RAG, Visual Search) và Tự động hóa (n8n).
+**Devenir** là nền tảng E-commerce thời trang cao cấp, Visual-First, tích hợp AI (RAG, Visual Search) và Tự động hóa (n8n).
 *   **Tech Stack:** MERN (MongoDB, Express, React, Node.js) + Vite + Pinecone/Qdrant.
-*   **Architecture:** Client (React), Admin (React + Typescript), Server (Node.js).
+*   **Architecture:** Client (React + Typescript), Admin (React + Typescript), Server (Node.js).
 
 ---
 
 ## 2. Nguyên tắc Cốt lõi (Core Principles)
 
-### 🚀 Performance First (Tối ưu Hiệu năng)
+### Performance First (Tối ưu Hiệu năng)
 *   **Lazy Loading:** Luôn áp dụng `React.lazy` và `Suspense` cho các Route components và các thành phần nặng (Charts, Maps, Modals).
 *   **Image Optimization:** Sử dụng format **WebP** cho tất cả ảnh tĩnh. Với ảnh động từ Cloudinary, luôn dùng tham số `f_auto,q_auto`.
 *   **Minimize Re-renders:** Sử dụng `useMemo` cho các tính toán phức tạp và `useCallback` cho các function prop. Hạn chế passing object/array literals trực tiếp vào props.
 *   **Backend Response:** API response phải dưới **200ms**. Sử dụng `.lean()` trong Mongoose cho các query `GET`. Index database đầy đủ.
 
-### 🎨 Visual & UX Excellence (Trải nghiệm & Thẩm mỹ)
+### Visual & UX Excellence (Trải nghiệm & Thẩm mỹ)
 *   **Premium Feel:** Giao diện phải mang cảm giác cao cấp. Sử dụng khoảng trắng hợp lý, typography sang trọng (Inter/Outfit).
 *   **Micro-interactions:** Thêm hiệu ứng hover, transition mượt mà (0.3s ease) cho mọi phần tử tương tác. Sử dụng thư viện `framer-motion` hoặc `GSAP` cho animations.
 *   **Loading States:** **KHÔNG BAO GIỜ** để màn hình trắng. Sử dụng Skeleton loading hoặc Spinner (Loading component) cho mọi trạng thái chờ.
 *   **Feedback:** Luôn thông báo trạng thái thành công/thất bại (Toast notification) cho mọi hành động của user (Thêm giỏ hàng, Thanh toán, Lưu thay đổi).
 
-### 🛠 Clean Code & Maintainability
+### Clean Code & Maintainability
 *   **DRY (Don't Repeat Yourself):** Tách logic lặp lại thành Custom Hooks (Frontend) hoặc Service functions (Backend).
 *   **Modular Architecture:** Mỗi component/function chỉ làm một việc duy nhất (Single Responsibility).
 *   **Consistensy:** Tuân thủ chặt chẽ Naming Convention đã định nghĩa.
@@ -33,36 +33,137 @@ Tài liệu này định nghĩa các tiêu chuẩn, nguyên tắc và hướng d
 
 ## 3. Hướng dẫn Tối ưu hóa Cụ thể
 
-### Frontend (React/Vite)
+### Frontend (React/Vite + TypeScript)
 
-1.  **Component Structure:**
-    *   Tách biệt `Presentational Components` (UI) và `Container Components` (Logic/Data fetching).
-    *   Đặt file CSS Module ngay cạnh component (`Component.jsx`, `Component.module.css`).
+1.  **Project Structure (Feature-Based Architecture):**
+    ```
+    src/
+    ├── core/                    # Core infrastructure
+    │   ├── api/                 # Axios client, interceptors
+    │   ├── stores/              # Zustand global stores (auth, ui)
+    │   ├── providers/           # React providers
+    │   └── lib/                 # Third-party configs (queryClient, socket)
+    │
+    ├── shared/                  # Shared/reusable code
+    │   ├── components/          # UI components (Button, Modal, etc.)
+    │   ├── hooks/               # Shared hooks (useDebounce, useMediaQuery)
+    │   ├── utils/               # Utility functions
+    │   └── types/               # Shared TypeScript types
+    │
+    └── features/                # Feature modules (self-contained)
+        ├── auth/
+        │   ├── api/             # Auth API calls
+        │   ├── components/      # Auth-specific components
+        │   ├── hooks/           # useAuth (React Query + Zustand)
+        │   ├── pages/           # Auth pages
+        │   └── types/           # Auth types
+        ├── products/
+        ├── cart/
+        └── checkout/
+    ```
 
-3.  **Data Fetching (React Query / TanStack Query):**
-    *   **Architecture:** Move all `useQuery` and `useMutation` hooks into dedicated custom hooks in `client/src/hooks/` or `client/src/services/` (e.g., `useProducts.js`, `useCart.js`). Don't call `useQuery` directly in components.
+2.  **State Management Strategy (Critical Rule):**
+    
+    **Rule: Chọn đúng tool cho đúng loại state**
+    
+    | Loại State | Tool | Ví dụ | Lý do |
+    |------------|------|-------|-------|
+    | **Server State** | **React Query** | Products, Cart, Orders, User data từ API | Auto caching, refetching, sync với server |
+    | **UI Global State** | **Zustand** | Auth (token, user), Theme, Sidebar open/close | Share giữa nhiều components, persist localStorage |
+    | **Local State** | **useState/useReducer** | Form inputs, Modal visibility, Accordion expanded | Chỉ dùng trong component, không cần share |
+    
+    **KHÔNG BAO GIỜ:**
+    - Dùng Zustand cho server data (products, orders) → Dùng React Query
+    - Dùng React Query cho UI state (theme, sidebar) → Dùng Zustand
+    - Lift state up quá mức → Giữ state ở component gần nhất cần nó
+    
+    **Ví dụ chuẩn:**
+    ```typescript
+    // Server State - React Query
+    const { data: products, isLoading } = useProducts({ category: 'men' });
+    
+    // UI Global State - Zustand
+    const { user, isAuthenticated, login } = useAuthStore();
+    const { theme, setTheme } = useUIStore();
+    
+    // Local State - useState
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    ```
+
+3.  **React Query (Server State) - Best Practices:**
+    *   **Architecture:** 
+        - Tất cả `useQuery`/`useMutation` phải nằm trong custom hooks tại `features/*/hooks/`
+        - API calls thuần (không hook) nằm trong `features/*/api/`
+        - **KHÔNG BAO GIỜ** gọi `useQuery` trực tiếp trong component
+    
+    *   **Query Keys Factory:**
+        ```typescript
+        // core/lib/queryClient.ts
+        export const queryKeys = {
+          products: {
+            all: ['products'],
+            lists: () => [...queryKeys.products.all, 'list'],
+            list: (filters) => [...queryKeys.products.lists(), filters],
+            detail: (id) => [...queryKeys.products.all, 'detail', id],
+          },
+        };
+        ```
+    
     *   **Caching Strategy:**
-        *   Set proper `staleTime` (e.g., 5 mins for categories, 30s for order status) to prevent unnecessary re-fetches.
-        *   Use `gcTime` (garbage collection) to keep unused data in cache for quick navigations.
-    *   **Query Keys:** Use consistent query key factories (arrays) like `['products', 'list', { category: 'men' }]` for easy invalidation.
+        - `staleTime`: 5 phút cho data ít thay đổi (categories), 30s cho data realtime (order status)
+        - `gcTime`: 10 phút để giữ cache cho navigation nhanh
+        - `placeholderData: keepPreviousData` cho pagination (tránh layout shift)
+    
     *   **UX Optimization:**
-        *   Use `placeholderData: keepPreviousData` for pagination to prevent layout shift.
-        *   Prefetch critical data on hover/interaction.
-        *   Handle `isLoading` and `isError` states gracefully with dedicated UI components.
+        - Prefetch data on hover (product cards)
+        - Luôn handle `isLoading`, `isError`, `isFetching` states
+        - Optimistic updates cho mutations (add to cart)
 
-4.  **HTTP Requests (Axios):**
-    *   **Architecture:** Use a centralized Axios instance (`client/src/api/axiosClient.js`) with base URL and timeout configuration.
-    *   **Interceptors:** 
-        *   **Request:** Auto-attach access tokens (JWT) to headers.
-        *   **Response:** Centralized error handling (e.g., auto-logout on 401, refresh token logic, standardized error messages).
-    *   **Usage:** Use this Axios instance inside your Custom Hooks or Service functions. Avoid `fetch` API for consistency.
+4.  **Zustand (UI Global State) - Best Practices:**
+    *   **Location:** Tất cả stores nằm trong `core/stores/`
+    *   **Persist:** Dùng `persist` middleware cho auth, theme
+    *   **Atomic Selectors:** Chỉ subscribe vào data cần thiết
+        ```typescript
+        // Bad - re-render khi bất kỳ auth state nào thay đổi
+        const authStore = useAuthStore();
+        
+        // Good - chỉ re-render khi user thay đổi
+        const user = useAuthStore((state) => state.user);
+        ```
+    
+    *   **Stores:**
+        - `authStore.ts`: user, token, isAuthenticated, login(), logout()
+        - `uiStore.ts`: theme, sidebarOpen, chatOpen, modals
 
-5.  **Bundle Optimization:**
-    *   Tránh import toàn bộ thư viện lớn (vd: `import { button } from 'lodash'` thay vì `import _ from 'lodash'`).
-    *   Sử dụng Dynamic Imports cho các tính năng ít dùng.
+5.  **HTTP Requests (Axios):**
+    *   **Centralized Client:** `core/api/apiClient.ts` với base URL, timeout, interceptors
+    *   **Request Interceptor:** Auto-attach JWT token từ Zustand authStore
+    *   **Response Interceptor:** Standardize error messages, handle 401 (logout)
+    *   **Usage:** Chỉ import `apiClient` trong API layer (`features/*/api/`), KHÔNG trong components
 
-4.  **Admin Dashboard:**
-    *   Xử lý data lớn phía server (Pagination), không load toàn bộ database về client.
+6.  **TypeScript:**
+    *   **Strict mode:** Enable `strict: true` trong `tsconfig.json`
+    *   **Path Aliases:** `@/features/*`, `@/shared/*`, `@/core/*`
+    *   **Type Exports:** Mỗi feature export types qua barrel file `index.ts`
+    *   **No `any`:** Sử dụng `unknown` hoặc define proper types
+
+7.  **Component Structure:**
+    *   **Presentational vs Container:** Tách UI (JSX) khỏi logic (hooks, data fetching)
+    *   **File Collocation:** Component + CSS Module + Types cùng folder
+        ```
+        Button/
+        ├── index.ts
+        ├── Button.tsx
+        ├── Button.module.css
+        └── Button.types.ts
+        ```
+    *   **Single Responsibility:** Mỗi component làm 1 việc duy nhất
+
+8.  **Bundle Optimization:**
+    *   Lazy load routes và heavy components (Charts, Modals)
+    *   Named imports để tree-shaking (`import { debounce } from 'lodash-es'`)
+    *   Dynamic imports cho features ít dùng
 
 ### Backend (Node.js/Express)
 
@@ -102,11 +203,32 @@ Tài liệu này định nghĩa các tiêu chuẩn, nguyên tắc và hướng d
     *   Services: `camelCase` (e.g., `emailService.js`, `telegramNotification.js`)
     *   Routes: `camelCase` (e.g., `productRoutes.js`)
 
-### Frontend (React)
-*   **Components:** `PascalCase` (e.g., `ProductCard.jsx`).
-*   **Hooks:** `use` prefix, camelCase (e.g., `useCart.js`).
-*   **Utils/Helpers:** camelCase (e.g., `formatCurrency.js`).
-*   **Constants:** SCREAMING_SNAKE_CASE (e.g., `API_BASE_URL`).
+### Frontend (React + TypeScript)
+*   **Files & Folders:**
+    *   Components: `PascalCase` (e.g., `ProductCard/`, `ProductCard.tsx`)
+    *   Hooks: `use` prefix, camelCase (e.g., `useCart.ts`, `useProducts.ts`)
+    *   Utils: camelCase (e.g., `formatCurrency.ts`, `validation.ts`)
+    *   Types: `*.types.ts` hoặc `*.model.ts` (e.g., `product.types.ts`, `user.model.ts`)
+    *   API: camelCase với suffix `Api` (e.g., `productApi.ts`, `authApi.ts`)
+    *   Stores: camelCase với suffix `Store` (e.g., `authStore.ts`, `uiStore.ts`)
+    
+*   **Variables & Functions:**
+    *   Variables: camelCase (e.g., `isLoading`, `userProfile`)
+    *   Functions: camelCase (e.g., `fetchProducts`, `handleSubmit`)
+    *   React Components: PascalCase (e.g., `const ProductCard = () => {}`)
+    *   Constants: SCREAMING_SNAKE_CASE (e.g., `API_BASE_URL`, `MAX_ITEMS`)
+    
+*   **TypeScript Types:**
+    *   Interfaces: `PascalCase` với prefix `I` optional (e.g., `User`, `IProduct`)
+    *   Types: `PascalCase` (e.g., `ProductParams`, `AuthState`)
+    *   Enums: `PascalCase` cho enum name, SCREAMING_SNAKE_CASE cho values
+        ```typescript
+        enum OrderStatus {
+          PENDING = 'PENDING',
+          PROCESSING = 'PROCESSING',
+          COMPLETED = 'COMPLETED',
+        }
+        ```
 
 ---
 

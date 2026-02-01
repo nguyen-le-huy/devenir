@@ -1,7 +1,7 @@
 import Product from '../../../models/ProductModel.js';
 import ProductVariant from '../../../models/ProductVariantModel.js';
 import Color from '../../../models/ColorModel.js';
-import { searchProducts, searchByCategoryMongoDB } from '../retrieval/vector-search.service.js';
+import { searchProducts, searchByCategoryMongoDB, searchKnowledgeBase } from '../retrieval/vector-search.service.js';
 import { rerankDocuments } from '../retrieval/reranking.service.js';
 import { generateResponse } from '../generation/response-generator.js';
 
@@ -156,8 +156,11 @@ export async function productAdvice(query, context = {}) {
             }
         }
 
-        // 1. Vector search (with enriched query)
-        const searchResults = await searchProducts(enrichedQuery, { topK: 50 });
+        // 1. Vector search (Product + Knowledge Base in parallel)
+        const [searchResults, kbResults] = await Promise.all([
+            searchProducts(enrichedQuery, { topK: 50 }),
+            searchKnowledgeBase(enrichedQuery, { topK: 3 })
+        ]);
 
         // Check if user is asking about a specific color
         const requestedColor = await findColorInQuery(query);
@@ -367,6 +370,17 @@ export async function productAdvice(query, context = {}) {
                 contextText += `\n`;
             }
         });
+
+        // Add Knowledge Base info to context
+        if (kbResults && kbResults.length > 0) {
+            contextText += `### Thông tin bổ sung (Knowledge Base):\n`;
+            kbResults.forEach(kb => {
+                if (kb.metadata?.text) {
+                    contextText += `- **${kb.metadata.title}**:\n${kb.metadata.text}\n\n`;
+                }
+            });
+        }
+
         // 7. Generate natural language response
         console.log('\\n=== CONTEXT BEING SENT TO LLM ===');
         console.log(contextText.substring(0, 2000));

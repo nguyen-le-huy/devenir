@@ -191,15 +191,38 @@ Tất cả sản phẩm được đóng gói cẩn thận trong **hộp DEVENIR 
 | **Phơi** | Trong bóng râm, tránh ánh nắng trực tiếp |
 | **Ủi** | Nhiệt độ thấp-trung bình |
 
-### Theo Chất Liệu
+### Theo Chất Liệu (Burberry Care Guide)
 
-**Cotton:**
-- Giặt riêng lần đầu để tránh phai màu
-- Phơi ngược mặt để giữ màu
+**Cashmere & Wool (Khăn & Áo Khoác):**
+- **Khuyến nghị:** Giặt khô chuyên nghiệp (Professional Dry Clean) để giữ form và độ mềm.
+- **Khăn Alpaca/Cashmere:** Tuyệt đối không giặt máy. Nếu giặt tay, dùng nước lạnh và dầu gội chuyên dụng cho len. Không vắt mạnh.
+- **Bảo quản:** Gấp gọn, không treo để tránh dãn. Dùng gói chống ẩm/hoa oải hương để tránh mối mọt.
 
-**Polyester:**
-- Không ủi nhiệt độ cao
-- Có thể sấy khô ở nhiệt độ thấp
+**Mũi Khâu Gabardine (Trench Coats):**
+- **Giặt:** Giặt khô chuyên nghiệp.
+- **Chống thấm:** Lớp chống nước có thể giảm theo thời gian -> Cần reproofing (phủ lại lớp chống thấm) định kỳ.
+
+**Sản phẩm Da (Túi, Giày):**
+- Không giặt nước. Dùng khăn ẩm mềm lau sạch vết bẩn nhẹ.
+- Dùng chuyên gia làm sạch da (Leather Specialist) cho vết bẩn cứng đầu.
+- Tránh nhiệt độ cao và ánh nắng trực tiếp.
+
+**Lụa (Silk):**
+- Giặt khô hoặc giặt tay cực nhẹ với nước lạnh.
+- Ủi ở nhiệt độ thấp nhất khi còn hơi ẩm (dùng vải lót).
+
+---
+
+## 🌸 Hướng Dẫn Sử Dụng Nước Hoa Burberry
+
+### Cách Xịt Chuẩn (The Burberry Way)
+1. **Điểm Mạch (Pulse Points):** Xịt vào cổ tay, sau tai, gáy, và bên trong khuỷu tay. Đây là nơi tỏa nhiệt giúp hương thơm lan tỏa.
+2. **Quy Tắc "Không Chà Xát":** Sau khi xịt lên cổ tay, **không** chà hai tay vào nhau. Việc này làm vỡ các phân tử hương (top notes) khiến mùi bay nhanh hơn.
+3. **Lớp Nền (Layering):** Thoa kem dưỡng thể (unscented hoặc cùng dòng) trước khi xịt để giữ mùi lâu hơn.
+
+### Bảo Quản
+- Để nơi khô ráo, thoáng mát, tránh ánh nắng trực tiếp (tốt nhất là trong hộp gốc hoặc tủ tối).
+- Hạn chế để trong phòng tắm (độ ẩm cao làm biến đổi mùi).
 
 ---
 
