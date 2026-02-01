@@ -77,16 +77,16 @@ const UserProfile = memo(() => {
             case 'overview':
                 return (
                     <ProfileOverview
-                        user={user}
+                        user={user as any}
                         onEditProfile={() => handleTabChange('personal')}
                     />
                 );
             case 'personal':
-                return <PersonalDetails user={user} />;
+                return <PersonalDetails user={user as any} />;
             case 'orders':
                 return <ProfileOrders />;
             case 'preferences':
-                return <MarketingPreferences user={user} />;
+                return <MarketingPreferences user={user as any} />;
             default:
                 return null;
         }

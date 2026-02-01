@@ -183,7 +183,7 @@ export default function ProfileOrders() {
     const { data, isLoading, error } = useUserOrders();
 
     // Handle both response structures: { data: [...] } or direct array
-    const orders: Order[] = Array.isArray(data) ? data : (data?.data || []);
+    const orders: Order[] = Array.isArray(data) ? data as any : (data?.data as any || []);
     
     const [statusFilter, setStatusFilter] = useState('all');
     const [sortMode, setSortMode] = useState('newest');

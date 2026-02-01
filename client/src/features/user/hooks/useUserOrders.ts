@@ -3,7 +3,7 @@
  * React Query + Socket.IO integration for realtime order updates
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/core/stores/useAuthStore';
 import { queryKeys } from '@/core/lib/queryClient';

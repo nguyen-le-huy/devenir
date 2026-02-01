@@ -19,11 +19,11 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
 
     const [preferences, setPreferences] = useState({
         channels: {
-            email: true,
-            phone: false,
-            messaging: false,
-            post: false,
             ...(user?.preferences?.channels || {}),
+            email: user?.preferences?.channels?.email ?? true,
+            phone: user?.preferences?.channels?.phone ?? false,
+            messaging: user?.preferences?.channels?.messaging ?? false,
+            post: user?.preferences?.channels?.post ?? false,
         },
         interests: user?.preferences?.interests || 'menswear' as const,
     });
@@ -110,7 +110,7 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
                                 name="interests"
                                 value="womenswear"
                                 checked={preferences.interests === 'womenswear'}
-                                onChange={(e) => handleInterestChange(e.target.value)}
+                                onChange={(e) => handleInterestChange(e.target.value as 'menswear' | 'womenswear' | 'both')}
                                 className={styles.radio}
                             />
                             <label htmlFor="interest-womenswear" className={styles.radioLabel}>
@@ -125,7 +125,7 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
                                 name="interests"
                                 value="menswear"
                                 checked={preferences.interests === 'menswear'}
-                                onChange={(e) => handleInterestChange(e.target.value)}
+                                onChange={(e) => handleInterestChange(e.target.value as 'menswear' | 'womenswear' | 'both')}
                                 className={styles.radio}
                             />
                             <label htmlFor="interest-menswear" className={styles.radioLabel}>
@@ -140,7 +140,7 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
                                 name="interests"
                                 value="both"
                                 checked={preferences.interests === 'both'}
-                                onChange={(e) => handleInterestChange(e.target.value)}
+                                onChange={(e) => handleInterestChange(e.target.value as 'menswear' | 'womenswear' | 'both')}
                                 className={styles.radio}
                             />
                             <label htmlFor="interest-both" className={styles.radioLabel}>

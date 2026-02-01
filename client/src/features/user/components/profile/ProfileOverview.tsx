@@ -75,7 +75,7 @@ export default function ProfileOverview({ user, onEditProfile }: ProfileOverview
 
                 <div className={styles.preferences}>
                     <p className={styles.prefItem}>
-                        <strong>Channel:</strong> {user?.preferences?.channel || 'Email'}
+                        <strong>Channels:</strong> {Object.keys(user?.preferences?.channels || {}).filter(k => (user?.preferences?.channels as any)?.[k]).join(', ') || 'Email'}
                     </p>
                     <p className={styles.prefItem}>
                         <strong>Interests:</strong> {user?.preferences?.interests || 'Menswear'}

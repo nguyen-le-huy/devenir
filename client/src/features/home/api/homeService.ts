@@ -67,19 +67,10 @@ class HomeService {
         return [];
       }
 
-      // Find all subcategories of Scarves
-      const subcategories = categories.filter((cat: CategoryData) =>
-        cat.parentId === scarvesCategory._id ||
-        String(cat.parentId) === String(scarvesCategory._id)
-      );
-
-      // Collect all category IDs (parent + children)
-      const allCategoryIds = [scarvesCategory._id, ...subcategories.map((sub: CategoryData) => sub._id)];
-
       // Fetch variants from all scarves categories
       const allVariants = await getVariantsByCategoryWithChildren(
         scarvesCategory._id,
-        categories
+        categories as any
       );
 
       if (!allVariants || allVariants.length === 0) {

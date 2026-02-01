@@ -80,7 +80,7 @@ export default function PersonalDetails({ user }: PersonalDetailsProps) {
         if (!validation.success) {
             // Map Zod errors to fieldErrors state
             const errors: Record<string, string> = {};
-            validation.error.errors.forEach((err) => {
+            validation.error.issues.forEach((err: any) => {
                 if (err.path[0]) {
                     errors[err.path[0] as string] = err.message;
                 }
@@ -102,7 +102,7 @@ export default function PersonalDetails({ user }: PersonalDetailsProps) {
         if (!validation.success) {
             // Map Zod errors to passwordErrors state
             const errors: Record<string, string> = {};
-            validation.error.errors.forEach((err) => {
+            validation.error.issues.forEach((err: any) => {
                 if (err.path[0]) {
                     errors[err.path[0] as string] = err.message;
                 }
