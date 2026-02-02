@@ -1,6 +1,9 @@
 version: '3.8'
-
 services:
+  # ==========================================
+  # 1. CORE APPLICATIONS
+  # ==========================================
+  
   # Backend API
   server:
     build:
@@ -13,19 +16,23 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3111
+      # Kết nối nội bộ qua tên service
+      - CLIP_SERVICE_URL=http://clip-service:8899
+      - QDRANT_URL=http://qdrant:6333
+      - REDIS_URL=redis://redis:6379
     env_file:
       - ./server/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      clip-service:
+        condition: service_healthy
     networks:
       - devenir-network
     volumes:
       - ./server/uploads:/app/uploads
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3111/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   # Client (React SPA)
   client:
     build:
@@ -39,12 +46,6 @@ services:
       - server
     networks:
       - devenir-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # Admin Dashboard  
   admin:
     build:
@@ -58,15 +59,73 @@ services:
       - server
     networks:
       - devenir-network
+  # ==========================================
+  # 2. INFRASTRUCTURE & AI SERVICES
+  # ==========================================
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: devenir-qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__HTTP_PORT=6333
+    networks:
+      - devenir-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD-SHELL", "/usr/bin/bash -c '</dev/tcp/127.0.0.1/6333'"]
       interval: 30s
       timeout: 10s
       retries: 3
-
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: devenir-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - devenir-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  # CLIP Service (Self-hosted AI)
+  clip-service:
+    build:
+      context: ./clip-service
+      dockerfile: Dockerfile
+    container_name: devenir-clip
+    restart: always
+    ports:
+      - "8899:8899"
+    volumes:
+      - clip_cache:/root/.cache
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    networks:
+      - devenir-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8899/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+volumes:
+  uploads:
+  qdrant_data:
+  redis_data:
+  clip_cache:
 networks:
   devenir-network:
     driver: bridge
-
-volumes:
-  uploads:

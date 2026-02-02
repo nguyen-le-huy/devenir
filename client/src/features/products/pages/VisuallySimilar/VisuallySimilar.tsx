@@ -27,10 +27,15 @@ const VisuallySimilar = () => {
             return false;
         }).map((result: any) => ({
             id: result.variantId,
+            _id: result.variantId, // ScarfCard might use _id
+            productId: result.productId, // Required for navigation
+            product_id: result.productId, // Alternate key
             name: result.productName,
             price: result.price,
-            image: result.mainImage || '/images/placeholder.png',
+            mainImage: result.mainImage || '/images/placeholder.png', // Correct key for ScarfCard
+            image: result.mainImage || '/images/placeholder.png', // Fallback key
             imageHover: result.hoverImage || result.mainImage || '/images/placeholder.png',
+            hoverImage: result.hoverImage || result.mainImage || '/images/placeholder.png', // Consistent naming
             color: result.color,
             size: result.size,
             sku: result.sku,

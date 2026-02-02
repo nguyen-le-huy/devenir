@@ -120,7 +120,8 @@ class ImageSearchService {
                 size: match.size,
                 sku: match.sku,
                 inStock: match.inStock !== false,
-                urlSlug: match.urlSlug
+                urlSlug: match.urlSlug,
+                productId: match.productId // Add productId for frontend navigation
             }));
 
             // Step 5: Cache results async (don't await)

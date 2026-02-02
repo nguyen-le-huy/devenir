@@ -10,7 +10,7 @@ export const findSimilarProductsSelfHost = asyncHandler(async (req, res) => {
     const { image, topK = 12, scoreThreshold = 0.15 } = req.body;
 
     // Validate image size (max 10MB base64) - handled in controller before passing to service to fail fast
-    if (image.length > 10 * 1024 * 1024) {
+    if (image.length > 50 * 1024 * 1024) {
         return res.status(400).json({
             success: false,
             message: 'Image too large. Maximum size is 10MB'

@@ -203,6 +203,10 @@ app.use('/api/admin/inventory', inventoryRoutes); // Inventory Management
 app.use('/api/financial', financialRoutes); // Financial reporting
 app.use('/api/admin/shipments', shipmentRoutes); // Shipment management
 
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date() });
+});
+
 app.get('/', (req, res) => {
   res.send('API is running...');
 });

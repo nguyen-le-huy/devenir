@@ -82,7 +82,24 @@ export const getCroppedImageBase64 = (imageElement: HTMLImageElement | null, cro
         cropHeight
     );
 
-    return canvas.toDataURL('image/png');
+    // Resize if too large (max 1024px) to reduce payload size
+    const MAX_DIMENSION = 1024;
+    if (cropWidth > MAX_DIMENSION || cropHeight > MAX_DIMENSION) {
+        const resizeCanvas = document.createElement('canvas');
+        const ratio = Math.min(MAX_DIMENSION / cropWidth, MAX_DIMENSION / cropHeight);
+
+        resizeCanvas.width = cropWidth * ratio;
+        resizeCanvas.height = cropHeight * ratio;
+
+        const resizeCtx = resizeCanvas.getContext('2d');
+        if (resizeCtx) {
+            resizeCtx.drawImage(canvas, 0, 0, resizeCanvas.width, resizeCanvas.height);
+            return resizeCanvas.toDataURL('image/jpeg', 0.9);
+        }
+    }
+
+    // Return as JPEG to save space (PNG can be huge for photos)
+    return canvas.toDataURL('image/jpeg', 0.9);
 };
 
 /**
