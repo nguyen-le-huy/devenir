@@ -17,20 +17,30 @@ jobs:
         run: |
           echo "📝 Creating .env files from GitHub Secrets..."
           
-          # Create server/.env from secret
-          echo "${{ secrets.SERVER_ENV_FILE }}" > server/.env
+          # Create server/.env from secret (remove BOM and trim)
+          echo "${{ secrets.SERVER_ENV_FILE }}" | sed '1s/^\xEF\xBB\xBF//' > server/.env
+          
+          # Verify .env file
+          if [ ! -s server/.env ]; then
+            echo "❌ server/.env is empty or missing!"
+            exit 1
+          fi
+          
+          echo "✅ server/.env created ($(wc -l < server/.env) lines)"
           
           # Create client/.env if needed (optional)
           if [ -n "${{ secrets.CLIENT_ENV_FILE }}" ]; then
-            echo "${{ secrets.CLIENT_ENV_FILE }}" > client/.env
+            echo "${{ secrets.CLIENT_ENV_FILE }}" | sed '1s/^\xEF\xBB\xBF//' > client/.env
+            echo "✅ client/.env created"
           fi
           
           # Create admin/.env if needed (optional)
           if [ -n "${{ secrets.ADMIN_ENV_FILE }}" ]; then
-            echo "${{ secrets.ADMIN_ENV_FILE }}" > admin/.env
+            echo "${{ secrets.ADMIN_ENV_FILE }}" | sed '1s/^\xEF\xBB\xBF//' > admin/.env
+            echo "✅ admin/.env created"
           fi
           
-          echo "✅ Environment files created successfully"
+          echo "✅ All environment files created successfully"
 
       - name: Build Docker Images
         run: |
