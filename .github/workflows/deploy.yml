@@ -5,9 +5,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-env:
-  PROJECT_ROOT: "/home/nguyenlehuy/Development/devenir"
-
 jobs:
   deploy:
     runs-on: self-hosted
@@ -16,84 +13,51 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Sync files to Production
+      - name: Verify Environment Files
         run: |
-          echo "🚀 Deploying to: ${{ env.PROJECT_ROOT }}"
-          
-          # Create directory if not exists
-          mkdir -p ${{ env.PROJECT_ROOT }}
-          
-          # Sync all files (exclude unnecessary files)
-          rsync -av --delete \
-            --exclude='node_modules' \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='*/dist' \
-            --exclude='*/build' \
-            --exclude='*.log' \
-            ./ ${{ env.PROJECT_ROOT }}/
-          
-          echo "✅ Files synced!"
-
-      - name: Create .env files if not exist
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          
-          # Check and create .env for server
+          # Check critical .env files exist
           if [ ! -f server/.env ]; then
-            echo "⚠️  server/.env not found. Please create it manually!"
+            echo "❌ server/.env not found. Please create it!"
             exit 1
           fi
-          
-          # Check and create .env for client
-          if [ ! -f client/.env ]; then
-            echo "⚠️  client/.env not found. Creating from example..."
-            cp client/.env.example client/.env || echo "Warning: .env.example not found"
-          fi
-          
-          # Check and create .env for admin
-          if [ ! -f admin/.env ]; then
-            echo "⚠️  admin/.env not found. Creating from example..."
-            cp admin/.env.example admin/.env || echo "Warning: .env.example not found"
-          fi
+          echo "✅ Environment files verified"
 
-      - name: Build and Deploy with Docker Compose
+      - name: Build Docker Images
         run: |
-          cd ${{ env.PROJECT_ROOT }}
-          
           echo "🐳 Building Docker images..."
-          docker-compose build --no-cache
-          
-          echo "🔄 Stopping old containers..."
-          docker-compose down
-          
-          echo "🚀 Starting new containers..."
-          docker-compose up -d
-          
-          echo "✅ Docker containers started!"
+          docker compose build
+          echo "✅ Images built successfully!"
+
+      - name: Deploy Containers
+        run: |
+          echo "🔄 Restarting containers..."
+          docker compose up -d
+          echo "✅ Containers restarted!"
 
       - name: Health Check
         run: |
-          cd ${{ env.PROJECT_ROOT }}
-          
-          echo "⏳ Waiting for services to be healthy..."
-          sleep 30
-          
-          # Check server health
-          docker-compose ps | grep devenir-server | grep "Up (healthy)" || echo "⚠️  Server not healthy yet"
-          
-          # Check client health  
-          docker-compose ps | grep devenir-client | grep "Up (healthy)" || echo "⚠️  Client not healthy yet"
-          
-          # Check admin health
-          docker-compose ps | grep devenir-admin | grep "Up (healthy)" || echo "⚠️  Admin not healthy yet"
+          echo "⏳ Waiting for services to start..."
+          sleep 20
           
           echo "📊 Container Status:"
-          docker-compose ps
+          docker compose ps
+          
+          # Test local endpoints
+          echo ""
+          echo "🧪 Testing services..."
+          curl -f http://localhost:5173 > /dev/null && echo "✅ Client OK" || echo "⚠️  Client not ready"
+          curl -f http://localhost:5174 > /dev/null && echo "✅ Admin OK" || echo "⚠️  Admin not ready"
+          curl -f http://localhost:3111 > /dev/null && echo "✅ API OK" || echo "⚠️  API not ready"
 
-      - name: Cleanup old images
+      - name: Reload Nginx
         run: |
-          echo "🧹 Cleaning up old Docker images..."
+          echo "🔄 Reloading Nginx..."
+          sudo nginx -t && sudo nginx -s reload || echo "⚠️  Nginx reload skipped"
+          echo "✅ Nginx reloaded"
+
+      - name: Cleanup
+        run: |
+          echo "🧹 Cleaning up dangling images..."
           docker image prune -f
           echo "✅ Cleanup completed!"
 
@@ -106,10 +70,13 @@ jobs:
         run: |
           if [ "${{ needs.deploy.result }}" == "success" ]; then
             echo "✅ DEPLOY SUCCESSFUL!"
-            echo "🌐 Client: http://your-server-ip:80"
-            echo "🎛️  Admin: http://your-server-ip:81"
-            echo "🔌 API: http://your-server-ip:3111"
+            echo ""
+            echo "🌐 Public URLs:"
+            echo "   Client: https://hystudio-server.tail86e288.ts.net/"
+            echo "   Admin:  https://hystudio-server.tail86e288.ts.net/admin/"
+            echo "   API:    https://hystudio-server.tail86e288.ts.net/api"
+            echo "   N8N:    https://hystudio-server.tail86e288.ts.net/n8n/"
           else
             echo "❌ DEPLOY FAILED!"
-            echo "Check logs: docker-compose logs"
+            echo "📋 Check logs: docker compose logs -f"
           fi
