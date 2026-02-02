@@ -15,8 +15,8 @@ const HomePage = memo(() => {
     return (
         <main>
             <SEO
-                title="Devenir - Men's Premium Fashion"
-                description="Discover Devenir's premium collection of men's fashion. Elevate your style with our exclusive range of clothing and accessories."
+                title="Devenir - Premium Fashion"
+                description="Discover Devenir's premium collection of fashion. Elevate your style with our exclusive range of clothing and accessories."
             />
             {/* Hero is above the fold - load immediately */}
             <Hero />

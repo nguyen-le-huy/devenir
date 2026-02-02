@@ -1,58 +1,115 @@
-name: Devenir Deploy Backend
+name: Docker Deploy to Production
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
-# KHAI BÁO ĐƯỜNG DẪN 1 LẦN TẠI ĐÂY
 env:
-  # Đường dẫn gốc của dự án trên server
   PROJECT_ROOT: "/home/nguyenlehuy/Development/devenir"
-  # Đường dẫn vào folder server (backend)
-  SERVER_PATH: "/home/nguyenlehuy/Development/devenir/server"
 
 jobs:
-  deploy-backend:
+  deploy:
     runs-on: self-hosted
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Sync files to Production Folder
+      - name: Sync files to Production
         run: |
           echo "🚀 Deploying to: ${{ env.PROJECT_ROOT }}"
           
-          # Tạo thư mục nếu chưa có
+          # Create directory if not exists
           mkdir -p ${{ env.PROJECT_ROOT }}
           
-          # Copy code backend sang (loại trừ file rác)
-          # Lưu ý: Cần cài rsync trên linux: sudo apt install rsync
-          rsync -av --exclude='node_modules' --exclude='.git' --exclude='.github' ./server/ ${{ env.SERVER_PATH }}/
+          # Sync all files (exclude unnecessary files)
+          rsync -av --delete \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='*/dist' \
+            --exclude='*/build' \
+            --exclude='*.log' \
+            ./ ${{ env.PROJECT_ROOT }}/
           
           echo "✅ Files synced!"
 
-      - name: Install Dependencies
+      - name: Create .env files if not exist
         run: |
-          echo "📦 Installing dependencies in ${{ env.SERVER_PATH }}"
-          cd ${{ env.SERVER_PATH }}
-          npm ci
+          cd ${{ env.PROJECT_ROOT }}
+          
+          # Check and create .env for server
+          if [ ! -f server/.env ]; then
+            echo "⚠️  server/.env not found. Please create it manually!"
+            exit 1
+          fi
+          
+          # Check and create .env for client
+          if [ ! -f client/.env ]; then
+            echo "⚠️  client/.env not found. Creating from example..."
+            cp client/.env.example client/.env || echo "Warning: .env.example not found"
+          fi
+          
+          # Check and create .env for admin
+          if [ ! -f admin/.env ]; then
+            echo "⚠️  admin/.env not found. Creating from example..."
+            cp admin/.env.example admin/.env || echo "Warning: .env.example not found"
+          fi
 
-      - name: Restart PM2
+      - name: Build and Deploy with Docker Compose
         run: |
-          echo "🔄 Restarting PM2..."
-          cd ${{ env.SERVER_PATH }}
+          cd ${{ env.PROJECT_ROOT }}
           
-          # Update env và restart
-          pm2 restart devenir-server --update-env || pm2 start server.js --name devenir-server
-          pm2 save
+          echo "🐳 Building Docker images..."
+          docker-compose build --no-cache
           
-          echo "✅ Backend Deployed Successfully!"
+          echo "🔄 Stopping old containers..."
+          docker-compose down
+          
+          echo "🚀 Starting new containers..."
+          docker-compose up -d
+          
+          echo "✅ Docker containers started!"
+
+      - name: Health Check
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          
+          echo "⏳ Waiting for services to be healthy..."
+          sleep 30
+          
+          # Check server health
+          docker-compose ps | grep devenir-server | grep "Up (healthy)" || echo "⚠️  Server not healthy yet"
+          
+          # Check client health  
+          docker-compose ps | grep devenir-client | grep "Up (healthy)" || echo "⚠️  Client not healthy yet"
+          
+          # Check admin health
+          docker-compose ps | grep devenir-admin | grep "Up (healthy)" || echo "⚠️  Admin not healthy yet"
+          
+          echo "📊 Container Status:"
+          docker-compose ps
+
+      - name: Cleanup old images
+        run: |
+          echo "🧹 Cleaning up old Docker images..."
+          docker image prune -f
+          echo "✅ Cleanup completed!"
 
   notify:
     runs-on: self-hosted
-    needs: deploy-backend
+    needs: deploy
     if: always()
     steps:
-      - name: Status
-        run: echo "${{ needs.deploy-backend.result == 'success' && '✅ DEPLOY OK' || '❌ DEPLOY FAILED' }}"
+      - name: Deployment Status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "✅ DEPLOY SUCCESSFUL!"
+            echo "🌐 Client: http://your-server-ip:80"
+            echo "🎛️  Admin: http://your-server-ip:81"
+            echo "🔌 API: http://your-server-ip:3111"
+          else
+            echo "❌ DEPLOY FAILED!"
+            echo "Check logs: docker-compose logs"
+          fi
