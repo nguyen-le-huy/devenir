@@ -1,4 +1,4 @@
-# Devenir - Premium Fashion E-commerce Platform.
+# Devenir - Premium Fashion E-commerce Platform
 
 <div align="center">
   
@@ -7,37 +7,17 @@
   [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
   [![React](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
   [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green.svg)](https://mongodb.com/)
-  [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+
 </div>
 
 ---
 
 ## Overview
 
-**Devenir** is a premium e-commerce solution designed for the fashion industry. Built on the MERN stack, it integrates cutting-edge AI features including:
+**Devenir** is an enterprise-grade e-commerce platform specialized in premium men's fashion, built on the MERN stack with advanced AI integration.
 
-- **RAG-powered AI Chatbot** for intelligent product recommendations
-- **Visual Search** using FashionCLIP for image-based product discovery
-- **Auto Social Media Posting** via n8n automation
-- **Telegram Order Notifications** for real-time order alerts
-- **Multi-gateway Payments** supporting VND (PayOS) and Crypto (USDT BSC)
-
----
-
-## Table of Contents
-
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [System Architecture](#system-architecture)
-- [Prerequisites](#prerequisites)
-- [Installation & Setup](#installation--setup)
-- [Configuration](#configuration)
-- [AI Features](#ai-features)
-- [Payment Integration](#payment-integration)
-- [Deployment](#deployment)
-- [API Reference](#api-reference)
-- [Workflows](#workflows)
-- [License](#license)
+The platform delivers an intelligent, modern, and personalized shopping experience through the integration of cutting-edge technologies including AI-powered recommendations, automated workflows, and multi-gateway payment solutions.
 
 ---
 
@@ -45,88 +25,55 @@
 
 ### Customer Experience
 
-| Feature | Description |
-|---------|-------------|
-| **AI Shopping Assistant** | RAG-powered chatbot with product advice, size recommendations, and order tracking |
-| **Visual Search** | Upload an image to find similar products using FashionCLIP + Qdrant |
-| **Store Location Map** | Embedded Google Maps in chat when asking for store address |
-| **Smart Filtering** | Filter by size, color, price range, category, and brand |
-| **Multi-payment** | VND bank transfer (PayOS) + Cryptocurrency (USDT BSC) |
-| **Real-time Updates** | Socket.io for live order status and chat notifications |
-| **OAuth Login** | Google OAuth 2.0 + Email/Password authentication |
+**AI Shopping Assistant (RAG-powered Chatbot)**
+- Intelligent product recommendations based on contextual understanding
+- Personalized size suggestions based on height and weight
+- Style matching and outfit coordination
+- Real-time order tracking within chat interface
+- Automated FAQ responses for policies and procedures
+- Embedded Google Maps for store location requests
+
+**Visual Search**
+- Image-based product discovery
+- Powered by FashionCLIP and Qdrant Vector Database
+- Find similar products by uploading images
+
+**Payment Solutions**
+- VND bank transfer via PayOS integration
+- Cryptocurrency payments (USDT BSC) via NowPayments
+- Real-time payment confirmation and order processing
+
+**Real-time Updates**
+- Live order status tracking via Socket.io
+- Instant notifications for order changes
+- Seamless communication channel
+
+**Authentication**
+- Google OAuth 2.0 integration
+- Traditional email/password authentication
+- Secure session management with JWT
 
 ### Admin Dashboard
 
-| Feature | Description |
-|---------|-------------|
-| **Analytics Dashboard** | Revenue charts, top products, user metrics (Recharts) |
-| **Product Management** | CRUD with variants, auto-ingestion to Pinecone & Qdrant |
-| **Order Management** | Status tracking, returns, and shipping integration |
-| **Social Media Posting** | One-click Facebook posting via n8n automation |
-| **Telegram Notifications** | Real-time order alerts sent to Telegram group |
-| **Inventory Alerts** | Low stock warnings and reorder notifications (Telegram + Excel) |
-| **Brand & Category Management** | Full control over taxonomy and branding |
+**Product Management**
+- Full CRUD operations with variant support (colors, sizes)
+- Automatic data synchronization to Pinecone and Qdrant vector databases
+- Bulk operations and batch processing
 
-### AI-Powered Features
+**Order Management**
+- Comprehensive order tracking and status updates
+- Return and refund processing
+- Shipping integration and logistics management
 
-| Service | Capability |
-|---------|------------|
-| **Product Advisor** | Smart recommendations based on query understanding |
-| **Size Advisor** | Personalized sizing from height/weight |
-| **Style Matcher** | Outfit coordination suggestions |
-| **Order Lookup** | Real-time order tracking via chat |
-| **Policy FAQ** | Automated shipping/return/payment policy answers |
-| **Store Locator** | Display store address with embedded map |
-| **Visual Search** | Find products by image similarity |
+**Analytics & Reporting**
+- Revenue visualization with Recharts
+- Best-selling products analysis
+- User behavior metrics and insights
 
----
-
-## Tech Stack
-
-### Frontend - Client (React)
-
-| Category | Technology |
-|----------|------------|
-| Framework | React 18 + Vite |
-| State | React Query (Server State), Zustand (Client State) |
-| Styling | CSS Modules, Vanilla CSS |
-| Animations | GSAP, ScrollTrigger, SplitText |
-| Real-time | Socket.io Client |
-
-### Frontend - Admin (React + TypeScript)
-
-| Category | Technology |
-|----------|------------|
-| Framework | React 18 + TypeScript + Vite |
-| UI Library | Shadcn/ui, TailwindCSS |
-| State | React Query (Server State), Zustand (Client State) |
-| Charts | Recharts |
-| Forms | React Hook Form, Zod |
-
-### Backend (Node.js)
-
-| Category | Technology |
-|----------|------------|
-| Runtime | Node.js 18+ |
-| Framework | Express.js |
-| Database | MongoDB Atlas |
-| Vector DB | Pinecone (RAG), Qdrant (Visual Search) |
-| AI/ML | OpenAI API, FashionCLIP |
-| Auth | JWT, Google OAuth 2.0 |
-| Payments | PayOS, NowPayments |
-| Media | Cloudinary |
-| Email | Nodemailer |
-| Real-time | Socket.io |
-
-### Infrastructure
-
-| Component | Platform |
-|-----------|----------|
-| Client & Admin | Vercel |
-| Backend API | Self-hosted (PM2 + Nginx) |
-| FashionCLIP Service | Docker (Self-hosted) |
-| n8n Automation | Docker (Self-hosted) |
-| Vector Databases | Qdrant Cloud, Pinecone |
+**Automation via n8n**
+- One-click Facebook Page posting
+- Telegram order notifications
+- Low inventory alerts with Excel exports
 
 ---
 
@@ -134,445 +81,199 @@
 
 ```
 devenir/
-├── server/                        # Backend API
-│   ├── config/                    # DB, Pinecone, Payment configs
-│   ├── controllers/               # Business logic
-│   ├── models/                    # Mongoose schemas
-│   ├── routes/                    # API endpoints
-│   ├── middleware/                # Auth, validation
-│   ├── services/
-│   │   ├── rag/                   # RAG AI System
-│   │   │   ├── core/              # RAGService, context builder
-│   │   │   ├── embeddings/        # OpenAI embeddings, propositions
-│   │   │   ├── generation/        # LLM response, prompts
-│   │   │   ├── orchestrators/     # Intent classification
-│   │   │   ├── retrieval/         # Vector search
-│   │   │   └── specialized/       # Domain services
-│   │   │       ├── product-advisor.service.js
-│   │   │       ├── size-advisor.service.js
-│   │   │       ├── style-matcher.service.js
-│   │   │       ├── order-lookup.service.js
-│   │   │       └── policy-faq.service.js
-│   │   ├── imageSearch/           # Visual Search System
-│   │   │   ├── clipServiceClient.js
-│   │   │   └── qdrantVectorStore.js
-│   │   ├── telegram/              # Telegram Notifications
-│   │   │   └── telegramNotification.js
-│   │   ├── ingestion/             # Auto-ingestion service
-│   │   ├── payos/                 # PayOS integration
-│   │   └── nowpayments/           # NowPayments integration
-│   ├── scripts/
-│   │   └── ingestion/             # Pinecone & Qdrant ingestion scripts
-│   └── server.js
-│
-├── client/                        # Customer Frontend
-│   ├── src/
-│   │   ├── core/                  # Core infrastructure
-│   │   │   ├── api/               # Axios client, interceptors
-│   │   │   ├── stores/            # Zustand global stores (auth, ui)
-│   │   │   └── lib/               # Third-party configs (queryClient, socket)
-│   │   ├── shared/                # Shared/reusable code
-│   │   │   ├── components/        # UI components (Button, Modal)
-│   │   │   ├── hooks/             # Shared hooks (useDebounce)
-│   │   │   ├── utils/             # Utility functions
-│   │   │   └── types/             # Shared TypeScript types
-│   │   ├── features/              # Feature modules (Feature-Based)
-│   │   │   ├── auth/              # Authentication
-│   │   │   ├── products/          # Product listing, detail
-│   │   │   ├── cart/              # Shopping cart
-│   │   │   ├── checkout/          # Checkout flow
-│   │   │   ├── chat/              # AI Chat widget (RAG)
-│   │   │   │   ├── api/           # chatApi.ts
-│   │   │   │   ├── components/    # ChatIcon, ChatWindow, ChatMessage, StreamingText
-│   │   │   │   ├── hooks/         # useChat, useChatMessages, useChatActions
-│   │   │   │   ├── store/         # useChatUIStore (Zustand)
-│   │   │   │   ├── utils/         # chatValidation, chatConstants
-│   │   │   │   └── types/         # Type definitions
-│   │   │   ├── nowpayments/       # Crypto payment integration
-│   │   │   └── [other features]/
-│   │   └── pages/                 # Top-level route pages
-│
-├── admin/                         # Admin Dashboard
-│   ├── src/
-│   │   ├── components/            # Shadcn/ui components
-│   │   ├── pages/
-│   │   │   ├── products/          # Product management
-│   │   │   ├── orders/            # Order management
-│   │   │   └── content/           # Social media posting
-│   │   ├── hooks/                 # React Query hooks
-│   │   └── services/              # API clients
-│
-├── clip-service/                  # FashionCLIP Docker Service
-│   ├── app.py                     # FastAPI server
-│   ├── Dockerfile
-│   └── requirements.txt
-│
-└── .agent/workflows/              # Development workflows
-    ├── UploadingPost.md           # Facebook posting guide
-    ├── TelegramOrderNotification.md # Telegram order alerts
-    ├── inventoryAlert.md          # Inventory monitoring
-    ├── image-search-selfhost.md   # Visual search setup
-    └── nowpayments-integration.md # Crypto payment guide
+├── client/          # Customer-facing frontend (React + Vite + TypeScript)
+├── admin/           # Admin dashboard (React + TypeScript + Shadcn UI)
+├── server/          # Backend API (Node.js + Express + MongoDB)
+├── clip-service/    # FashionCLIP microservice (FastAPI + Docker)
+└── .agent/          # Development workflows and automation guides
 ```
+
+### Technology Stack
+
+**Frontend**
+- React 18 with Vite and TypeScript
+- State Management: React Query (server state) + Zustand (client state)
+- Styling: CSS Modules, TailwindCSS (Admin)
+- Animations: GSAP, ScrollTrigger, SplitText
+
+**Backend**
+- Node.js 18+ with Express.js
+- MongoDB with Mongoose ODM
+- Vector Databases: Pinecone (RAG), Qdrant (Visual Search)
+- AI/ML: OpenAI API, FashionCLIP
+- Real-time Communication: Socket.io
+
+**Infrastructure**
+- Client & Admin: Vercel deployment
+- Backend API: Self-hosted with PM2 and Nginx
+- FashionCLIP: Docker containerized service
+- n8n Automation: Docker containerized workflows
 
 ---
 
-## Prerequisites
+## AI Capabilities
 
-- **Node.js** v18.x or higher
-- **npm** or **yarn**
-- **MongoDB** (Atlas recommended)
-- **Docker** (for FashionCLIP service)
+### RAG Chatbot (Retrieval-Augmented Generation)
 
-### External Services
+The chatbot system is built on an **Intent-based Routing Architecture**, classifying user queries and routing them to specialized services:
 
-| Service | Purpose | Required |
-|---------|---------|----------|
-| MongoDB Atlas | Primary database | ✅ Yes |
-| Pinecone | RAG vector search | ✅ Yes |
-| OpenAI API | Embeddings & LLM | ✅ Yes |
-| Cloudinary | Image storage | ✅ Yes |
-| Qdrant | Visual search vectors | Optional |
-| PayOS | VND payments | Optional |
-| NowPayments | Crypto payments | Optional |
-| n8n | Social media automation | Optional |
+**Specialized Services**
+- **ProductAdvisor**: Product recommendations based on user needs
+- **SizeAdvisor**: Size suggestions based on body measurements
+- **StyleMatcher**: Outfit coordination and style matching
+- **OrderLookup**: Real-time order status retrieval
+- **PolicyFAQ**: Automated responses for return, payment, and shipping policies
+- **GeneralHelper**: General inquiry handling
 
----
-
-## Installation & Setup
-
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/yourusername/devenir.git
-cd devenir
+**Processing Pipeline**
 ```
-
-### 2. Backend Setup
-
-```bash
-cd server
-npm install
-cp .env.example .env
-# Edit .env with your credentials
-npm run dev
+User Query → Intent Classification → Specialized Service → 
+Vector Search (Pinecone) → Context Building → LLM Response (GPT-4o-mini)
 ```
-
-### 3. Client Setup
-
-```bash
-cd ../client
-npm install
-cp .env.example .env
-npm run dev
-```
-
-### 4. Admin Setup
-
-```bash
-cd ../admin
-npm install
-cp .env.example .env
-npm run dev
-```
-
-### 5. FashionCLIP Service (Optional - for Visual Search)
-
-```bash
-cd ../clip-service
-docker build -t fashion-clip .
-docker run -d -p 8000:8000 --name clip-service fashion-clip
-```
-
----
-
-## Configuration
-
-### Server Environment Variables
-
-```env
-# Database
-MONGO_URI=mongodb+srv://...
-PINECONE_API_KEY=...
-PINECONE_INDEX=clothing-store
-
-# Vector Search (Visual Search)
-QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=...
-QDRANT_COLLECTION=devenir_products
-CLIP_SERVICE_URL=http://localhost:8000
-
-# Security
-JWT_SECRET=your_secure_secret
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-
-# AI Services
-OPENAI_API_KEY=...
-
-# Media Storage
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
-
-# Payment - PayOS (VND)
-PAYOS_CLIENT_ID=...
-PAYOS_API_KEY=...
-PAYOS_CHECKSUM_KEY=...
-
-# Payment - NowPayments (Crypto)
-NOWPAYMENTS_API_KEY=...
-NOWPAYMENTS_IPN_SECRET=...
-NOWPAYMENTS_SANDBOX=false
-
-# Telegram Notifications (via n8n)
-N8N_ORDER_NOTIFICATION_WEBHOOK=https://your-n8n.com/webhook/order-notification
-TELEGRAM_ORDER_CHAT_ID=-1001234567890
-
-# URLs
-SERVER_URL=https://api.devenir.shop
-CLIENT_URL=https://www.devenir.shop
-ADMIN_URL=https://admin.devenir.shop
-```
-
-### Client Environment Variables
-
-```env
-VITE_API_URL=http://localhost:3111/api
-VITE_SOCKET_URL=http://localhost:3111
-```
-
----
-
-## AI Features
-
-### RAG Chatbot Architecture
-
-```
-User Query
-    ↓
-Intent Classification (Quick + LLM)
-    ↓
-┌─────────────────────────────────────┐
-│ product_advice → ProductAdvisor    │
-│ size_advice    → SizeAdvisor       │
-│ style_match    → StyleMatcher      │
-│ order_lookup   → OrderLookup       │
-│ policy_faq     → PolicyFAQ         │
-│ general        → GeneralHelper     │
-└─────────────────────────────────────┘
-    ↓
-Vector Search (Pinecone) + Color Matching
-    ↓
-Context Building + Reranking
-    ↓
-LLM Response Generation (GPT-4o-mini)
-    ↓
-Response with Product Cards
-```
-
-### Visual Search Flow
-
-```
-Image Upload
-    ↓
-FashionCLIP Encoding (512-dim)
-    ↓
-Qdrant Similarity Search
-    ↓
-Product Recommendations
-```
-
-### Chat Feature Architecture (Feature-Based)
-
-Chat feature được tổ chức theo Feature-Based Architecture với các layer rõ ràng:
-
-```
-features/chat/
-├── api/                     # API Layer
-│   └── chatApi.ts           # HTTP calls (Axios)
-│
-├── hooks/                   # Business Logic Layer
-│   ├── useChat.ts           # Main orchestrator hook
-│   ├── useChatMessages.ts   # Message state (React Query)
-│   ├── useChatActions.ts    # Action handlers
-│   └── useChatSession.ts    # Session management
-│
-├── store/                   # UI State Layer (Zustand)
-│   └── useChatUIStore.ts    # Chat visibility, initial view state
-│
-├── components/              # Presentation Layer
-│   ├── ChatIcon.tsx         # Floating chat button
-│   ├── ChatWindow.tsx       # Chat container
-│   ├── ChatMessage.tsx      # Message bubble with products
-│   ├── StreamingText.tsx    # Streaming animation (RAF optimized)
-│   └── *.module.css         # CSS Modules (Google Sans Flex)
-│
-├── utils/                   # Utilities
-│   ├── chatValidation.ts    # Input validation, text parsing
-│   ├── chatUtils.ts         # Helper functions
-│   └── chatConstants.ts     # Constants (STREAMING_SPEED, etc.)
-│
-└── types/                   # TypeScript Definitions
-    ├── api.types.ts         # API request/response types
-    ├── store.types.ts       # Store state types
-    └── index.ts             # Barrel exports
-```
-
-**Design Principles:**
-- **Separation of Concerns:** API ↔ Hooks ↔ Components clearly separated
-- **State Management:** React Query (server state) + Zustand (UI state)
-- **Performance:** RAF-based streaming, memoization, lazy loading
-- **Type Safety:** Full TypeScript coverage
-- **Styling:** CSS Modules with Google Sans Flex font
-
-### Data Ingestion
-
-Products are automatically ingested to both vector databases when created/updated:
-
-```javascript
-// Auto-triggered on product CRUD operations
-triggerProductIngestion(productId, variantIds)
-// → Pinecone: Text propositions for RAG
-// → Qdrant: Image embeddings for Visual Search
-```
-
----
-
-## Payment Integration
-
-### PayOS (Vietnam Bank Transfer)
-
-- **Currency:** VND
-- **Methods:** QR Code, Bank Transfer
-- **Confirmation:** Real-time webhook (IPN)
-
-### NowPayments (Cryptocurrency)
-
-- **Currency:** USDT (BEP-20 on BSC)
-- **Fees:** ~$0.10 per transaction
-- **Confirmation:** Blockchain webhook (IPN)
-- **Sandbox:** Available for testing
-
----
-
-## Deployment
-
-### Frontend (Vercel)
-
-1. Connect GitHub repository to Vercel
-2. Configure build:
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-3. Add environment variables in Vercel dashboard
-
-### Backend (Self-hosted)
-
-```bash
-# Install PM2
-npm install -g pm2
-
-# Start server
-pm2 start server.js --name "devenir-api"
-pm2 save
-pm2 startup
-```
-
-### Nginx Configuration
-
-```nginx
-server {
-    listen 80;
-    server_name api.devenir.shop;
-
-    location / {
-        proxy_pass http://localhost:3111;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
----
-
-## API Reference
-
-### Authentication
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login with email/password |
-| POST | `/api/auth/google` | Google OAuth callback |
-| GET | `/api/auth/me` | Get current user |
-
-### Products
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/products` | List products (paginated) |
-| GET | `/api/products/:id` | Get product details |
-| POST | `/api/products/admin` | Create product (Admin) |
-| PUT | `/api/products/admin/:id` | Update product (Admin) |
-| DELETE | `/api/products/admin/:id` | Delete product (Admin) |
 
 ### Visual Search
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/image-search/search` | Search by image upload |
+Image-based product discovery powered by **FashionCLIP**:
 
-### AI Chat
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/chat` | Send message (authenticated) |
-| POST | `/api/chat/guest` | Send message (guest) |
-| GET | `/api/chat/history` | Get conversation history |
-
-### Payments
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/payments/payos/session` | Create PayOS payment |
-| POST | `/api/payments/payos/webhook` | PayOS IPN callback |
-| POST | `/api/payments/nowpayments/session` | Create crypto invoice |
-| POST | `/api/payments/nowpayments/webhook` | NowPayments IPN |
-
-### Social Media
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/social/webhook-proxy` | Proxy to n8n for FB posting |
+```
+Image Upload → FashionCLIP Encoding (512-dim vector) → 
+Qdrant Similarity Search → Ranked Product Results
+```
 
 ---
 
-## Workflows
+## Automation Workflows
 
-Development workflows are documented in `.agent/workflows/`:
+Automated processes built with **n8n**:
 
-| Workflow | Description |
-|----------|-------------|
-| `/UploadingPost` | Auto Facebook posting via n8n |
-| `/TelegramOrderNotification` | Order alerts to Telegram via n8n |
-| `/inventoryAlert` | Low stock warnings & Excel reports |
-| `/image-search-selfhost` | Visual search with FashionCLIP + Qdrant |
-| `/nowpayments-integration` | USDT BSC payment integration |
-| `/exportFile` | Inventory export to CSV/Excel |
+**Facebook Auto-Posting**
+- Automatic product publishing to Facebook Page
+- Scheduled content distribution
+- Multi-platform content management
+
+**Telegram Order Notifications**
+- Real-time order confirmations sent to Telegram groups
+- Instant order status updates
+- Team collaboration and monitoring
+
+**Inventory Management**
+- Automated low-stock alerts via Telegram
+- Excel report generation and distribution
+- Proactive inventory monitoring
 
 ---
 
 ## Security
 
-- **JWT Authentication** with httpOnly cookies
-- **Rate Limiting** on API endpoints
-- **CORS** configured for specific origins
-- **Input Validation** with Express Validator
-- **Password Hashing** with bcrypt
-- **HTTPS** enforced in production
+**Authentication & Authorization**
+- JWT-based authentication with httpOnly cookies
+- Role-based access control (RBAC)
+- OAuth 2.0 integration for third-party authentication
+
+**API Security**
+- Rate limiting on all endpoints
+- CORS configuration for specific origins
+- Input validation with Express Validator
+- Password hashing with bcrypt
+
+**Production Security**
+- HTTPS enforcement
+- Environment variable encryption
+- Security headers configuration
+
+---
+
+## Project Structure
+
+### Frontend - Feature-Based Architecture
+
+```
+client/src/
+├── core/               # Core infrastructure (API, Stores, Libraries)
+├── shared/             # Shared resources (Components, Hooks, Utilities)
+└── features/           # Feature modules (Feature-Based)
+    ├── auth/           # Authentication and authorization
+    ├── products/       # Product listing and details
+    ├── cart/           # Shopping cart management
+    ├── checkout/       # Checkout and payment flow
+    ├── chat/           # AI-powered chat widget (RAG)
+    └── nowpayments/    # Cryptocurrency payment integration
+```
+
+### Backend - Service Layer Pattern
+
+```
+server/
+├── models/             # Mongoose schemas and models
+├── controllers/        # Request handlers and routing logic
+├── services/           # Business logic and data processing
+│   ├── rag/            # RAG AI system implementation
+│   ├── imageSearch/    # Visual search engine
+│   ├── telegram/       # Telegram notification service
+│   ├── payos/          # PayOS payment gateway
+│   └── nowpayments/    # NowPayments cryptocurrency gateway
+└── routes/             # API endpoint definitions
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or higher
+- MongoDB (MongoDB Atlas recommended)
+- Docker (for FashionCLIP service)
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/devenir.git
+cd devenir
+
+# Backend setup
+cd server
+npm install
+cp .env.example .env
+npm run dev
+
+# Client setup
+cd ../client
+npm install
+cp .env.example .env
+npm run dev
+
+# Admin setup
+cd ../admin
+npm install
+cp .env.example .env
+npm run dev
+
+# FashionCLIP service (optional)
+cd ../clip-service
+docker build -t fashion-clip .
+docker run -d -p 8000:8000 fashion-clip
+```
+
+### Configuration
+
+Required environment variables:
+
+**Backend (.env)**
+```env
+MONGO_URI=mongodb+srv://your-mongodb-uri
+PINECONE_API_KEY=your-pinecone-key
+OPENAI_API_KEY=your-openai-key
+CLOUDINARY_CLOUD_NAME=your-cloudinary-name
+JWT_SECRET=your-jwt-secret
+```
+
+**Client (.env)**
+```env
+VITE_API_URL=http://localhost:3111/api
+VITE_SOCKET_URL=http://localhost:3111
+```
 
 ---
 
@@ -584,6 +285,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
   <strong>Built by Hystudio</strong>
-  
-  [Website](https://devenir.shop) · [Documentation](https://docs.devenir.shop) · [Support](mailto:support@devenir.shop)
+  <br/>
+  <a href="https://devenir.shop">Website</a> · 
+  <a href="mailto:support@devenir.shop">Support</a>
 </div>
