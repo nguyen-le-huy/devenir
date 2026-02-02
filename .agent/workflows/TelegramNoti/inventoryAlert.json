@@ -1,0 +1,594 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        -272
+      ],
+      "id": "98166dca-020f-48d7-9db9-a0113edb41d9",
+      "name": "Schedule Hourly Check"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -384,
+        112
+      ],
+      "id": "999a495b-4955-4e23-b090-f94def92ba3e",
+      "name": "Telegram Trigger",
+      "webhookId": "a36e7857-a7bd-42d1-acee-991f572d0cbf",
+      "credentials": {
+        "telegramApi": {
+          "id": "GMLL1UVQZpm1qh5k",
+          "name": "Devenir"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.callback_query ? 'button' : ($json.message.text && $json.message.text.startsWith('/inventory') ? 'command' : 'other') }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "button"
+            },
+            {
+              "value2": "command",
+              "output": 1
+            }
+          ]
+        }
+      },
+      "id": "75ebae20-a1ac-4e91-bd46-289dde92eb09",
+      "name": "Main Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "aggregate",
+        "collection": "productvariants",
+        "query": "=[\n  {\n    \"$lookup\": {\n      \"from\": \"products\",\n      \"localField\": \"product_id\",\n      \"foreignField\": \"_id\",\n      \"as\": \"product\"\n    }\n  },\n  {\n    \"$unwind\": {\n      \"path\": \"$product\",\n      \"preserveNullAndEmptyArrays\": true\n    }\n  },\n  {\n    \"$project\": {\n      \"_id\": 1,\n      \"product_id\": 1,\n      \"sku\": 1,\n      \"color\": 1,\n      \"size\": 1,\n      \"quantity\": 1,\n      \"price\": 1,\n      \"reserved\": 1,\n      \"incoming\": 1,\n      \"lowStockThreshold\": 1,\n      \"binLocation\": 1,\n      \"isActive\": 1,\n      \"updatedAt\": 1,\n      \"productName\": {\n        \"$ifNull\": [\"$product.name\", \"Unknown Product\"]\n      },\n      \"variantName\": {\n        \"$concat\": [\n          { \"$ifNull\": [\"$color\", \"No Color\"] },\n          \" - \",\n          { \"$ifNull\": [\"$size\", \"No Size\"] }\n        ]\n      },\n      \"available\": {\n        \"$subtract\": [\n          { \"$ifNull\": [\"$quantity\", 0] },\n          { \"$ifNull\": [\"$reserved\", 0] }\n        ]\n      },\n      \"status\": {\n        \"$cond\": [\n          { \"$eq\": [\"$quantity\", 0] },\n          \"out_of_stock\",\n          {\n            \"$cond\": [\n              { \"$lte\": [\"$quantity\", 10] },\n              \"low_stock\",\n              \"in_stock\"\n            ]\n          }\n        ]\n      }\n    }\n  },\n  {\n    \"$match\": {\n      \"isActive\": true,\n      \"quantity\": { \"$lte\": 10 }\n    }\n  },\n  {\n    \"$sort\": {\n      \"quantity\": 1\n    }\n  }\n]"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        -112
+      ],
+      "id": "1db49f47-e9fb-407a-9374-34d65d379658",
+      "name": "MongoDB Get Inventory",
+      "alwaysOutputData": false,
+      "credentials": {
+        "mongoDb": {
+          "id": "gYNdnt8ZWFTNOZiV",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nif (!items || items.length === 0) {\n  return {\n    json: {\n      error: true,\n      message: 'Không có dữ liệu tồn kho',\n      stats: {\n        total: 0,\n        in_stock_count: 0,\n        low_stock_count: 0,\n        out_of_stock_count: 0,\n        critical_products: [],\n        total_critical: 0\n      },\n      categorized: {\n        all: [],\n        in_stock: [],\n        low_stock: [],\n        out_of_stock: []\n      },\n      timestamp: new Date().toISOString()\n    }\n  };\n}\n\nconst categorized = {\n  all: items,\n  in_stock: items.filter(item => item.json.quantity > 10),\n  low_stock: items.filter(item => item.json.quantity > 0 && item.json.quantity <= 10),\n  out_of_stock: items.filter(item => item.json.quantity === 0)\n};\n\ncategorized.low_stock.sort((a, b) => a.json.quantity - b.json.quantity);\ncategorized.out_of_stock.sort((a, b) => a.json.quantity - b.json.quantity);\n\nconst criticalItems = [...categorized.out_of_stock, ...categorized.low_stock];\n\n// CHỈ LẤY 5 SẢN PHẨM\nconst critical_products = criticalItems.slice(0, 5).map(item => ({\n  name: `${item.json.productName} (${item.json.variantName})`,\n  quantity: item.json.quantity,\n  sku: item.json.sku || 'N/A',\n  available: item.json.available || item.json.quantity\n}));\n\nconst stats = {\n  total: parseInt(items.length),\n  in_stock_count: parseInt(categorized.in_stock.length),\n  low_stock_count: parseInt(categorized.low_stock.length),\n  out_of_stock_count: parseInt(categorized.out_of_stock.length),\n  critical_products: critical_products,\n  total_critical: criticalItems.length\n};\n\nstats.in_stock_percent = ((stats.in_stock_count / stats.total) * 100).toFixed(1);\nstats.low_stock_percent = ((stats.low_stock_count / stats.total) * 100).toFixed(1);\nstats.out_of_stock_percent = ((stats.out_of_stock_count / stats.total) * 100).toFixed(1);\n\nreturn {\n  json: {\n    stats,\n    categorized,\n    timestamp: new Date().toISOString()\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -112
+      ],
+      "id": "42e8ce12-2715-465e-a21f-2614102e3006",
+      "name": "Process Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3b4c7ed0-1f7f-4184-b04e-9f103cb2e0f4",
+              "leftValue": "={{ $json.stats.low_stock_count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        -112
+      ],
+      "id": "5268533b-f5d1-4674-9bf5-29c1b6cd9237",
+      "name": "IF Auto Alert?"
+    },
+    {
+      "parameters": {
+        "chatId": "-1003626332168",
+        "text": "=🚨 *CẢNH BÁO TỒN KHO DEVENIR*\n\n📊 *Thống kê:*\n━━━━━━━━━━━━━━━━\n• 📦 Tổng: {{ $json.stats.total }} sp\n• ✅ Còn hàng: {{ $json.stats.in_stock_count }} sp ({{ $json.stats.in_stock_percent }}%)\n• ⚠️ *Sắp hết: {{ $json.stats.low_stock_count }} sp* ({{ $json.stats.low_stock_percent }}%)\n• ❌ Hết hàng: {{ $json.stats.out_of_stock_count }} sp ({{ $json.stats.out_of_stock_percent }}%)\n\n⚠️ *Top 5/{{ $json.stats.total_critical }} sản phẩm cần nhập gấp nhất:*\n{{ $json.stats.critical_products.map((p, i) => `${i+1}. ${p.name}\\n   • SKU: \\`${p.sku}\\` | Còn: *${p.quantity}* | Khả dụng: ${p.available}`).join('\\n\\n') }}\n\n━━━━━━━━━━━━━━━━\n🕐 {{ new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) }}\n\n📥 *Nhấn nút để tải báo cáo chi tiết:*",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "📊 Tất cả sản phẩm",
+                    "additionalFields": {
+                      "callback_data": "report_all"
+                    }
+                  },
+                  {
+                    "text": "⚠️ Sắp hết",
+                    "additionalFields": {
+                      "callback_data": "report_low_stock"
+                    }
+                  },
+                  {
+                    "text": "❌ Hết hàng",
+                    "additionalFields": {
+                      "callback_data": "report_out_of_stock"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        -112
+      ],
+      "id": "4373bcb1-5877-41a3-8891-85c044e66a24",
+      "name": "Send Alert",
+      "webhookId": "c910969c-2e19-4b4a-b7a9-30735934dcbf",
+      "credentials": {
+        "telegramApi": {
+          "id": "GMLL1UVQZpm1qh5k",
+          "name": "Devenir"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.callback_query.data }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "report_all"
+            },
+            {
+              "value2": "report_low_stock",
+              "output": 1
+            },
+            {
+              "value2": "report_out_of_stock",
+              "output": 2
+            }
+          ]
+        }
+      },
+      "id": "70f09dbd-3649-4adf-9aac-ea53eb73e418",
+      "name": "Check Button Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        224,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let matchStage = {};\nlet filename = 'Ton_Kho_Devenir_';\n\n// Lấy dữ liệu an toàn\nconst data = $input.item.json;\nconst action = data.callback_query ? data.callback_query.data : '';\n\n// QUAN TRỌNG: Lấy ID từ node gốc để không bị mất khi qua nhiều bước\nconst chatId = $('Telegram Trigger').item.json.callback_query.message.chat.id;\nconst callbackQueryId = $('Telegram Trigger').item.json.callback_query.id;\n\n// Logic lọc dựa trên nút bấm\nif (action === 'report_all') {\n    matchStage = { \"isActive\": true };\n    filename += 'Tat_Ca';\n} \nelse if (action === 'report_low_stock') {\n    matchStage = { \n        \"isActive\": true, \n        \"quantity\": { \"$gt\": 0, \"$lte\": 10 } \n    };\n    filename += 'Sap_Het';\n} \nelse if (action === 'report_out_of_stock') {\n    matchStage = { \n        \"isActive\": true, \n        \"quantity\": 0 \n    };\n    filename += 'Het_Hang';\n}\n\nreturn {\n    json: {\n        matchStage,\n        filename: `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`,\n        chatId,\n        callbackQueryId\n    }\n};"
+      },
+      "id": "92fe7219-6e7f-418b-af99-c355ab9a2cd6",
+      "name": "Prepare Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "aggregate",
+        "collection": "productvariants",
+        "query": "=[\n  {\n    \"$lookup\": {\n      \"from\": \"products\",\n      \"localField\": \"product_id\",\n      \"foreignField\": \"_id\",\n      \"as\": \"product\"\n    }\n  },\n  {\n    \"$unwind\": {\n      \"path\": \"$product\",\n      \"preserveNullAndEmptyArrays\": true\n    }\n  },\n  {\n    \"$match\": {{ JSON.stringify($json.matchStage) }}\n  },\n  {\n    \"$project\": {\n      \"_id\": 0,\n      \"SKU\": \"$sku\",\n      \"Tên Sản Phẩm\": { \"$ifNull\": [\"$product.name\", \"Unknown\"] },\n      \"Phân Loại\": {\n          \"$concat\": [\n            { \"$ifNull\": [\"$color\", \"-\"] },\n            \" / \",\n            { \"$ifNull\": [\"$size\", \"-\"] }\n          ]\n      },\n      \"Màu\": \"$color\",\n      \"Size\": \"$size\",\n      \"Giá Bán\": \"$price\",\n      \"Tồn Kho\": \"$quantity\",\n      \"Đang Giữ (Reserved)\": { \"$ifNull\": [\"$reserved\", 0] },\n      \"Khả Dụng\": {\n        \"$subtract\": [\n          { \"$ifNull\": [\"$quantity\", 0] },\n          { \"$ifNull\": [\"$reserved\", 0] }\n        ]\n      },\n      \"Vị Trí\": { \"$ifNull\": [\"$binLocation\", \"\"] },\n      \"Trạng Thái\": {\n        \"$cond\": [\n          { \"$eq\": [\"$quantity\", 0] },\n          \"Hết hàng\",\n          \"Còn hàng\"\n        ]\n      }\n    }\n  },\n  {\n    \"$sort\": {\n      \"quantity\": 1\n    }\n  }\n]"
+      },
+      "id": "d9535f8d-b8fe-4a6a-ac7e-3a2d960cf637",
+      "name": "Get Report Data",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [
+        656,
+        304
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "gYNdnt8ZWFTNOZiV",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toFile",
+        "fileFormat": "xlsx",
+        "options": {
+          "fileName": "={{ $('Prepare Filter').first().json.filename }}",
+          "sheetName": "Ton Kho"
+        }
+      },
+      "id": "71004820-7bc1-46a6-8690-46dc9cfa7b00",
+      "name": "Create Excel File",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "=-1003626332168",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "📊 Đây là báo cáo tồn kho bạn yêu cầu.",
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "ef9e966e-6a80-48d7-ba4b-1ba68a73a1a3",
+      "name": "Send Excel to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        192
+      ],
+      "webhookId": "ff0a064b-b472-461e-aaa8-50d8c3a8fe00",
+      "credentials": {
+        "telegramApi": {
+          "id": "GMLL1UVQZpm1qh5k",
+          "name": "Devenir"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "answerCallbackQuery"
+      },
+      "id": "6b4dbfaf-88c5-479f-a82b-171aa91ff904",
+      "name": "Stop Loading",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        400
+      ],
+      "webhookId": "80c303cf-79b5-4447-bde7-3b90efdfb46f",
+      "credentials": {
+        "telegramApi": {
+          "id": "GMLL1UVQZpm1qh5k",
+          "name": "Devenir"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Hourly Check": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Get Inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Main Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Router": {
+      "main": [
+        [
+          {
+            "node": "Check Button Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MongoDB Get Inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB Get Inventory": {
+      "main": [
+        [
+          {
+            "node": "Process Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Data": {
+      "main": [
+        [
+          {
+            "node": "IF Auto Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Auto Alert?": {
+      "main": [
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Button Action": {
+      "main": [
+        [
+          {
+            "node": "Prepare Filter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Filter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Filter": {
+      "main": [
+        [
+          {
+            "node": "Get Report Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Report Data": {
+      "main": [
+        [
+          {
+            "node": "Create Excel File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Excel File": {
+      "main": [
+        [
+          {
+            "node": "Send Excel to Telegram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Stop Loading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "update_id": 100774792,
+        "callback_query": {
+          "id": "4141469731214187802",
+          "from": {
+            "id": 5259228359,
+            "is_bot": false,
+            "first_name": "huy",
+            "username": "lehyyy",
+            "language_code": "en"
+          },
+          "message": {
+            "message_id": 69,
+            "from": {
+              "id": 8500376532,
+              "is_bot": true,
+              "first_name": "Devi",
+              "username": "devenirr_bot"
+            },
+            "chat": {
+              "id": -1003626332168,
+              "title": "Devenir",
+              "type": "supergroup"
+            },
+            "date": 1765724053,
+            "text": "🚨 CẢNH BÁO TỒN KHO DEVENIR\n\n📊 Thống kê:\n━━━━━━━━━━━━━━━━\n• 📦 Tổng: 21 sp\n• ✅ Còn hàng: 0 sp (0.0%)\n• ⚠️ Sắp hết: 20 sp (95.2%)\n• ❌ Hết hàng: 1 sp (4.8%)\n\n⚠️ Top 5/21 sản phẩm cần nhập gấp nhất:\n1. Heraldic Knight Wool Sweater (Night black - XL)\n   • SKU: HER-XL-NIGHT-BLACK | Còn: 0 | Khả dụng: 0\n\n2. EKD Wool Cashmere Sweater (Wine red - Free Size)\n   • SKU: EKD-FREE-SIZE-WINE-RED | Còn: 1 | Khả dụng: 1\n\n3. Reversible Cashmere Scarf (Mist / Sugar - Free Size)\n   • SKU: REV-FREE SIZE-MIST-/-SUGAR | Còn: 2 | Khả dụng: 2\n\n4. Detachable Scarf Wool Blend Jacket (Truffle brown - Free Size)\n   • SKU: DET-FREE-SIZE-TRUFFLE-BROWN | Còn: 3 | Khả dụng: 3\n\n5. Boston Holdall (Charcoal - Free Size)\n   • SKU: BOS-FREE-SIZE-CHARCOAL | Còn: 3 | Khả dụng: 3\n\n━━━━━━━━━━━━━━━━\n🕐 21:54:13 14/12/2025\n\n📥 Nhấn nút để tải báo cáo chi tiết:",
+            "entities": [
+              {
+                "offset": 3,
+                "length": 24,
+                "type": "bold"
+              },
+              {
+                "offset": 32,
+                "length": 9,
+                "type": "bold"
+              },
+              {
+                "offset": 107,
+                "length": 14,
+                "type": "bold"
+              },
+              {
+                "offset": 160,
+                "length": 36,
+                "type": "bold"
+              },
+              {
+                "offset": 258,
+                "length": 18,
+                "type": "code"
+              },
+              {
+                "offset": 284,
+                "length": 1,
+                "type": "bold"
+              },
+              {
+                "offset": 363,
+                "length": 22,
+                "type": "code"
+              },
+              {
+                "offset": 393,
+                "length": 1,
+                "type": "bold"
+              },
+              {
+                "offset": 476,
+                "length": 26,
+                "type": "code"
+              },
+              {
+                "offset": 510,
+                "length": 1,
+                "type": "bold"
+              },
+              {
+                "offset": 603,
+                "length": 27,
+                "type": "code"
+              },
+              {
+                "offset": 638,
+                "length": 1,
+                "type": "bold"
+              },
+              {
+                "offset": 706,
+                "length": 22,
+                "type": "code"
+              },
+              {
+                "offset": 736,
+                "length": 1,
+                "type": "bold"
+              },
+              {
+                "offset": 797,
+                "length": 33,
+                "type": "bold"
+              }
+            ],
+            "reply_markup": {
+              "inline_keyboard": [
+                [
+                  {
+                    "text": "📊 Tất cả sản phẩm",
+                    "callback_data": "report_all"
+                  },
+                  {
+                    "text": "⚠️ Sắp hết",
+                    "callback_data": "report_low_stock"
+                  },
+                  {
+                    "text": "❌ Hết hàng",
+                    "callback_data": "report_out_of_stock"
+                  }
+                ]
+              ]
+            }
+          },
+          "chat_instance": "5792434213368843811",
+          "data": "report_low_stock"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe2169d4b44c72baa3b147b70fc0000eeff440c5e6839cb32e590e7c1126112c"
+  }
+}

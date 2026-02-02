@@ -1,0 +1,93 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order-notification",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        48,
+        48
+      ],
+      "id": "ed9d418f-7250-4730-aba7-55045c475d83",
+      "name": "Webhook - Receive Order",
+      "webhookId": "04ebf79a-65ae-493c-b0a0-31d6724d896a"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get order data - try body first (webhook), then direct json\nconst order = $input.first().json.body || $input.first().json;\n\n// Safety check\nif (!order || !order.items) {\n  return {\n    json: {\n      chatId: order?.telegramChatId || '-1003601880605',\n      text: '⚠️ Received order notification but data is incomplete.'\n    }\n  };\n}\n\nconst itemsList = order.items.map((item, idx) => \n  `  ${idx + 1}. ${item.name}\\n     • Màu: ${item.color} | Size: ${item.size}\\n     • SL: ${item.quantity} x $${item.price}`\n).join('\\n\\n');\n\nconst address = order.shippingAddress || {};\nconst fullAddress = `${address.street || ''}, ${address.city || ''}`;\nconst paymentEmoji = order.paymentGateway === 'PayOS' ? '🏦' : '₿';\n\nconst message = `\n🎉 *ĐƠN HÀNG MỚI!*\n\n📦 *Mã đơn:* \\`#${order.orderCode}\\`\n💰 *Tổng tiền:* *$${order.totalPrice}*\n${paymentEmoji} *Thanh toán:* ${order.paymentGateway}\n\n👤 *Khách hàng:*\n- Email: ${order.customerEmail}\n- SĐT: ${address.phone || 'N/A'}\n\n📍 *Địa chỉ:*\n${fullAddress}\n\n🛍️ *Sản phẩm:*\n${itemsList}\n\n🚚 *Giao hàng:* ${order.deliveryWindow === 'standard' ? 'Tiêu chuẩn (2-3 ngày)' : order.deliveryWindow === 'next' ? 'Ngày hôm sau' : 'Chọn ngày'}\n\n⏰ ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`.trim();\n\nreturn {\n  json: {\n    chatId: order.telegramChatId || '-1003601880605',\n    text: message\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        48
+      ],
+      "id": "76a18487-cb28-4ff2-8fc4-beaa4c79979f",
+      "name": "Format Message"
+    },
+    {
+      "parameters": {
+        "chatId": "=-1003601880605",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        496,
+        48
+      ],
+      "id": "a45e4e6b-5004-4c37-815e-afa192562a85",
+      "name": "Telegram - Send Message",
+      "webhookId": "cad1bb14-67ce-42b4-a381-cc051fa3e999",
+      "credentials": {
+        "telegramApi": {
+          "id": "GMLL1UVQZpm1qh5k",
+          "name": "Devenir"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Receive Order": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Send Message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fe2169d4b44c72baa3b147b70fc0000eeff440c5e6839cb32e590e7c1126112c"
+  }
+}

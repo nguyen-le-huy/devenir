@@ -66,7 +66,8 @@ const allowedOrigins = [
   'https://devenir-admin.vercel.app',
   'https://devenir.shop', // Domain chính
   'https://www.devenir.shop', // Subdomain www
-  'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net', // Tailscale domain
+  'https://nguyenlehuy-vivobook-asuslaptop-x512fa-a512fa.tail86e288.ts.net', // Tailscale domain (cũ)
+  'https://hystudio-server.tail86e288.ts.net', // Tailscale domain (mới)
   /\.vercel\.app$/ // Allow ALL Vercel subdomains (preview & production)
 ];
 
