@@ -1,4 +1,4 @@
-# Devenir - Premium Fashion E-commerce Platform
+# Devenir - Premium Fashion E-commerce Platform.
 
 <div align="center">
   
