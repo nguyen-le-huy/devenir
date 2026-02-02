@@ -2,9 +2,9 @@ import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { queryKeys } from '@/core/lib/queryClient';
 import { fetchMyOrders, fetchMyOrderDetail } from '@/features/orders/api/orderService';
 import { useAuthStore } from '@/core/stores/useAuthStore';
-import { IOrder, IOrderFilters } from '@/features/orders/types';
+import { IOrder, IOrderFilters, IOrderListResponse } from '@/features/orders/types';
 
-export const useMyOrders = (filters: IOrderFilters = {}): UseQueryResult<{ data: IOrder[], total: number, page: number, pages: number }, Error> => {
+export const useMyOrders = (filters: IOrderFilters = {}): UseQueryResult<IOrderListResponse, Error> => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const token = useAuthStore((state) => state.token);
 
@@ -17,9 +17,9 @@ export const useMyOrders = (filters: IOrderFilters = {}): UseQueryResult<{ data:
             const data = query.state.data;
             if (!data) return false;
 
-            // Check if there are any active orders
-            const orders = (data as any)?.data || [];
-            const hasActive = orders.some((o: IOrder) => o.status !== 'delivered' && o.status !== 'cancelled');
+            // Check if there are any active orders to poll for updates
+            const orders = data.data || [];
+            const hasActive = orders.some((o) => o.status !== 'delivered' && o.status !== 'cancelled');
             return hasActive ? 10_000 : false;
         },
         refetchIntervalInBackground: true,

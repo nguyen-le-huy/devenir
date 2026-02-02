@@ -3,23 +3,26 @@ export interface User {
     _id: string;
     email: string;
     role: 'user' | 'admin';
-    username?: string;
+    username: string;
     firstName?: string;
     lastName?: string;
     phone?: string;
     birthday?: string;
     avatar?: string;
     preferences?: UserPreferences;
+    createdAt?: string;
+    updatedAt?: string;
+    emailVerified?: boolean;
 }
 
 export interface UserPreferences {
-    channels?: {
-        email?: boolean;
-        phone?: boolean;
-        messaging?: boolean;
-        post?: boolean;
+    channels: {
+        email: boolean;
+        phone: boolean;
+        messaging: boolean;
+        post: boolean;
     };
-    interests?: string;
+    interests: 'menswear' | 'womenswear' | 'both';
 }
 
 export interface RegisterData {

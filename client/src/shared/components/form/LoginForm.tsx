@@ -5,8 +5,13 @@ import FormButton from './FormButton';
 import FormError from './FormError';
 import styles from './LoginForm.module.css';
 
+interface LoginFormData {
+    email: string;
+    password: string;
+}
+
 interface LoginFormProps {
-    onSubmit: (data: any) => void;
+    onSubmit: (data: LoginFormData) => void;
     onForgotPassword: () => void;
     onGoogleLogin?: (credential: string | undefined) => void;
     onSwitchToRegister?: () => void;
@@ -44,7 +49,7 @@ const LoginForm = ({ onSubmit, onForgotPassword, onGoogleLogin, onSwitchToRegist
 
         if (!formData.email.trim()) {
             errors.email = 'Email is required';
-        } else if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
+        } else if (!/^\w+([-.]?\w+)*@\w+([-.]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
             errors.email = 'Invalid email address';
         }
 

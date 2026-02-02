@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { homeService } from '../api/homeService';
+import { queryKeys } from '@/core/lib/queryClient';
+import { CACHE_TIMES } from '@/features/products/types';
 import type { NewArrivalProduct, ScarvesProduct } from '../types';
 
 /**
@@ -11,10 +13,10 @@ import type { NewArrivalProduct, ScarvesProduct } from '../types';
  */
 export const useNewArrivals = (limit: number = 4) => {
   const { data, isLoading, isError, error } = useQuery<NewArrivalProduct[]>({
-    queryKey: ['home', 'new-arrivals', limit],
+    queryKey: queryKeys.home.newArrivals(limit),
     queryFn: () => homeService.getLatestProducts(limit),
-    staleTime: 5 * 60 * 1000, // 5 minutes - data doesn't change frequently
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
+    staleTime: CACHE_TIMES.PRODUCT_STALE,
+    gcTime: CACHE_TIMES.STATIC_STALE,
     retry: 2,
     refetchOnWindowFocus: false,
   });
@@ -35,10 +37,10 @@ export const useNewArrivals = (limit: number = 4) => {
  */
 export const useScarves = () => {
   const { data, isLoading, isError, error } = useQuery<ScarvesProduct[]>({
-    queryKey: ['home', 'scarves-collection'],
+    queryKey: queryKeys.home.scarvesCollection(),
     queryFn: () => homeService.getScarvesCollection(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,
+    staleTime: CACHE_TIMES.CATEGORY_STALE,
+    gcTime: CACHE_TIMES.STATIC_STALE,
     retry: 2,
     refetchOnWindowFocus: false,
   });

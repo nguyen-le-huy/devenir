@@ -20,7 +20,6 @@ export const getSocket = (token: string | null): Socket | null => {
     }
 
     currentToken = token;
-    // @ts-ignore - Socket.io types might conflict slightly with client logic or extra options
     socketInstance = io(SOCKET_URL, {
         transports: ['websocket', 'polling'], // Allow fallback to polling
         autoConnect: true,

@@ -12,22 +12,8 @@ import { createColorMap } from '@/features/products/api/colorService';
 import { getVariantsByCategory, getVariantsByCategoryWithChildren } from '@/features/products/api/productService';
 import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
 import { useProductFilter } from '@/features/products/hooks/useProductFilter';
-
-// Helper to transform variant to card props - moved outside to stable reference
-const transformVariantToProduct = (variant: any) => {
-    const productId = variant.productInfo?._id || variant.product;
-    return {
-        id: variant._id,
-        name: variant.productInfo?.name || 'Unknown Product',
-        price: variant.price,
-        image: variant.mainImage || '/images/placeholder.png',
-        imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
-        color: variant.color,
-        size: variant.size,
-        sku: variant.sku,
-        productId: productId,
-    };
-};
+import { getColorName } from '@/features/products/utils/productUtils';
+import type { IEnrichedVariant } from '@/features/products/types';
 
 const ProductByCategory = memo(() => {
     const headerHeight = useHeaderHeight();
@@ -101,21 +87,21 @@ const ProductByCategory = memo(() => {
     // Calculate product variants map for color swatches
     const productVariantsMap = useMemo(() => {
         const map = new Map();
-        (variantsData as any[]).forEach(variant => {
-            const productId = variant.productInfo?._id || variant.product;
+        (variantsData as IEnrichedVariant[]).forEach(variant => {
+            const productId = variant.productInfo?._id || variant.product_id;
             if (!productId) return;
             if (!map.has(productId)) map.set(productId, []);
+            const colorName = getColorName(variant.color);
             map.get(productId).push({
                 ...variant,
-                productId,
-                colorHex: colorMap[variant.color] || '#ccc'
+                colorHex: colorMap[colorName] || '#ccc'
             });
         });
         return map;
     }, [variantsData, colorMap]);
 
-    const getColorVariants = useCallback((variant: any) => {
-        const productId = variant.productInfo?._id || variant.product;
+    const getColorVariants = useCallback((variant: IEnrichedVariant) => {
+        const productId = variant.productInfo?._id || variant.product_id;
         return productVariantsMap.get(productId) || [];
     }, [productVariantsMap]);
 
@@ -173,7 +159,7 @@ const ProductByCategory = memo(() => {
                         <div className={styles.topBox}>
                             <div className={styles.leftBox}>
                                 {firstFourVariants.map((variant) => (
-                                    <ScarfCard key={variant._id} scarf={transformVariantToProduct(variant)} colorVariants={getColorVariants(variant)} />
+                                    <ScarfCard key={variant._id} scarf={variant} colorVariants={getColorVariants(variant)} />
                                 ))}
                             </div>
                             <div className={styles.rightBox} style={{ backgroundImage: `url('${getOptimizedImageUrl(category.thumbnailUrl)}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
@@ -187,7 +173,7 @@ const ProductByCategory = memo(() => {
 
                     <div className={styles.productList}>
                         {remainingVariants.map((variant) => (
-                            <ScarfCard key={variant._id} scarf={transformVariantToProduct(variant)} colorVariants={getColorVariants(variant)} />
+                            <ScarfCard key={variant._id} scarf={variant} colorVariants={getColorVariants(variant)} />
                         ))}
                     </div>
 

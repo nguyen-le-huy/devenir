@@ -34,12 +34,12 @@ export const useUpdateProfile = () => {
     mutationFn: userApi.updateProfile,
     onSuccess: (data) => {
       // Update Zustand store
-      updateUser(data.user as any);
-      
+      updateUser(data.user);
+
       // Invalidate related queries
       // Invalidate user queries
       // queryClient.invalidateQueries({ queryKey: ['user'] });
-      
+
       toast.success('Profile updated successfully');
     },
     onError: (error) => {

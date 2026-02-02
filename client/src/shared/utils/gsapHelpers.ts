@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const, @typescript-eslint/no-unused-expressions */
 import gsap from 'gsap';
 import { Draggable } from 'gsap/Draggable';
 

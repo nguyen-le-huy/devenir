@@ -5,8 +5,15 @@ import FormButton from './FormButton';
 import FormError from './FormError';
 import styles from './RegisterForm.module.css';
 
+interface RegisterFormData {
+    username: string;
+    email: string;
+    phone: string;
+    password: string;
+}
+
 interface RegisterFormProps {
-    onSubmit: (data: any) => void;
+    onSubmit: (data: RegisterFormData) => void;
     onGoogleLogin?: (credential: string | undefined) => void;
     onBack?: () => void;
     loading?: boolean;
@@ -52,7 +59,7 @@ const RegisterForm = ({ onSubmit, onGoogleLogin, onBack, loading = false, error 
 
         if (!formData.email.trim()) {
             errors.email = 'Email is required';
-        } else if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
+        } else if (!/^\w+([-.]?\w+)*@\w+([-.]?\w+)*(\.\w{2,3})+$/.test(formData.email)) {
             errors.email = 'Invalid email address';
         }
 

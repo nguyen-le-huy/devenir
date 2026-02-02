@@ -25,16 +25,17 @@ const Backdrop = memo(({
     preventLenis = true,
     style = {},
 }: BackdropProps) => {
-    // If using isOpen pattern (no animation needed), render conditionally
-    if (isOpen !== undefined && !isOpen) {
-        return null;
-    }
-
+    // Hooks must be called at the top level
     const backdropStyle = useMemo<CSSProperties>(() => ({
         '--backdrop-z-index': zIndex,
         '--backdrop-opacity': opacity,
         ...style,
-    } as any), [zIndex, opacity, style]);
+    }), [zIndex, opacity, style]);
+
+    // If using isOpen pattern (no animation needed), render conditionally
+    if (isOpen !== undefined && !isOpen) {
+        return null;
+    }
 
     return (
         <div

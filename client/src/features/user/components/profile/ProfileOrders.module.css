@@ -391,6 +391,7 @@
         position: static;
     }
 }
+
 /* ============= SKELETON LOADING ============= */
 .skeletonContainer {
     display: flex;
@@ -401,12 +402,10 @@
 
 .skeletonRow {
     height: 60px;
-    background: linear-gradient(
-        90deg,
-        #f0f0f0 0%,
-        #f8f8f8 50%,
-        #f0f0f0 100%
-    );
+    background: linear-gradient(90deg,
+            #f0f0f0 0%,
+            #f8f8f8 50%,
+            #f0f0f0 100%);
     background-size: 200% 100%;
     border-radius: 8px;
     animation: skeleton-loading 1.5s ease-in-out infinite;
@@ -416,7 +415,24 @@
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.pageInfo {
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
 }

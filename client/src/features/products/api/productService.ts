@@ -23,6 +23,7 @@ const FETCH_LIMITS = {
     ALL_VARIANTS: 1000,
     LATEST_POOL: 50,
     RANDOM_POOL: 100,
+    CONCURRENCY: 5, // Limit requests to avoid N+1 choking
 } as const;
 
 // ============================================
@@ -56,23 +57,48 @@ const enrichVariantsWithProductInfo = (
 };
 
 /**
- * Fetch variants for multiple products in parallel
+ * Fetch variants for multiple products with concurrency control
  * Handles errors gracefully with fallback to empty arrays
  */
 const fetchVariantsForProducts = async (
     products: IProduct[]
 ): Promise<IEnrichedVariant[]> => {
-    const variantPromises = products.map((product) =>
-        apiClient
-            .get<IApiResponse<IVariant[]>>(`/products/${product._id}/variants`)
-            .then((response) => ({
-                product,
-                variants: (response as unknown as IApiResponse<IVariant[]>).data || [],
-            }))
-            .catch(() => ({ product, variants: [] as IVariant[] }))
-    );
+    // Defines the mapper function
+    const mapper = async (product: IProduct) => {
+        try {
+            // Note: explicit cast because apiClient interceptor returns data directly (stripping AxiosResponse)
+            const response = await apiClient.get(`/products/${product._id}/variants`) as unknown as IApiResponse<IVariant[]>;
+            const variants = response.data || [];
+            return { product, variants };
+        } catch (error) {
+            console.warn(`Failed to fetch variants for product ${product._id}`, error);
+            // Return empty variants on failure to keep the UI working
+            return { product, variants: [] as IVariant[] };
+        }
+    };
 
-    const results = await Promise.all(variantPromises);
+    // Concurrency limiter implementation
+    // We execute promises in batches to respect FETCH_LIMITS.CONCURRENCY
+    const results: { product: IProduct; variants: IVariant[] }[] = [];
+    const queue = [...products];
+
+    // Helper to process queue
+    async function worker() {
+        while (queue.length > 0) {
+            const product = queue.shift();
+            if (product) {
+                const result = await mapper(product);
+                results.push(result);
+            }
+        }
+    }
+
+    // Start workers
+    const workerPromises = Array(Math.min(products.length, FETCH_LIMITS.CONCURRENCY))
+        .fill(null)
+        .map(() => worker());
+
+    await Promise.all(workerPromises);
 
     return results.flatMap(({ product, variants }) =>
         enrichVariantsWithProductInfo(variants, product)
@@ -109,13 +135,13 @@ const filterUniqueByProductColor = (
 export const getAllProducts = (
     params: IProductListParams = {}
 ): Promise<IApiResponse<IProduct[]>> =>
-    apiClient.get('/products', { params });
+    apiClient.get('/products', { params }) as Promise<IApiResponse<IProduct[]>>;
 
 /**
  * Get product by ID with variants
  */
 export const getProductById = (id: string): Promise<IApiResponse<IProduct>> =>
-    apiClient.get(`/products/${id}`);
+    apiClient.get(`/products/${id}`) as Promise<IApiResponse<IProduct>>;
 
 /**
  * Get variants for a specific product
@@ -123,7 +149,7 @@ export const getProductById = (id: string): Promise<IApiResponse<IProduct>> =>
 export const getProductVariants = (
     productId: string
 ): Promise<IApiResponse<IVariant[]>> =>
-    apiClient.get(`/products/${productId}/variants`);
+    apiClient.get(`/products/${productId}/variants`) as Promise<IApiResponse<IVariant[]>>;
 
 /**
  * Get all variants with optional filtering
@@ -131,7 +157,7 @@ export const getProductVariants = (
 export const getAllVariants = (
     params: Record<string, unknown> = {}
 ): Promise<IApiResponse<IVariant[]>> =>
-    apiClient.get('/variants', { params });
+    apiClient.get('/variants', { params }) as Promise<IApiResponse<IVariant[]>>;
 
 // ============================================
 // API Functions - Complex with Data Transformation
@@ -144,14 +170,14 @@ export const getAllVariants = (
 export const getVariantsByCategory = async (
     categoryId: string
 ): Promise<IEnrichedVariant[]> => {
-    const productsResponse = await apiClient.get<IApiResponse<IProduct[]>>('/products', {
+    const productsResponse = await apiClient.get('/products', {
         params: {
             category: categoryId,
             limit: FETCH_LIMITS.ALL_VARIANTS,
         },
-    });
+    }) as unknown as IApiResponse<IProduct[]>;
 
-    const products = (productsResponse as unknown as IApiResponse<IProduct[]>).data || [];
+    const products = productsResponse.data || [];
 
     if (products.length === 0) {
         return [];
@@ -201,16 +227,17 @@ export const getVariantsByCategoryWithChildren = async (
 export const getVariantById = async (
     variantId: string
 ): Promise<IVariantDetailResponse> => {
-    const response = await apiClient.get<IApiResponse<IVariantDetailResponse>>(
-        `/variants/${variantId}`
-    );
+    const response = await apiClient.get(`/variants/${variantId}`) as unknown as IApiResponse<IVariantDetailResponse>;
+    const data = response; // data is effectively the response object because of interceptor? Wait.
 
-    const data = response as unknown as IApiResponse<IVariantDetailResponse>;
+    // Interceptor: returns response.data
+    // So response IS { success: ..., data: ... }
 
     if (data.success && data.data) {
         return data.data;
     }
 
+    // Fallback?
     return data as unknown as IVariantDetailResponse;
 };
 
@@ -221,14 +248,14 @@ export const getVariantById = async (
 export const getLatestVariants = async (
     limit = 4
 ): Promise<IEnrichedVariant[]> => {
-    const productsResponse = await apiClient.get<IApiResponse<IProduct[]>>('/products', {
+    const productsResponse = await apiClient.get('/products', {
         params: {
             limit: FETCH_LIMITS.LATEST_POOL,
             sort: '-createdAt',
         },
-    });
+    }) as unknown as IApiResponse<IProduct[]>;
 
-    const products = (productsResponse as unknown as IApiResponse<IProduct[]>).data || [];
+    const products = productsResponse.data || [];
 
     if (products.length === 0) {
         return [];
@@ -254,13 +281,13 @@ export const getLatestVariants = async (
 export const getRandomVariants = async (
     limit = 8
 ): Promise<IEnrichedVariant[]> => {
-    const productsResponse = await apiClient.get<IApiResponse<IProduct[]>>('/products', {
+    const productsResponse = await apiClient.get('/products', {
         params: {
             limit: FETCH_LIMITS.RANDOM_POOL,
         },
-    });
+    }) as unknown as IApiResponse<IProduct[]>;
 
-    const products = (productsResponse as unknown as IApiResponse<IProduct[]>).data || [];
+    const products = productsResponse.data || [];
 
     if (products.length === 0) {
         return [];

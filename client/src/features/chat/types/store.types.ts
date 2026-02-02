@@ -18,17 +18,3 @@ export interface ChatUIState {
     incrementUnread: () => void;
     resetUnread: () => void;
 }
-
-/**
- * Chat session state
- */
-export interface ChatSessionState {
-    sessionId: string | null;
-    guestId: string | null;
-    isGuest: boolean;
-
-    // Actions
-    setSessionId: (sessionId: string) => void;
-    setGuestId: (guestId: string) => void;
-    clearSession: () => void;
-}

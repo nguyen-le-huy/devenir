@@ -24,7 +24,7 @@ export const getOptimizedImageUrl = (imageUrl: string): string => {
 
     // Remove existing transformations (like q_90/) to avoid double transformation
     // Pattern: transformations are before version (v1234/) or folder path
-    const transformPattern = /^([a-z]_[^\/]+\/)+/;
+    const transformPattern = /^([a-z]_[^/]+\/)+/;
     imagePath = imagePath.replace(transformPattern, '');
 
     // Change extension to .webp for clarity (Cloudinary supports this)

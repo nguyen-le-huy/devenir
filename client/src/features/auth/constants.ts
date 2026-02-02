@@ -31,3 +31,31 @@ export const AUTH_MESSAGES = {
 } as const;
 
 export type AuthMessageKey = keyof typeof AUTH_MESSAGES;
+
+/**
+ * Signup Benefits - Benefits list displayed on auth page
+ * Extracted to constant to prevent re-creation on every render
+ */
+export const SIGNUP_BENEFITS = [
+    "Faster checkout with saved information",
+    "Track orders and easily manage returns",
+    "Discover the latest updates from Devenir",
+    "Manage your profile and preferences",
+    "Get expert support from our customer team"
+] as const;
+
+/**
+ * Toast message generators with user personalization
+ * Provides consistent welcome messages across the app
+ * 
+ * @example
+ * ```ts
+ * toast.success(getWelcomeMessage(user.firstName));
+ * // Output: "Welcome, John!" or "Welcome!" if no name
+ * ```
+ */
+export const getWelcomeMessage = (firstName?: string): string => 
+    firstName ? `Welcome, ${firstName}!` : 'Welcome!';
+
+export const getWelcomeBackMessage = (firstName?: string): string => 
+    firstName ? `Welcome back, ${firstName}!` : 'Welcome back!';

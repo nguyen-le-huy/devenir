@@ -26,7 +26,7 @@ const useLenis = (options: LenisOptions = {}): void => {
             infinite: false,
             ...options,
             smoothTouch: false, // Explicitly cast if needed or move to ...options if supported
-        } as any); // Cast to any to bypass type mismatch if library definitions are outdated
+        } as LenisOptions);
 
         // Store instance globally for external access
         setLenisInstance(lenis);
@@ -44,11 +44,11 @@ const useLenis = (options: LenisOptions = {}): void => {
 
         // Cleanup
         return () => {
-            setLenisInstance(null as any);
+            setLenisInstance(null);
             lenis.destroy();
             gsap.ticker.remove(tickerCallback);
         };
-    }, []);
+    }, [options]);
 };
 
 export default useLenis;

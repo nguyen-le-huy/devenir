@@ -25,7 +25,7 @@ apiClient.interceptors.request.use(
           config.headers.Authorization = `Bearer ${token}`;
         }
       }
-    } catch (e) {
+    } catch {
       // If parsing fails, try legacy token key
       const token = localStorage.getItem('token');
       if (token) {

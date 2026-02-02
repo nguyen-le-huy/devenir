@@ -1,0 +1,132 @@
+/**
+ * ErrorBoundary - Premium error UI styling
+ * Ensures graceful error display aligned with brand
+ */
+
+.errorContainer {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.errorCard {
+    max-width: 500px;
+    width: 100%;
+    background: white;
+    padding: 3rem 2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.errorIcon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    line-height: 1;
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.message {
+    font-size: 1rem;
+    color: #6c757d;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.errorDetails {
+    text-align: left;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.errorDetails summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #495057;
+    padding: 0.5rem;
+    user-select: none;
+}
+
+.errorDetails summary:hover {
+    color: #212529;
+}
+
+.errorDetails pre {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    color: #dc3545;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.retryButton {
+    padding: 0.875rem 2.5rem;
+    background: #000;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.retryButton:hover {
+    background: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.retryButton:active {
+    transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .errorCard {
+        padding: 2rem 1.5rem;
+    }
+
+    .title {
+        font-size: 1.5rem;
+    }
+
+    .errorIcon {
+        font-size: 3rem;
+    }
+
+    .retryButton {
+        width: 100%;
+        padding: 1rem;
+    }
+}

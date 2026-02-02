@@ -73,16 +73,17 @@ export default function PersonalDetails({ user }: PersonalDetailsProps) {
 
     const handleUpdateProfile = (e: FormEvent) => {
         e.preventDefault();
-        
+
         // Validate with Zod schema
         const validation = validateUserProfile(formData);
 
         if (!validation.success) {
             // Map Zod errors to fieldErrors state
             const errors: Record<string, string> = {};
-            validation.error.issues.forEach((err: any) => {
-                if (err.path[0]) {
-                    errors[err.path[0] as string] = err.message;
+            validation.error.issues.forEach((err) => {
+                const field = err.path[0];
+                if (typeof field === 'string') {
+                    errors[field] = err.message;
                 }
             });
             setFieldErrors(errors);
@@ -95,16 +96,17 @@ export default function PersonalDetails({ user }: PersonalDetailsProps) {
 
     const handleChangePassword = (e: FormEvent) => {
         e.preventDefault();
-        
+
         // Validate with Zod schema
         const validation = validateChangePassword(passwordData);
 
         if (!validation.success) {
             // Map Zod errors to passwordErrors state
             const errors: Record<string, string> = {};
-            validation.error.issues.forEach((err: any) => {
-                if (err.path[0]) {
-                    errors[err.path[0] as string] = err.message;
+            validation.error.issues.forEach((err) => {
+                const field = err.path[0];
+                if (typeof field === 'string') {
+                    errors[field] = err.message;
                 }
             });
             setPasswordErrors(errors);
@@ -132,13 +134,13 @@ export default function PersonalDetails({ user }: PersonalDetailsProps) {
         <div className={styles.personalDetails}>
             {/* Error Messages - Display inline errors from API */}
             {updateProfileMutation.isError && (
-                <FormError 
-                    message={(updateProfileMutation.error as ApiError)?.message || 'Failed to update profile'} 
+                <FormError
+                    message={(updateProfileMutation.error as ApiError)?.message || 'Failed to update profile'}
                 />
             )}
             {changePasswordMutation.isError && (
-                <FormError 
-                    message={(changePasswordMutation.error as ApiError)?.message || 'Failed to change password'} 
+                <FormError
+                    message={(changePasswordMutation.error as ApiError)?.message || 'Failed to change password'}
                 />
             )}
 
@@ -315,13 +317,13 @@ export default function PersonalDetails({ user }: PersonalDetailsProps) {
                                 <span className={styles.errorText}>{passwordErrors.confirmPassword}</span>
                             )}
                         </div>(
-                                    <>
-                                        <span className={styles.spinner} />
-                                        Changing...
-                                    </>
-                                ) : (
-                                    'Change password'
-                                )
+                        <>
+                            <span className={styles.spinner} />
+                            Changing...
+                        </>
+                        ) : (
+                        'Change password'
+                        )
 
                         <div className={styles.passwordActions}>
                             <button

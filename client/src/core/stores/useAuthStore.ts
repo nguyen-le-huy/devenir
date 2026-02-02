@@ -6,7 +6,7 @@ import type { User } from '@/features/auth/types';
 // Re-export User type for convenience
 export type { User };
 
-interface AuthState {
+export interface AuthState {
     user: User | null;
     token: string | null;
     isAuthenticated: boolean;

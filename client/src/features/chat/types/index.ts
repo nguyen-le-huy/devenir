@@ -84,5 +84,4 @@ export type {
 // Re-export store types
 export type {
     ChatUIState,
-    ChatSessionState,
 } from './store.types';

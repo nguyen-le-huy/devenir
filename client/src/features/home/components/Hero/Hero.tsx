@@ -26,14 +26,13 @@ const Hero = memo(() => {
         return unsubscribe;
     }, []);
 
-    // Chạy animation
-    useEffect(() => {
+    // Run animation with GSAP Context for auto-cleanup
+    useGSAP(() => {
         if (!heroRef.current) return;
 
-        // Nếu đã animate rồi (hasAnimated ref), chỉ cần set state để hiển thị lại
+        // If already animated, just ensure visibility
         if (hasAnimated.current) {
             setIsAnimFinished(true);
-            // Đảm bảo các phần tử khác cũng hiện
             gsap.set(buttonRef.current, { opacity: 1, x: 0 });
             gsap.set(logoRef.current, { opacity: 1 });
             if (svgPathRef.current) {
@@ -47,19 +46,17 @@ const Hero = memo(() => {
         document.fonts.ready.then(() => {
             const heroTexts = heroRef.current?.querySelectorAll('.splitHero');
 
-            // Không cần set opacity 0 thủ công nữa vì CSS đã lo
             gsap.set(buttonRef.current, { opacity: 0 });
             gsap.set(logoRef.current, { opacity: 0 });
 
             const tl = gsap.timeline({
                 onComplete: () => {
                     hasAnimated.current = true;
-                    setIsAnimFinished(true); // Trigger re-render để add class visible
+                    setIsAnimFinished(true);
                 }
             });
 
             heroTexts?.forEach((text: Element, index: number) => {
-                // Đảm bảo revert split text cũ nếu có
                 const textEl = text as HTMLElement & { _split?: { revert: () => void } };
                 if (textEl._split) textEl._split.revert();
 
@@ -69,18 +66,15 @@ const Hero = memo(() => {
                     autoSplit: true
                 });
 
-                // Lưu reference để cleanup nếu cần
                 textEl._split = split;
 
-                // Wrap lines for overflow hidden (như ChatWindow)
                 split.lines.forEach((line: Element) => {
                     const wrapper = document.createElement('div');
                     wrapper.style.overflow = 'hidden';
-                    line.parentNode?.insertBefore(wrapper, line);;
+                    line.parentNode?.insertBefore(wrapper, line);
                     wrapper.appendChild(line);
                 });
 
-                // Set opacity 1 cho container cha bằng GSAP (override CSS opacity: 0 tạm thời)
                 gsap.set(textEl, { opacity: 1 });
 
                 tl.from(split.lines, {
@@ -93,7 +87,6 @@ const Hero = memo(() => {
                 }, index * 0.15);
             });
 
-            // Button animation - set initial state then animate to final
             gsap.set(buttonRef.current, { x: 50 });
             tl.to(buttonRef.current, {
                 opacity: 1,
@@ -119,7 +112,7 @@ const Hero = memo(() => {
                 ease: 'power3.inOut'
             }, '-=0.5');
         });
-    }, [shouldAnimate]);
+    }, { dependencies: [shouldAnimate], scope: heroRef });
 
     return (
         <div ref={heroRef} className={`${styles.hero} container`}>

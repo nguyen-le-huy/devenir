@@ -1,11 +1,10 @@
 import './global.css'
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'sonner';
 import { useEffect, useState, lazy, Suspense, useCallback } from 'react';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 
-// @ts-ignore
 import ScrollToTop from '@/shared/components/ScrollToTop/ScrollToTop';
 import ChatIcon from '@/features/chat/components/ChatIcon';
 import ChatWindow from '@/features/chat/components/ChatWindow';
@@ -17,11 +16,13 @@ import VisuallySimilar from '@/features/products/pages/VisuallySimilar/VisuallyS
 
 import AllCategories from '@/features/products/pages/AllCategories/AllCategories';
 import ErrorBoundary from '@/shared/components/ErrorBoundary/ErrorBoundary';
+import ErrorBoundaryWrapper from '@/shared/components/ErrorBoundary/ErrorBoundaryWrapper';
 import Loading from '@/shared/components/Loading/Loading';
-import Preloader from '@/shared/components/Preloader/Preloader';
-import { useTracking } from '@/core/hooks/useTracking';
+import HomePreloader from '@/shared/components/Preloader/HomePreloader';
+import TrackingWrapper from '@/core/components/TrackingWrapper';
 import { trackingService } from '@/core/services/trackingService';
 import useLenis from '@/shared/hooks/useLenis';
+import { ROUTES } from '@/core/constants/routes';
 
 const Layout = lazy(() => import('@/shared/components/layout/Layout'));
 const HomePage = lazy(() => import('@/features/home/pages/HomePage/HomePage'));
@@ -29,7 +30,7 @@ const RegisterPage = lazy(() => import('@/features/auth/pages/Register/RegisterP
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/auth/ResetPasswordPage'));
 const AuthPage = lazy(() => import('@/features/auth/pages/auth/AuthPage'));
 const EmailVerificationPage = lazy(() => import('@/features/auth/pages/auth/EmailVerificationPage'));
-const UserProfile = lazy(() => import('@/features/user/pages/UserProfile/UserProfile'));
+const UserProfile = lazy(() => import('@/features/user/pages/UserProfile'));
 const ProductByCategory = lazy(() => import('@/features/products/pages/ProductByCategory/ProductByCategory'));
 const ProductDetail = lazy(() => import('@/features/products/pages/ProductDetail/ProductDetail'));
 const CheckoutLayout = lazy(() => import('@/features/checkout/components/checkoutLayout/CheckoutLayout'));
@@ -74,36 +75,50 @@ function App() {
             <BrowserRouter>
                 <ScrollToTop />
                 <TrackingWrapper />
-                <Toaster position="top-center" richColors />
+                <Toaster position="top-center" richColors duration={2000} />
 
-                {/* ✅ Preloader hiển thị ngay lập tức - TRƯỚC Suspense */}
+                {/* Preloader: Rendered immediately before Suspense boundary */}
                 <HomePreloader />
 
                 <ErrorBoundary>
                     <Suspense fallback={<Loading />}>
                         <Routes>
-                            {/* ✅ Routes KHÔNG cần Layout */}
-                            <Route path="/register" element={<RegisterPage />} />
-                            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-                            <Route path="/categories" element={<AllCategories />} />
+                            {/* Standalone Routes: No main layout wrapper */}
+                            <Route path={ROUTES.AUTH.REGISTER} element={<RegisterPage />} />
+                            <Route
+                                path={ROUTES.AUTH.RESET_PASSWORD}
+                                element={
+                                    <ErrorBoundaryWrapper>
+                                        <ResetPasswordPage />
+                                    </ErrorBoundaryWrapper>
+                                }
+                            />
+                            <Route path={ROUTES.PRODUCTS.CATEGORIES} element={<AllCategories />} />
 
-                            {/* ✅ Routes CẦN Layout - bọc trong Layout element */}
+                            {/* Main App Routes: Wrapped with default Layout */}
                             <Route element={<Layout />}>
-                                <Route path="/auth" element={<AuthPage />} />
-                                <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
-                                <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-                                <Route path="/" element={<HomePage />} />
-                                <Route path="/products" element={<ProductByCategory />} />
-                                <Route path="/product-detail" element={<ProductDetail />} />
+                                <Route path={ROUTES.AUTH.LOGIN} element={<AuthPage />} />
+                                <Route
+                                    path={ROUTES.AUTH.VERIFY_EMAIL}
+                                    element={
+                                        <ErrorBoundaryWrapper>
+                                            <EmailVerificationPage />
+                                        </ErrorBoundaryWrapper>
+                                    }
+                                />
+                                <Route path={ROUTES.USER.PROFILE} element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+                                <Route path={ROUTES.HOME} element={<HomePage />} />
+                                <Route path={ROUTES.PRODUCTS.LIST} element={<ProductByCategory />} />
+                                <Route path={ROUTES.PRODUCTS.DETAIL} element={<ProductDetail />} />
                                 <Route path="*" element={<HomePage />} />
-                                <Route path="/visually-similar" element={<VisuallySimilar />} />
+                                <Route path={ROUTES.PRODUCTS.VISUALLY_SIMILAR} element={<VisuallySimilar />} />
                             </Route>
 
                             <Route element={<CheckoutLayout />}>
-                                <Route path="/checkout" element={<Checkout />} />
-                                <Route path="/shipping" element={<Shipping />} />
+                                <Route path={ROUTES.CHECKOUT.MAIN} element={<Checkout />} />
+                                <Route path={ROUTES.CHECKOUT.SHIPPING} element={<Shipping />} />
                                 <Route
-                                    path="/checkout/payos/success"
+                                    path={ROUTES.CHECKOUT.PAYOS_SUCCESS}
                                     element={
                                         <ProtectedRoute>
                                             <PayOSResult />
@@ -111,19 +126,19 @@ function App() {
                                     }
                                 />
                                 <Route
-                                    path="/payment-successful"
+                                    path={ROUTES.CHECKOUT.SUCCESS}
                                     element={
                                         <PaymentSuccessful />
                                     }
                                 />
                                 <Route
-                                    path="/payment-failed"
+                                    path={ROUTES.CHECKOUT.FAILED}
                                     element={
                                         <PaymentFailed />
                                     }
                                 />
                                 <Route
-                                    path="/checkout/nowpayments/success"
+                                    path={ROUTES.CHECKOUT.NOWPAYMENTS_SUCCESS}
                                     element={
                                         <ProtectedRoute>
                                             <NowPaymentsResult />
@@ -140,24 +155,6 @@ function App() {
             </BrowserRouter>
         </GoogleOAuthProvider>
     );
-}
-
-// Component để auto-track page views
-function TrackingWrapper() {
-    useTracking(); // Auto track page views on route change
-    return null;
-}
-
-// ✅ Component render Preloader chỉ khi ở trang chủ
-function HomePreloader() {
-    const location = useLocation();
-
-    // Chỉ hiển thị Preloader trên trang chủ
-    if (location.pathname !== '/') {
-        return null;
-    }
-
-    return <Preloader />;
 }
 
 export default App;

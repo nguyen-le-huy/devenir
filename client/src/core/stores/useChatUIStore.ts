@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { ChatUIState } from '../types/store.types';
+import type { ChatUIState } from '@/features/chat/types/store.types';
 
 /**
  * Chat UI Store

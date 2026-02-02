@@ -42,7 +42,7 @@ export interface ShippingAddressDTO {
 /**
  * Shipping address response from API
  */
-export interface ShippingAddressResponse extends ApiResponse<ShippingAddressDTO> { }
+export type ShippingAddressResponse = ApiResponse<ShippingAddressDTO>;
 
 /**
  * Gift code validation request
@@ -131,7 +131,7 @@ export interface ProductVariantDTO {
 /**
  * Recommended products response
  */
-export interface RecommendedProductsResponse extends ApiResponse<ProductVariantDTO[]> { }
+export type RecommendedProductsResponse = ApiResponse<ProductVariantDTO[]>;
 
 /**
  * Payment order status (from backend)
@@ -148,7 +148,7 @@ export interface PaymentOrderStatus {
 /**
  * Payment status API response
  */
-export interface PaymentStatusResponse extends ApiResponse<PaymentOrderStatus> { }
+export type PaymentStatusResponse = ApiResponse<PaymentOrderStatus>;
 
 /**
  * Navigation state for payment success page

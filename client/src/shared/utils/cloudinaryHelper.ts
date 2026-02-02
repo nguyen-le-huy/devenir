@@ -31,7 +31,7 @@ export const toWebP = (url: string, options: CloudinaryOptions = {}): string => 
     const { quality = 90, width, height } = options;
 
     // Build transformation string
-    let transformations = [`f_webp`, `q_${quality}`];
+    const transformations = [`f_webp`, `q_${quality}`];
 
     if (width) transformations.push(`w_${width}`);
     if (height) transformations.push(`h_${height}`);
@@ -71,7 +71,7 @@ export const toOptimized = (url: string, options: CloudinaryOptions = {}): strin
 
     // Use f_auto for automatic format selection (WebP for supported browsers)
     // Use q_auto for automatic quality optimization
-    let transformations = ['f_auto', 'q_auto'];
+    const transformations = ['f_auto', 'q_auto'];
 
     if (width) transformations.push(`w_${width}`);
     if (height) transformations.push(`h_${height}`);

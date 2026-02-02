@@ -6,12 +6,12 @@ import { trackEvent } from '@/shared/utils/eventTracker';
 import { useProductTracking } from '@/core/hooks/useTracking';
 import { useVariantById } from './useProducts';
 import { getVariantsByCategoryWithChildren } from '@/features/products/api/productService';
+import { getColorName, getCloudinaryPublicId } from '@/features/products/utils/productUtils';
 import type {
     IProduct,
     IVariant,
     ICategory,
     IEnrichedVariant,
-    IProductCardData,
     IGalleryData,
 } from '@/features/products/types';
 
@@ -29,19 +29,6 @@ const PLACEHOLDER_IMAGE = '/images/placeholder.png';
 const STALE_TIMES = {
     RELATED_PRODUCTS: 5 * 60 * 1000, // 5 minutes
 } as const;
-
-// ============================================
-// Helper Functions
-// ============================================
-
-/**
- * Extract Cloudinary public ID from URL for deduplication
- */
-const getCloudinaryPublicId = (url: string): string => {
-    if (!url || !url.includes('cloudinary.com')) return url;
-    const match = url.match(/\/upload\/(?:[^/]+\/)*v?\d*\/?(.+?)(?:\.[^.]+)?$/);
-    return match ? match[1] : url;
-};
 
 // ============================================
 // Hooks
@@ -66,7 +53,7 @@ export const useProductView = (variantId: string) => {
                 variantId: variant._id,
                 category: product.category?.name || 'Unknown',
                 brand: product.brand?.name || 'Unknown',
-                color: (variant as any).color?.name || variant.color || 'Unknown',
+                color: getColorName(variant.color),
                 size: variant.size || 'Free Size',
                 price: variant.salePrice || variant.basePrice,
                 sku: variant.sku,
@@ -85,7 +72,7 @@ export const useProductView = (variantId: string) => {
             }
             : null,
         variant?.size,
-        variant?.colorName || (variant as any)?.color?.name || variant?.color
+        getColorName(variant?.color || variant?.colorName)
     );
 
     return { variant, product, siblingVariants, isLoading, error, productData };
@@ -154,11 +141,12 @@ export const useGallery = (
 
 /**
  * Hook to fetch and manage related products
+ * Returns IEnrichedVariant[] for direct use with ProductCarousel/ScarfCard
  */
 export const useRelatedProducts = (
     product: IProduct | undefined,
     allCategories: ICategory[]
-): IProductCardData[] => {
+): IEnrichedVariant[] => {
     // Get parent category ID
     const parentCategoryId = useMemo(() => {
         if (!product?.category) return null;
@@ -185,8 +173,8 @@ export const useRelatedProducts = (
         staleTime: STALE_TIMES.RELATED_PRODUCTS,
     });
 
-    // Filter and transform to ProductCardData format
-    const relatedProducts = useMemo((): IProductCardData[] => {
+    // Filter to get unique products (exclude current product)
+    const relatedProducts = useMemo((): IEnrichedVariant[] => {
         const variants = variantsData || [];
         if (!variants.length || !product) return [];
 
@@ -210,17 +198,7 @@ export const useRelatedProducts = (
                     return true;
                 }
                 return false;
-            })
-            .map((variantItem) => ({
-                id: variantItem._id,
-                name: variantItem.productInfo?.name || 'Product',
-                price: variantItem.price,
-                image: variantItem.mainImage || PLACEHOLDER_IMAGE,
-                imageHover: variantItem.hoverImage || variantItem.mainImage || PLACEHOLDER_IMAGE,
-                color: variantItem.color,
-                size: variantItem.size,
-                sku: variantItem.sku,
-            }));
+            });
     }, [variantsData, product]);
 
     return relatedProducts;

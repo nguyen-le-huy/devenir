@@ -1,12 +1,12 @@
 /**
  * Chat Messages Hook
- * Manages chat messages with local state and sessionStorage persistence
- * Note: Using local state instead of React Query for real-time chat UX
+ * Manages chat messages with React Query and local state
+ * Handles sending, receiving, and persisting messages
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { chatApi } from '../api/chatApi';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useChatSession } from './useChatSession';
+import { useChatHistory, useSendMessage } from './useChatQuery';
 import type {
     ChatMessage,
     ChatMessagePayload,
@@ -38,17 +38,20 @@ interface UseChatMessagesReturn {
 export const useChatMessages = (): UseChatMessagesReturn => {
     const { sessionId, isAuthenticated, setSessionId } = useChatSession();
 
-    // Load messages from sessionStorage on mount
+    // React Query Hooks
+    const { data: serverHistory, isLoading: isHistoryLoading } = useChatHistory(isAuthenticated);
+    const sendMessageMutation = useSendMessage();
+
+    // Local State (for Guests & Optimistic Updates)
     const [messages, setMessages] = useState<ChatMessage[]>(() => {
         try {
             const saved = sessionStorage.getItem(CHAT_STORAGE_KEY);
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // Mark all loaded messages as already streamed
                 return parsed.map((msg: ChatMessage) => ({
                     ...msg,
                     isStreamed: true,
-                    timestamp: new Date(msg.timestamp), // Convert back to Date
+                    timestamp: new Date(msg.timestamp),
                 }));
             }
             return [];
@@ -58,10 +61,20 @@ export const useChatMessages = (): UseChatMessagesReturn => {
         }
     });
 
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const historyLoadedRef = useRef(false);
 
-    // Persist messages to sessionStorage whenever they change
+    // Sync Server History (Only once when loaded)
+    useEffect(() => {
+        if (isAuthenticated && serverHistory && !historyLoadedRef.current) {
+            if (serverHistory.length > 0) {
+                setMessages(serverHistory);
+            }
+            historyLoadedRef.current = true;
+        }
+    }, [isAuthenticated, serverHistory]);
+
+    // Persist messages to sessionStorage (Guest only or backup)
     useEffect(() => {
         if (messages.length > 0) {
             try {
@@ -85,7 +98,6 @@ export const useChatMessages = (): UseChatMessagesReturn => {
             return;
         }
 
-        // Clear previous error
         setError(null);
 
         // Track chat start
@@ -101,12 +113,11 @@ export const useChatMessages = (): UseChatMessagesReturn => {
             timestamp: new Date(),
         };
 
-        // Add user message immediately (optimistic update)
+        // Optimistic update
         setMessages((prev) => [...prev, userMessage]);
-        setIsLoading(true);
 
         try {
-            // Prepare conversation history (last N messages)
+            // Prepare conversation history
             const conversationHistory: ChatHistoryMessage[] = messages
                 .slice(-MAX_CONVERSATION_HISTORY)
                 .map((msg) => ({
@@ -121,15 +132,17 @@ export const useChatMessages = (): UseChatMessagesReturn => {
                 conversation_history: conversationHistory,
             };
 
-            // Add session_id for guest users
             if (!isAuthenticated && sessionId) {
                 payload.session_id = sessionId;
             }
 
-            // Send to API
-            const response = await chatApi.sendMessage(payload, isAuthenticated);
+            // Call Mutation
+            const response = await sendMessageMutation.mutateAsync({
+                payload,
+                isAuthenticated
+            });
 
-            // Save session_id for guest users
+            // Handle Session (Guest)
             if (!isAuthenticated && response.session_id) {
                 setSessionId(response.session_id);
             }
@@ -142,7 +155,7 @@ export const useChatMessages = (): UseChatMessagesReturn => {
                 hasAction: !!response.suggested_action,
             });
 
-            // Create bot message
+            // Add bot message
             const botMessage: ChatMessage = {
                 id: Date.now() + 1,
                 text: response.answer || 'Xin lỗi, tôi không thể trả lời lúc này.',
@@ -151,11 +164,11 @@ export const useChatMessages = (): UseChatMessagesReturn => {
                 suggestedProducts: response.suggested_products || [],
                 suggestedAction: response.suggested_action,
                 storeLocation: response.store_location,
-                isStreamed: false, // Will trigger streaming animation
+                isStreamed: false,
             };
 
-            // Add bot message
             setMessages((prev) => [...prev, botMessage]);
+
         } catch (err) {
             console.error('Chat Error:', err);
 
@@ -172,14 +185,11 @@ export const useChatMessages = (): UseChatMessagesReturn => {
             };
 
             setMessages((prev) => [...prev, errorMessage]);
-        } finally {
-            setIsLoading(false);
         }
-    }, [messages, isAuthenticated, sessionId, setSessionId]);
+    }, [messages, isAuthenticated, sessionId, setSessionId, sendMessageMutation]);
 
     /**
      * Add a bot message (for action feedback)
-     * This is stable and won't cause re-renders
      */
     const addBotMessage = useCallback((text: string) => {
         const botMessage: ChatMessage = {
@@ -199,10 +209,11 @@ export const useChatMessages = (): UseChatMessagesReturn => {
         setMessages([]);
         sessionStorage.removeItem(CHAT_STORAGE_KEY);
         setError(null);
+        historyLoadedRef.current = false;
     }, []);
 
     /**
-     * Mark a message as streamed (animation complete)
+     * Mark a message as streamed
      */
     const markMessageAsStreamed = useCallback((id: number | string) => {
         setMessages((prev) =>
@@ -211,6 +222,9 @@ export const useChatMessages = (): UseChatMessagesReturn => {
             )
         );
     }, []);
+
+    // Derived Loading State
+    const isLoading = sendMessageMutation.isPending || (isAuthenticated && isHistoryLoading);
 
     return {
         messages,

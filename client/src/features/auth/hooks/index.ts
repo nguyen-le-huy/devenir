@@ -5,3 +5,4 @@ export * from './useGoogleAuth';
 export * from './useAddPhone';
 export * from './useForgotPassword';
 export * from './useUserMutations';
+export * from './useAuthActions';

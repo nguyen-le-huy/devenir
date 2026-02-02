@@ -17,6 +17,7 @@ import SizeAndFit from '@/features/products/components/SizeAndFit/SizeAndFit';
 import AddToBagNoti from '@/shared/components/Notification/AddToBagNoti';
 import TryOn from '@/features/products/components/TryOn/TryOn';
 import { useProductView, useGallery, useRelatedProducts } from '@/features/products/hooks/useProductDetailLogic';
+import { getColorName } from '@/features/products/utils/productUtils';
 
 // Static config to avoid re-creation
 const ACCORDION_ITEMS = [
@@ -60,21 +61,26 @@ const ProductDetail = memo(() => {
 
     // Categories & Related Products
     const { data: allCategoriesData } = useCategories();
-    const allCategories = useMemo(() => Array.isArray((allCategoriesData as any)?.data) ? (allCategoriesData as any).data : (Array.isArray(allCategoriesData) ? allCategoriesData : []), [allCategoriesData]);
-    const relatedProducts = useRelatedProducts(product, allCategories as any[]);
+    // Safely extract categories array from response
+    const allCategories = useMemo(() => {
+        if (!allCategoriesData) return [];
+        return allCategoriesData.data || [];
+    }, [allCategoriesData]);
+
+    const relatedProducts = useRelatedProducts(product, allCategories);
 
     // Colors
     const { data: colorsData } = useColors();
     const colorMap = useMemo(() => createColorMap(colorsData || []), [colorsData]);
 
     // Derived Logic
-    const colorCount = useMemo(() => new Set(siblingVariants.map((v: any) => v.color)).size, [siblingVariants]);
-    const currentColorName = variant?.color || 'Unknown';
+    const colorCount = useMemo(() => new Set(siblingVariants.map((v) => getColorName(v.color))).size, [siblingVariants]);
+    const currentColorName = getColorName(variant?.color);
     const currentColorHex = colorMap[currentColorName] || '#ccc';
 
     const { sameColorVariants, needsSizeSelection } = useMemo(() => {
-        const sameColor = siblingVariants.filter((v: any) => v.color === currentColorName);
-        const sizes = [...new Set(sameColor.map((v: any) => v.size))].filter(Boolean);
+        const sameColor = siblingVariants.filter((v) => getColorName(v.color) === currentColorName);
+        const sizes = [...new Set(sameColor.map((v) => v.size))].filter(Boolean);
         const isFree = sizes.length === 1 && String(sizes[0]).toLowerCase() === 'free size';
         return { sameColorVariants: sameColor, needsSizeSelection: !isFree && sizes.length > 0 };
     }, [siblingVariants, currentColorName]);

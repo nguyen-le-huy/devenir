@@ -1,8 +1,8 @@
 import apiClient from '@/core/api/apiClient';
-import { IOrder, IOrderFilters } from '../types';
+import { IOrder, IOrderFilters, IOrderListResponse } from '../types';
 
-export const fetchMyOrders = async (params: IOrderFilters = {}): Promise<{ data: IOrder[], total: number, page: number, pages: number }> => {
-    const response = await apiClient.get('/orders/my', { params });
+export const fetchMyOrders = async (params: IOrderFilters = {}): Promise<IOrderListResponse> => {
+    const response = await apiClient.get<IOrderListResponse>('/orders/my', { params });
     return response.data;
 }
 

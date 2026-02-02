@@ -8,8 +8,8 @@ export let lenisInstance: Lenis | null = null;
 
 /**
  * Set the Lenis instance
- * @param {Lenis} instance - The Lenis instance
+ * @param {Lenis | null} instance - The Lenis instance or null to clear
  */
-export const setLenisInstance = (instance: Lenis) => {
+export const setLenisInstance = (instance: Lenis | null) => {
     lenisInstance = instance;
 };

@@ -3,37 +3,10 @@
  * Strict type definitions for user-related data structures
  */
 
-/**
- * User entity from backend
- */
-export interface User {
-  _id: string;
-  username: string;
-  email: string;
-  phone: string;
-  firstName?: string;
-  lastName?: string;
-  birthday?: string;
-  role: 'customer' | 'admin';
-  preferences: UserPreferences;
-  createdAt: string;
-  updatedAt: string;
-  emailVerified?: boolean;
-  avatar?: string;
-}
+import type { User, UserPreferences } from '@/features/auth/types';
 
-/**
- * User preferences for marketing and communications
- */
-export interface UserPreferences {
-  channels: {
-    email: boolean;
-    phone: boolean;
-    messaging: boolean;
-    post: boolean;
-  };
-  interests: 'menswear' | 'womenswear' | 'both';
-}
+// Re-export types
+export type { User, UserPreferences };
 
 /**
  * Payload for updating user profile
@@ -85,4 +58,5 @@ export interface MarketingPreferencesProps {
 export interface ProfileOverviewProps {
   user: User;
   onEditProfile: () => void;
+  onEditPreferences: () => void;
 }

@@ -87,4 +87,19 @@ export const queryKeys = {
         all: ['cart'] as const,
         detail: () => [...queryKeys.cart.all, 'detail'] as const,
     },
+
+    // Auth (for future user profile queries)
+    auth: {
+        all: ['auth'] as const,
+        profile: () => [...queryKeys.auth.all, 'profile'] as const,
+        user: (userId: string) => [...queryKeys.auth.all, 'user', userId] as const,
+        preferences: (userId: string) => [...queryKeys.auth.all, 'preferences', userId] as const,
+    },
+
+    // Home
+    home: {
+        all: ['home'] as const,
+        newArrivals: (limit: number) => [...queryKeys.home.all, 'new-arrivals', limit] as const,
+        scarvesCollection: () => [...queryKeys.home.all, 'scarves-collection'] as const,
+    },
 };

@@ -24,7 +24,10 @@ export default function EmailVerificationPage() {
                 }
             });
         }
-    }, [token, navigate, verifyMutation]);
+         
+        // Note: verifyMutation excluded from deps to prevent double API calls
+        // Safe because hasCalledRef ensures single execution
+    }, [token, navigate]);
 
     return (
         <div className={styles.container}>

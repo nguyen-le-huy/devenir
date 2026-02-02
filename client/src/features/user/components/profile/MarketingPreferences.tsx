@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useUpdatePreferences } from '@/features/user/hooks';
-import type { MarketingPreferencesProps } from '@/features/user/types';
+import type { MarketingPreferencesProps, UserPreferences } from '@/features/user/types';
 import type { ApiError } from '@/shared/types';
 import styles from './MarketingPreferences.module.css';
 
@@ -17,18 +17,17 @@ import styles from './MarketingPreferences.module.css';
 export default function MarketingPreferences({ user }: MarketingPreferencesProps) {
     const updatePreferencesMutation = useUpdatePreferences();
 
-    const [preferences, setPreferences] = useState({
+    const [preferences, setPreferences] = useState<UserPreferences>({
         channels: {
-            ...(user?.preferences?.channels || {}),
             email: user?.preferences?.channels?.email ?? true,
             phone: user?.preferences?.channels?.phone ?? false,
             messaging: user?.preferences?.channels?.messaging ?? false,
             post: user?.preferences?.channels?.post ?? false,
         },
-        interests: user?.preferences?.interests || 'menswear' as const,
+        interests: user?.preferences?.interests || 'menswear',
     });
 
-    const handleChannelChange = (channel: keyof typeof preferences.channels) => {
+    const handleChannelChange = (channel: keyof UserPreferences['channels']) => {
         setPreferences((prev) => ({
             ...prev,
             channels: {
@@ -38,7 +37,7 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
         }));
     };
 
-    const handleInterestChange = (interest: 'menswear' | 'womenswear' | 'both') => {
+    const handleInterestChange = (interest: UserPreferences['interests']) => {
         setPreferences((prev) => ({
             ...prev,
             interests: interest,
@@ -78,13 +77,13 @@ export default function MarketingPreferences({ user }: MarketingPreferencesProps
                     </p>
 
                     <div className={styles.channelList}>
-                        {Object.entries(preferences.channels).map(([channel, isSelected]) => (
+                        {(Object.keys(preferences.channels) as Array<keyof UserPreferences['channels']>).map((channel) => (
                             <div key={channel} className={styles.checkboxGroup}>
                                 <input
                                     type="checkbox"
                                     id={`channel-${channel}`}
-                                    checked={isSelected as boolean}
-                                    onChange={() => handleChannelChange(channel as any)}
+                                    checked={preferences.channels[channel]}
+                                    onChange={() => handleChannelChange(channel)}
                                     className={styles.checkbox}
                                 />
                                 <label htmlFor={`channel-${channel}`} className={styles.checkboxLabel}>

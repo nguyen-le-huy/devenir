@@ -1,6 +1,7 @@
 import { memo, lazy, Suspense } from 'react';
 import Hero from '@/features/home/components/Hero/Hero';
 import Loading from '@/shared/components/Loading/Loading';
+import SEO from '@/shared/components/SEO/SEO';
 
 // Lazy load components below the fold for performance
 const Introduction = lazy(() => import('@/features/home/components/Introduction/Introduction'));
@@ -13,9 +14,13 @@ const OurPartners = lazy(() => import('@/features/home/components/OurPartners/Ou
 const HomePage = memo(() => {
     return (
         <main>
+            <SEO
+                title="Devenir - Men's Premium Fashion"
+                description="Discover Devenir's premium collection of men's fashion. Elevate your style with our exclusive range of clothing and accessories."
+            />
             {/* Hero is above the fold - load immediately */}
             <Hero />
-            
+
             {/* Below fold components - lazy load with Suspense */}
             <Suspense fallback={<Loading />}>
                 <Introduction />

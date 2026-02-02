@@ -5,11 +5,15 @@ import { useAuthStore } from '@/core/stores/useAuthStore';
 import { ICart, ICartResponse } from '../types';
 import { toast } from 'sonner';
 import { logger } from '@/shared/utils/logger';
-import { queryKeys } from '@/core/lib/queryClient';
+import { cartQueryKeys } from '../lib/queryKeys';
 import { CART_CONFIG, TOAST_MESSAGES } from '../utils/constants';
-
-// Use centralized cart keys from queryClient
-const cartKeys = queryKeys.cart;
+import {
+    calculateCartTotals,
+    getColorName,
+    getVariantPrice,
+} from '../utils/cartCalculations';
+import { validateAddToCart, validateUpdateCartItem } from '../utils/cartValidation';
+import { z } from 'zod';
 
 /**
  * Hook to fetch current user's cart
@@ -20,7 +24,7 @@ export const useCart = () => {
     const token = useAuthStore((state) => state.token);
 
     return useQuery<ICartResponse, Error, ICart>({
-        queryKey: cartKeys.detail(),
+        queryKey: cartQueryKeys.detail(),
         queryFn: cartService.getCart,
         enabled: isAuthenticated && !!token,
         staleTime: CART_CONFIG.STALE_TIME,
@@ -30,14 +34,24 @@ export const useCart = () => {
 
 /**
  * Hook to add item to cart
- * Relies on fast API response (<200ms target) instead of complex optimistic updates
+ * Includes validation and error tracking
  */
 export const useAddToCart = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ variantId, quantity = 1 }: { variantId: string; quantity?: number }) =>
-            cartService.addToCart(variantId, quantity),
+        mutationFn: ({ variantId, quantity = 1 }: { variantId: string; quantity?: number }) => {
+            // Validate input before API call
+            try {
+                validateAddToCart({ variantId, quantity });
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    throw new Error(error.issues[0].message);
+                }
+                throw error;
+            }
+            return cartService.addToCart(variantId, quantity);
+        },
 
         onSuccess: (response, variables) => {
             const data = response.data;
@@ -54,59 +68,70 @@ export const useAddToCart = () => {
                             productId: product._id,
                             productName: product.name,
                             quantity: variables.quantity || 1,
-                            price: variant.salePrice || variant.basePrice || variant.price || 0,
+                            price: getVariantPrice(variant),
                             size: variant.size,
-                            color: typeof variant.color === 'string' ? variant.color : variant.color?.name
+                            color: getColorName(variant.color),
                         });
                     }
                 }
             }
             toast.success(TOAST_MESSAGES.ADD_SUCCESS);
             // Invalidate to refetch fresh data from server
-            queryClient.invalidateQueries({ queryKey: cartKeys.all });
+            queryClient.invalidateQueries({ queryKey: cartQueryKeys.all });
         },
-        onError: (error) => {
-            logger.error('Failed to add item to cart', error);
-            toast.error(TOAST_MESSAGES.ADD_ERROR);
+        onError: (error, variables) => {
+            logger.error('Failed to add item to cart', {
+                error,
+                variantId: variables.variantId,
+                quantity: variables.quantity,
+            });
+            toast.error(error instanceof Error ? error.message : TOAST_MESSAGES.ADD_ERROR);
         },
     });
 };
 
 /**
  * Hook to update cart item quantity with Optimistic Updates
+ * Uses shared calculation logic for consistency
  */
 export const useUpdateCartItem = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ variantId, quantity }: { variantId: string; quantity: number }) =>
-            cartService.updateCartItem(variantId, quantity),
+        mutationFn: ({ variantId, quantity }: { variantId: string; quantity: number }) => {
+            // Validate input
+            try {
+                validateUpdateCartItem({ variantId, quantity });
+            } catch (error) {
+                if (error instanceof z.ZodError) {
+                    throw new Error(error.issues[0].message);
+                }
+                throw error;
+            }
+            return cartService.updateCartItem(variantId, quantity);
+        },
 
         onMutate: async ({ variantId, quantity }) => {
-            await queryClient.cancelQueries({ queryKey: cartKeys.detail() });
-            const previousCart = queryClient.getQueryData<ICart>(cartKeys.detail());
+            await queryClient.cancelQueries({ queryKey: cartQueryKeys.detail() });
+            const previousCart = queryClient.getQueryData<ICart>(cartQueryKeys.detail());
 
             if (previousCart) {
                 const currentItems = previousCart.items || [];
-                const newItems = currentItems.map(item => {
+                const newItems = currentItems.map((item) => {
                     if (item.productVariant._id === variantId) {
                         return { ...item, quantity };
                     }
                     return item;
                 });
 
-                // Recalculate totals (approximate)
-                const totalItems = newItems.reduce((acc, item) => acc + item.quantity, 0);
-                const totalPrice = newItems.reduce((acc, item) => {
-                    const price = item.productVariant.salePrice || item.productVariant.price || 0;
-                    return acc + (price * item.quantity);
-                }, 0);
+                // Use shared calculation logic
+                const { totalItems, totalPrice } = calculateCartTotals(newItems);
 
-                queryClient.setQueryData<ICart>(cartKeys.detail(), {
+                queryClient.setQueryData<ICart>(cartQueryKeys.detail(), {
                     ...previousCart,
                     items: newItems,
                     totalItems,
-                    totalPrice
+                    totalPrice,
                 });
             }
 
@@ -114,13 +139,17 @@ export const useUpdateCartItem = () => {
         },
 
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: cartKeys.all });
+            queryClient.invalidateQueries({ queryKey: cartQueryKeys.all });
         },
-        onError: (error, _, context) => {
-            logger.error('Failed to update cart item', error);
-            toast.error(TOAST_MESSAGES.UPDATE_ERROR);
+        onError: (error, variables, context) => {
+            logger.error('Failed to update cart item', {
+                error,
+                variantId: variables.variantId,
+                quantity: variables.quantity,
+            });
+            toast.error(error instanceof Error ? error.message : TOAST_MESSAGES.UPDATE_ERROR);
             if (context?.previousCart) {
-                queryClient.setQueryData(cartKeys.detail(), context.previousCart);
+                queryClient.setQueryData(cartQueryKeys.detail(), context.previousCart);
             }
         },
     });
@@ -128,6 +157,7 @@ export const useUpdateCartItem = () => {
 
 /**
  * Hook to remove item from cart with Optimistic Updates
+ * Uses shared calculation logic for consistency
  */
 export const useRemoveFromCart = () => {
     const queryClient = useQueryClient();
@@ -136,25 +166,21 @@ export const useRemoveFromCart = () => {
         mutationFn: (variantId: string) => cartService.removeFromCart(variantId),
 
         onMutate: async (variantId) => {
-            await queryClient.cancelQueries({ queryKey: cartKeys.detail() });
-            const previousCart = queryClient.getQueryData<ICart>(cartKeys.detail());
+            await queryClient.cancelQueries({ queryKey: cartQueryKeys.detail() });
+            const previousCart = queryClient.getQueryData<ICart>(cartQueryKeys.detail());
 
             if (previousCart) {
                 const currentItems = previousCart.items || [];
-                const newItems = currentItems.filter(item => item.productVariant._id !== variantId);
+                const newItems = currentItems.filter((item) => item.productVariant._id !== variantId);
 
-                // Recalculate totals
-                const totalItems = newItems.reduce((acc, item) => acc + item.quantity, 0);
-                const totalPrice = newItems.reduce((acc, item) => {
-                    const price = item.productVariant.salePrice || item.productVariant.price || 0;
-                    return acc + (price * item.quantity);
-                }, 0);
+                // Use shared calculation logic
+                const { totalItems, totalPrice } = calculateCartTotals(newItems);
 
-                queryClient.setQueryData<ICart>(cartKeys.detail(), {
+                queryClient.setQueryData<ICart>(cartQueryKeys.detail(), {
                     ...previousCart,
                     items: newItems,
                     totalItems,
-                    totalPrice
+                    totalPrice,
                 });
             }
 
@@ -162,14 +188,17 @@ export const useRemoveFromCart = () => {
         },
 
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: cartKeys.all });
+            queryClient.invalidateQueries({ queryKey: cartQueryKeys.all });
             toast.success(TOAST_MESSAGES.REMOVE_SUCCESS);
         },
-        onError: (error, _, context) => {
-            logger.error('Failed to remove item from cart', error);
+        onError: (error, variantId, context) => {
+            logger.error('Failed to remove item from cart', {
+                error,
+                variantId,
+            });
             toast.error(TOAST_MESSAGES.REMOVE_ERROR);
             if (context?.previousCart) {
-                queryClient.setQueryData(cartKeys.detail(), context.previousCart);
+                queryClient.setQueryData(cartQueryKeys.detail(), context.previousCart);
             }
         },
     });
@@ -184,28 +213,28 @@ export const useClearCart = () => {
     return useMutation({
         mutationFn: cartService.clearCart,
         onMutate: async () => {
-            await queryClient.cancelQueries({ queryKey: cartKeys.detail() });
-            const previousCart = queryClient.getQueryData<ICart>(cartKeys.detail());
+            await queryClient.cancelQueries({ queryKey: cartQueryKeys.detail() });
+            const previousCart = queryClient.getQueryData<ICart>(cartQueryKeys.detail());
 
             if (previousCart) {
-                queryClient.setQueryData<ICart>(cartKeys.detail(), {
+                queryClient.setQueryData<ICart>(cartQueryKeys.detail(), {
                     ...previousCart,
                     items: [],
                     totalItems: 0,
-                    totalPrice: 0
+                    totalPrice: 0,
                 });
             }
 
             return { previousCart };
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: cartKeys.all });
+            queryClient.invalidateQueries({ queryKey: cartQueryKeys.all });
         },
         onError: (error, _, context) => {
-            logger.error('Failed to clear cart', error);
+            logger.error('Failed to clear cart', { error });
             toast.error(TOAST_MESSAGES.CLEAR_ERROR);
             if (context?.previousCart) {
-                queryClient.setQueryData(cartKeys.detail(), context.previousCart);
+                queryClient.setQueryData(cartQueryKeys.detail(), context.previousCart);
             }
         },
     });

@@ -2,58 +2,73 @@ import { useState, useMemo, useCallback, memo, MouseEvent } from 'react';
 import styles from './ScarfCard.module.css';
 import { Link } from 'react-router-dom';
 import { getLazyLoadProps, getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
+import type { IScarfCardProps, IEnrichedVariant } from '@/features/products/types';
+import { getColorName } from '@/features/products/utils/productUtils';
 
-interface ScarfCardProps {
-    scarf: any;
-    colorVariants?: any[];
+interface IActiveVariant {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    imageHover: string;
+    color: string;
+    colorHex: string;
 }
 
 /**
  * ScarfCard - Product card with color variants
  * 
- * @param {Object} scarf - Current variant data
- * @param {Array} colorVariants - Optional: Array of sibling variants with different colors
- *                                Each variant should have: _id, color, colorHex, mainImage, hoverImage
+ * @param {IScarfCardProps} props - Component props
  */
-const ScarfCard = memo(({ scarf, colorVariants = [] }: ScarfCardProps) => {
+const ScarfCard = memo(({ scarf, colorVariants = [] }: IScarfCardProps) => {
     // State for current displayed variant
-    const [activeVariant, setActiveVariant] = useState<any>(null);
+    const [activeVariant, setActiveVariant] = useState<IActiveVariant | null>(null);
 
     // Get the product ID from scarf data
-    const productId = scarf.productId || scarf.product_id || scarf.productInfo?._id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const productId = (scarf as any).productId || scarf.product_id || (scarf as IEnrichedVariant).productInfo?._id;
 
     // Process color variants - get unique colors only, with current color first
-    const uniqueColorVariants = useMemo(() => {
+    const uniqueColorVariants: IActiveVariant[] = useMemo(() => {
         if (!colorVariants || colorVariants.length === 0) {
             return [];
         }
 
         // Filter variants that belong to the same product
         const sameProductVariants = colorVariants.filter(v => {
-            const variantProductId = v.productId || v.product_id || v.productInfo?._id;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const variantProductId = (v as any).productId || v.product_id || (v as IEnrichedVariant).productInfo?._id;
             return variantProductId === productId;
         });
 
         // Get unique colors (one variant per color)
-        const colorMap = new Map();
+        const colorMap = new Map<string, IActiveVariant>();
+
         sameProductVariants.forEach(variant => {
-            const color = variant.color?.toLowerCase();
+            // Use util to safely get color name
+            const colorRaw = variant.color;
+            const color = getColorName(colorRaw).toLowerCase();
+
+            // Use type assertion for optional properties that might be present in enriched data
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const vAny = variant as any;
+
             if (color && !colorMap.has(color)) {
                 colorMap.set(color, {
-                    id: variant._id || variant.id,
-                    color: variant.color,
-                    colorHex: variant.colorHex || variant.colorCode || '#ccc',
-                    mainImage: variant.mainImage,
-                    hoverImage: variant.hoverImage || variant.mainImage,
+                    id: variant._id,
+                    color: getColorName(colorRaw),
+                    colorHex: vAny.colorHex || vAny.colorCode || '#ccc',
+                    image: variant.mainImage,
+                    imageHover: variant.hoverImage || variant.mainImage,
                     price: variant.price,
-                    name: variant.name || variant.productInfo?.name || scarf.name
+                    name: variant.name || (variant as IEnrichedVariant).productInfo?.name || scarf.name || 'Product'
                 });
             }
         });
 
         // Convert to array and sort: current color first
         const variants = Array.from(colorMap.values());
-        const originalColor = (scarf.color || '').toLowerCase();
+        const originalColor = getColorName(scarf.color).toLowerCase();
 
         // Sort to put the original/current color first
         variants.sort((a, b) => {
@@ -65,28 +80,30 @@ const ScarfCard = memo(({ scarf, colorVariants = [] }: ScarfCardProps) => {
         });
 
         return variants;
-    }, [colorVariants, productId, scarf.color]);
+    }, [colorVariants, productId, scarf]);
 
     // Current color of the scarf (for display, not for sorting)
-    const currentColor = (activeVariant?.color || scarf.color || '').toLowerCase();
+    const scarfColor = getColorName(scarf.color);
+    const currentColor = (activeVariant?.color || scarfColor || '').toLowerCase();
 
     // Determine displayed variant (active or original)
     const displayedVariant = useMemo(() => {
         if (activeVariant) {
             return {
                 id: activeVariant.id,
-                name: activeVariant.name || scarf.name,
-                price: activeVariant.price || scarf.price,
-                image: activeVariant.mainImage || scarf.image,
-                imageHover: activeVariant.hoverImage || activeVariant.mainImage || scarf.imageHover
+                name: activeVariant.name,
+                price: activeVariant.price,
+                image: activeVariant.image,
+                imageHover: activeVariant.imageHover
             };
         }
+
         return {
-            id: scarf.id || scarf._id,
-            name: scarf.name,
+            id: scarf._id, // safe access
+            name: scarf.name || (scarf as IEnrichedVariant).productInfo?.name || 'Product',
             price: scarf.price,
-            image: scarf.image || scarf.mainImage,
-            imageHover: scarf.imageHover
+            image: scarf.mainImage,
+            imageHover: scarf.hoverImage || scarf.mainImage
         };
     }, [activeVariant, scarf]);
 
@@ -97,7 +114,7 @@ const ScarfCard = memo(({ scarf, colorVariants = [] }: ScarfCardProps) => {
     const hasColorVariants = uniqueColorVariants.length > 1;
 
     // Handle color click
-    const handleColorClick = useCallback((e: MouseEvent, variant: any) => {
+    const handleColorClick = useCallback((e: MouseEvent, variant: IActiveVariant) => {
         e.preventDefault();
         e.stopPropagation();
         setActiveVariant(variant);

@@ -36,7 +36,7 @@ const ForgotPasswordForm = ({
         if (!email.trim()) {
             return 'Email is required';
         }
-        if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+        if (!/^\w+([-.]?\w+)*@\w+([-.]?\w+)*(\.\w{2,3})+$/.test(email)) {
             return 'Invalid email address';
         }
         return '';

@@ -16,11 +16,11 @@ export const formatDate = (
   formatString = 'MM/dd/yyyy'
 ): string => {
   if (!dateString) return '—';
-  
+
   try {
     const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
     return format(date, formatString, { locale: enUS });
-  } catch (error) {
+  } catch {
     console.error('Invalid date format:', dateString);
     return '—';
   }
@@ -40,10 +40,10 @@ export const formatDateTime = (dateString: string | Date | null | undefined): st
  */
 export const formatPhoneNumber = (phone: string | null | undefined): string => {
   if (!phone) return '—';
-  
+
   // Remove all non-numeric characters
   const cleaned = phone.replace(/\D/g, '');
-  
+
   // Vietnamese phone format
   if (cleaned.startsWith('84')) {
     // +84 xxx xxx xxx
@@ -52,7 +52,7 @@ export const formatPhoneNumber = (phone: string | null | undefined): string => {
     // 0xxx xxx xxx
     return `${cleaned.slice(0, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
   }
-  
+
   return phone;
 };
 
@@ -61,7 +61,7 @@ export const formatPhoneNumber = (phone: string | null | undefined): string => {
  */
 export const formatCurrency = (amount: number | null | undefined): string => {
   if (amount === null || amount === undefined) return '$0.00';
-  
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -99,14 +99,14 @@ export const getDisplayName = (
  */
 export const maskEmail = (email: string | null | undefined): string => {
   if (!email) return '—';
-  
+
   const [localPart, domain] = email.split('@');
   if (!domain) return email;
-  
+
   if (localPart.length <= 2) {
     return `${localPart[0]}***@${domain}`;
   }
-  
+
   return `${localPart[0]}***${localPart[localPart.length - 1]}@${domain}`;
 };
 
@@ -116,13 +116,13 @@ export const maskEmail = (email: string | null | undefined): string => {
  */
 export const maskPhone = (phone: string | null | undefined): string => {
   if (!phone) return '—';
-  
+
   const cleaned = phone.replace(/\D/g, '');
   const lastFour = cleaned.slice(-4);
-  
+
   if (cleaned.startsWith('84')) {
     return `+84 *** *** ${lastFour}`;
   }
-  
+
   return `*** *** ${lastFour}`;
 };

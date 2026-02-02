@@ -1,17 +1,18 @@
+
 /**
  * ChatMessage Component
  * Displays individual chat messages with streaming animation
- * Refactored to use extracted StreamingText component
+ * Refactored to use extracted sub-components
  */
 
 import { memo, useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import styles from './ChatMessage.module.css';
 import StreamingText from './StreamingText';
-import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
 import { parseBoldText } from '../utils/chatValidation';
 import type { ChatMessage as ChatMessageType, SuggestedAction, ActionType } from '../types';
-import { DirectionsIcon } from './ChatIcons';
+import { DirectionsIcon } from './icons';
+import ChatProductCard from './ChatProductCard';
+import ChatActionButtons from './ChatActionButtons';
 
 interface ChatMessageProps {
     message: ChatMessageType;
@@ -61,13 +62,6 @@ const ChatMessage = memo<ChatMessageProps>(({
             setShowActions(true);
         }
     }, [shouldStream]);
-
-    /**
-     * Format price to USD
-     */
-    const formatPrice = useCallback((price: number): string => {
-        return '$' + new Intl.NumberFormat('en-US').format(price);
-    }, []);
 
     /**
      * Render message with bold text support (for non-streaming)
@@ -125,37 +119,10 @@ const ChatMessage = memo<ChatMessageProps>(({
                     showProducts && (
                         <div className={`${styles.products} ${styles.fadeIn}`}>
                             {message.suggestedProducts.map((product) => (
-                                <Link
-                                    to={`/product-detail?variant=${product.variantId || product._id}`}
+                                <ChatProductCard
                                     key={product._id}
-                                    className={`${styles.productCard} ${!product.inStock ? styles.outOfStock : ''
-                                        }`}
-                                >
-                                    {product.mainImage && (
-                                        <div className={styles.imageWrapper}>
-                                            <img
-                                                src={getOptimizedImageUrl(product.mainImage)}
-                                                alt={product.name}
-                                                loading="lazy"
-                                            />
-                                            {!product.inStock && (
-                                                <div className={styles.outOfStockOverlay}>
-                                                    <span>Hết hàng</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <div className={styles.productInfo}>
-                                        <span className={styles.productName}>{product.name}</span>
-                                        <span className={styles.productPrice}>
-                                            {product.minPrice === product.maxPrice
-                                                ? formatPrice(product.minPrice)
-                                                : `${formatPrice(product.minPrice)} - ${formatPrice(
-                                                    product.maxPrice
-                                                )}`}
-                                        </span>
-                                    </div>
-                                </Link>
+                                    product={product}
+                                />
                             ))}
                         </div>
                     )}
@@ -190,19 +157,11 @@ const ChatMessage = memo<ChatMessageProps>(({
                     message.suggestedAction &&
                     !message.actionHandled &&
                     showActions && (
-                        <div className={`${styles.actionButtons} ${styles.fadeIn}`}>
-                            <p className={styles.actionPrompt}>
-                                {message.suggestedAction.prompt}
-                            </p>
-                            <div className={styles.buttonGroup}>
-                                <button className={styles.yesButton} onClick={handleYesClick}>
-                                    Có, thêm vào giỏ
-                                </button>
-                                <button className={styles.noButton} onClick={handleNoClick}>
-                                    Không, cảm ơn
-                                </button>
-                            </div>
-                        </div>
+                        <ChatActionButtons
+                            prompt={message.suggestedAction.prompt}
+                            onYes={handleYesClick}
+                            onNo={handleNoClick}
+                        />
                     )}
 
                 {/* Action Result Feedback */}

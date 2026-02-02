@@ -4,7 +4,7 @@ import { useAuthStore } from '@/core/stores/useAuthStore';
 import RegisterForm from '@/shared/components/form/RegisterForm';
 import { useRegister, useGoogleAuth } from '@/features/auth/hooks';
 import { RegisterData, AuthResponse } from '@/features/auth/types';
-import { AUTH_MESSAGES } from '@/features/auth/constants';
+import { AUTH_MESSAGES, getWelcomeMessage } from '@/features/auth/constants';
 import styles from './RegisterPage.module.css';
 
 /**
@@ -25,7 +25,7 @@ export default function RegisterPage() {
                 if (response.token && response.user) {
                     loginToStore(response.token, response.user);
                     navigate('/');
-                    toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
+                    toast.success(getWelcomeMessage(response.user.firstName));
                 } else {
                     // Verification flow
                     toast.success(AUTH_MESSAGES.REGISTER_SUCCESS);
@@ -42,7 +42,7 @@ export default function RegisterPage() {
             onSuccess: (response: AuthResponse) => {
                 loginToStore(response.token, response.user);
                 navigate('/');
-                toast.success(`Welcome, ${response.user.firstName || 'User'}!`);
+                toast.success(getWelcomeMessage(response.user.firstName));
             },
             onError: (error) => {
                 toast.error(error.message || AUTH_MESSAGES.GOOGLE_REGISTER_FAILED);

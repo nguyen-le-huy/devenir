@@ -16,7 +16,7 @@ export const useShippingAddress = () => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const token = useAuthStore((state) => state.token);
 
-    return useQuery({
+    return useQuery<ShippingAddress | null>({
         queryKey: shippingKeys.address(),
         queryFn: shippingService.getShippingAddress,
         enabled: isAuthenticated && !!token,

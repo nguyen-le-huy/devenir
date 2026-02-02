@@ -1,12 +1,9 @@
 import { useState } from 'react';
-import { LoginData } from '@/features/auth/types';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 import LoginForm from '@/shared/components/form/LoginForm';
 import ForgotPasswordForm from '@/shared/components/form/ForgotPasswordForm';
-import { useLogin, useGoogleAuth, useForgotPassword } from '@/features/auth/hooks';
-import { AUTH_MESSAGES } from '@/features/auth/constants';
+import { useAuthActions } from '@/features/auth/hooks';
 import styles from './AuthModal.module.css';
 import Backdrop from '@/shared/components/Backdrop/Backdrop';
 
@@ -25,48 +22,24 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const [activeForm, setActiveForm] = useState<'login' | 'forgot'>('login');
     const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
 
-    // Hooks
-    const loginMutation = useLogin();
-    const googleAuthMutation = useGoogleAuth();
-    const forgotPasswordMutation = useForgotPassword();
+    // Auth actions hook with modal close callback
+    const { 
+        handleLogin, 
+        handleGoogleLogin, 
+        handleForgotPassword,
+        isLoginLoading,
+        isGoogleLoading,
+        isForgotPasswordLoading,
+        loginError,
+        forgotPasswordError
+    } = useAuthActions({ onSuccess: onClose });
 
     if (!isOpen) return null;
 
-    // ============ LOGIN HANDLER ============
-    const handleLogin = (data: LoginData) => {
-        loginMutation.mutate(data, {
-            onSuccess: () => {
-                onClose();
-                toast.success(AUTH_MESSAGES.LOGIN_SUCCESS);
-            },
-            onError: (error) => {
-                toast.error(error.message || AUTH_MESSAGES.LOGIN_FAILED);
-            }
-        });
-    };
-
-    // ============ GOOGLE LOGIN HANDLER ============
-    const handleGoogleLogin = (credential: string | undefined) => {
-        if (!credential) return;
-
-        googleAuthMutation.mutate(credential, {
-            onSuccess: (response) => {
-                onClose();
-                toast.success(`Welcome back, ${response.user.firstName || 'User'}!`);
-            },
-            onError: (error) => {
-                toast.error(error.message || AUTH_MESSAGES.GOOGLE_LOGIN_FAILED);
-            }
-        });
-    };
-
-    // ============ FORGOT PASSWORD HANDLER ============
-    const handleForgotPassword = (data: { email: string }) => {
-        forgotPasswordMutation.mutate(data, {
-            onSuccess: () => {
-                setForgotPasswordSubmitted(true);
-            }
-        });
+    // ============ WRAPPED HANDLERS WITH LOCAL STATE ============
+    const handleForgotPasswordWithSuccess = (data: { email: string }) => {
+        handleForgotPassword(data);
+        setForgotPasswordSubmitted(true);
     };
 
     // ============ FORM SWITCHERS ============
@@ -115,8 +88,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                                 onForgotPassword={switchToForgotPassword}
                                 onGoogleLogin={handleGoogleLogin}
                                 onSwitchToRegister={switchToRegister}
-                                loading={loginMutation.isPending || googleAuthMutation.isPending}
-                                error={loginMutation.error?.message ?? ''}
+                                loading={isLoginLoading || isGoogleLoading}
+                                error={loginError?.message ?? ''}
                             />
                         </div>
                     )}
@@ -126,10 +99,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                             {!forgotPasswordSubmitted ? (
                                 <>
                                     <ForgotPasswordForm
-                                        onSubmit={handleForgotPassword}
+                                        onSubmit={handleForgotPasswordWithSuccess}
                                         onBack={switchToLogin}
-                                        loading={forgotPasswordMutation.isPending}
-                                        error={forgotPasswordMutation.error?.message ?? ''}
+                                        loading={isForgotPasswordLoading}
+                                        error={forgotPasswordError?.message ?? ''}
                                     />
                                 </>
                             ) : (

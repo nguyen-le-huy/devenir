@@ -25,7 +25,9 @@ class TrackingService {
         const parsed = JSON.parse(authState)
         if (parsed?.state?.token) return parsed.state.token
       }
-    } catch (e) { }
+    } catch {
+      // Intentionally ignore parse errors - return fallback token
+    }
     return localStorage.getItem('token')
   }
 

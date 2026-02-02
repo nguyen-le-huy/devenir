@@ -1,8 +1,14 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
+import styles from './ErrorBoundary.module.css';
 
 interface ErrorBoundaryProps {
     children: ReactNode;
     fallback?: ReactNode;
+    /**
+     * Callback executed when user clicks reset/try again
+     * Useful for navigating back or clearing state
+     */
+    onReset?: () => void;
 }
 
 interface ErrorBoundaryState {
@@ -10,6 +16,17 @@ interface ErrorBoundaryState {
     error: Error | null;
 }
 
+/**
+ * ErrorBoundary - Catches runtime errors in component tree
+ * Prevents white screen of death, provides graceful error UI
+ * 
+ * @example
+ * ```tsx
+ * <ErrorBoundary onReset={() => navigate('/auth')}>
+ *   <SomePageThatMightCrash />
+ * </ErrorBoundary>
+ * ```
+ */
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     constructor(props: ErrorBoundaryProps) {
         super(props);
@@ -17,54 +34,50 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     }
 
     static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-        // Update state so the next render will show the fallback UI.
         return { hasError: true, error };
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-        // You can also log the error to an error reporting service
-        console.error("Uncaught error:", error, errorInfo);
+        // Log to error reporting service (Sentry, DataDog, etc.)
+        console.error('[ErrorBoundary] Caught error:', error, errorInfo);
+        
+        // In production, send to monitoring service
+        if (process.env.NODE_ENV === 'production') {
+            // window.analytics?.track('Error Boundary Triggered', { error: error.message });
+        }
     }
+
+    handleReset = () => {
+        this.setState({ hasError: false, error: null });
+        this.props.onReset?.();
+    };
 
     render(): ReactNode {
         if (this.state.hasError) {
-            // You can render any custom fallback UI
             if (this.props.fallback) {
                 return this.props.fallback;
             }
+
             return (
-                <div style={{
-                    padding: '2rem',
-                    textAlign: 'center',
-                    color: '#333', // Default to dark text, can be overridden by CSS
-                    height: '100vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    background: '#f8f9fa'
-                }}>
-                    <h2>Something went wrong.</h2>
-                    {this.state.error && (
-                        <details style={{ whiteSpace: 'pre-wrap', marginBottom: '1rem', maxWidth: '80%' }}>
-                            <summary>Error Details</summary>
-                            {this.state.error.toString()}
-                        </details>
-                    )}
-                    <button
-                        onClick={() => window.location.reload()}
-                        style={{
-                            padding: '10px 20px',
-                            cursor: 'pointer',
-                            backgroundColor: '#000',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '1rem'
-                        }}
-                    >
-                        Reload Page
-                    </button>
+                <div className={styles.errorContainer}>
+                    <div className={styles.errorCard}>
+                        <div className={styles.errorIcon}>⚠️</div>
+                        <h1 className={styles.title}>Something went wrong</h1>
+                        <p className={styles.message}>
+                            {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
+                        </p>
+                        
+                        {process.env.NODE_ENV === 'development' && this.state.error && (
+                            <details className={styles.errorDetails}>
+                                <summary>Error Stack (Dev Only)</summary>
+                                <pre>{this.state.error.stack}</pre>
+                            </details>
+                        )}
+
+                        <button onClick={this.handleReset} className={styles.retryButton}>
+                            Try Again
+                        </button>
+                    </div>
                 </div>
             );
         }

@@ -1,11 +1,14 @@
 import { useState, useEffect, memo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/core/stores/useAuthStore';
+import { useAuthStore, type AuthState } from '@/core/stores/useAuthStore';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import ProfileOverview from '@/features/user/components/profile/ProfileOverview';
 import PersonalDetails from '@/features/user/components/profile/PersonalDetails';
 import MarketingPreferences from '@/features/user/components/profile/MarketingPreferences';
 import ProfileOrders from '@/features/user/components/profile/ProfileOrders';
 import PageWrapper from '@/shared/components/PageWrapper/PageWrapper';
+import { AdminIcon } from '@/shared/components/icons/AdminIcon';
+import { LogoutIcon } from '@/shared/components/icons/LogoutIcon';
 import styles from './UserProfile.module.css';
 
 /**
@@ -31,14 +34,14 @@ const navItems = [
 const UserProfile = memo(() => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    
+
     // Atomic selectors - only subscribe to needed state
-    const user = useAuthStore((state) => state.user);
-    const logout = useAuthStore((state) => state.logout);
-    
+    const user = useAuthStore((state: AuthState) => state.user);
+    const logout = useAuthStore((state: AuthState) => state.logout);
+
     const initialTab = searchParams.get('tab') || 'overview';
     const [activeTab, setActiveTab] = useState(initialTab);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const isMobile = useMediaQuery('(max-width: 768px)');
 
     // Protected route - redirect if not authenticated
     useEffect(() => {
@@ -47,16 +50,6 @@ const UserProfile = memo(() => {
         }
     }, [user, navigate]);
 
-    // Handle window resize for responsive
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
     const handleLogout = () => {
         logout();
         navigate('/auth');
@@ -64,7 +57,8 @@ const UserProfile = memo(() => {
 
     const handleGoToAdmin = () => {
         // Open admin panel - user must login again for security
-        window.open('http://localhost:5173', '_blank');
+        // Use environment variable in real app
+        window.open('http://devenir-admin.vercel.app', '_blank');
     };
 
     const handleTabChange = (id: string) => {
@@ -73,20 +67,23 @@ const UserProfile = memo(() => {
     };
 
     const renderContent = () => {
+        if (!user) return null;
+
         switch (activeTab) {
             case 'overview':
                 return (
                     <ProfileOverview
-                        user={user as any}
+                        user={user}
                         onEditProfile={() => handleTabChange('personal')}
+                        onEditPreferences={() => handleTabChange('preferences')}
                     />
                 );
             case 'personal':
-                return <PersonalDetails user={user as any} />;
+                return <PersonalDetails user={user} />;
             case 'orders':
                 return <ProfileOrders />;
             case 'preferences':
-                return <MarketingPreferences user={user as any} />;
+                return <MarketingPreferences user={user} />;
             default:
                 return null;
         }
@@ -94,7 +91,7 @@ const UserProfile = memo(() => {
 
     // Early return if not authenticated
     if (!user) {
-        return null;
+        return null; // or loading spinner
     }
 
     return (
@@ -145,14 +142,12 @@ const UserProfile = memo(() => {
                                     </div>
                                 </div>
 
-                                {user?.role === 'admin' && (
+                                {user.role === 'admin' && (
                                     <button
                                         className={styles.adminBtn}
                                         onClick={handleGoToAdmin}
                                     >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M13 21H3V8H1V3H5V1H8V3H16V1H19V3H23V8H21V21H11V23H13V21ZM19 5H5V7H19V5ZM3 9H21V21H3V9Z" fill="currentColor" />
-                                        </svg>
+                                        <AdminIcon />
                                         Admin Dashboard
                                     </button>
                                 )}
@@ -161,9 +156,7 @@ const UserProfile = memo(() => {
                                     className={styles.logoutBtn}
                                     onClick={handleLogout}
                                 >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M9 21H5C4.44772 21 4 20.5523 4 20V4C4 3.44772 4.44772 3 5 3H9M16 17L21 12M21 12L16 7M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
+                                    <LogoutIcon />
                                     Sign out
                                 </button>
                             </div>
@@ -174,7 +167,7 @@ const UserProfile = memo(() => {
                     <main className={styles.mainContent}>
                         {/* Greeting */}
                         <div className={styles.greeting}>
-                            <h1>Hi, {user?.username || user?.email?.split('@')[0]}</h1>
+                            <h1>Hi, {user.username || user.email?.split('@')[0]}</h1>
                         </div>
 
                         {/* Content Section */}

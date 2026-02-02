@@ -3,12 +3,15 @@ import { IProduct, IVariant } from '@/features/products/types';
 // Re-export for convenience
 export type { IProduct };
 
+// Re-export API types
+export * from './api.types';
+
 /**
  * Product Variant Interface - Extended from products feature
- * Added cart-specific fields
+ * Added cart-specific fields with populated references
  */
-export interface IProductVariant extends IVariant {
-    product_id: IProduct; // Populated product reference
+export interface IProductVariant extends Omit<IVariant, 'product_id' | 'color'> {
+    product_id: IProduct; // Populated product reference (override from string to IProduct)
     color: {
         _id?: string;
         name: string;

@@ -1,6 +1,7 @@
 import { memo } from 'react';
-import ProductCarousel from '@/features/products/components/ProductCarousel/ProductCarousel.jsx';
+import ProductCarousel from '@/features/products/components/ProductCarousel/ProductCarousel';
 import { useScarves } from '@/features/home/hooks/useHomeProducts';
+import type { ScarvesProduct } from '@/features/home/types';
 
 const Scarves = memo(() => {
     // Use custom hook for scarves collection
@@ -23,11 +24,27 @@ const Scarves = memo(() => {
         return null;
     }
 
+    // Map ScarvesProduct to format compatible with ScarfCard
+    const mappedProducts = products.map((product: ScarvesProduct) => ({
+        _id: product.id,
+        product_id: product.id,
+        sku: product.sku,
+        price: product.price,
+        basePrice: product.price,
+        color: 'Unknown', // Scarves don't have color in the type
+        size: 'Free Size',
+        stock: 0,
+        mainImage: product.image,
+        hoverImage: product.imageHover,
+        images: [product.image],
+        name: product.name,
+    }));
+
     return (
         <ProductCarousel
             title="Scarves Collection"
             viewAllLink="/products?category=scarves"
-            products={products}
+            products={mappedProducts}
             showViewAll={true}
         />
     );

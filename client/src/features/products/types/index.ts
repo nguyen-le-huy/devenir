@@ -52,7 +52,7 @@ export interface IVariant {
     price: number;
     basePrice: number;
     salePrice?: number;
-    color: string;
+    color: string | IColor;
     colorName?: string;
     size: string;
     stock: number;
@@ -60,6 +60,15 @@ export interface IVariant {
     hoverImage?: string;
     images: string[];
     createdAt?: string;
+    // For handling populated or derived data
+    colorCode?: string;
+    colorHex?: string;
+    name?: string; // Sometimes variant has a name override or flattened from product
+}
+
+export interface IScarfCardProps {
+    scarf: IEnrichedVariant | IVariant;
+    colorVariants?: IVariant[] | IEnrichedVariant[];
 }
 
 /**
@@ -113,7 +122,7 @@ export interface IApiResponse<T> {
     message?: string;
 }
 
-export interface IProductListResponse extends IApiResponse<IProduct[]> { }
+export type IProductListResponse = IApiResponse<IProduct[]>;
 
 export interface IVariantDetailResponse {
     variant: IVariant;

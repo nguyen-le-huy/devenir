@@ -51,3 +51,10 @@ export interface IOrderFilters {
     limit?: number;
     status?: OrderStatus;
 }
+
+export interface IOrderListResponse {
+    data: IOrder[];
+    total: number;
+    page: number;
+    pages: number;
+}

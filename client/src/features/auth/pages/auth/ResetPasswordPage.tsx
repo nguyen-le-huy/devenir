@@ -5,6 +5,7 @@ import FormButton from '@/shared/components/form/FormButton';
 import FormError from '@/shared/components/form/FormError';
 import { useResetPassword } from '@/features/auth/hooks';
 import { AUTH_MESSAGES } from '@/features/auth/constants';
+import { validateResetPasswordForm } from '@/features/auth/utils/validation';
 import styles from './ResetPasswordPage.module.css';
 
 /**
@@ -37,28 +38,11 @@ const ResetPasswordPage = () => {
         }
     };
 
-    const validateForm = () => {
-        const errors: Record<string, string> = {};
-
-        if (!formData.newPassword) {
-            errors.newPassword = 'Mật khẩu mới không được để trống';
-        } else if (formData.newPassword.length < 6) {
-            errors.newPassword = 'Mật khẩu phải ít nhất 6 ký tự';
-        }
-
-        if (!formData.confirmPassword) {
-            errors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
-        } else if (formData.newPassword !== formData.confirmPassword) {
-            errors.confirmPassword = 'Mật khẩu không khớp';
-        }
-
-        return errors;
-    };
-
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
-        const errors = validateForm();
+        // Use extracted validation utility
+        const errors = validateResetPasswordForm(formData);
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
             return;

@@ -1,9 +1,11 @@
-import { 
-  getLatestVariants, 
-  getVariantsByCategoryWithChildren 
+import {
+  getLatestVariants,
+  getVariantsByCategoryWithChildren
 } from '@/features/products/api/productService';
 import { getAllCategories } from '@/features/products/api/categoryService';
-import type { NewArrivalProduct, ScarvesProduct, CategoryData } from '../types';
+import { getColorName } from '@/features/products/utils/productUtils';
+import type { NewArrivalProduct, ScarvesProduct } from '../types';
+import type { ICategory, IEnrichedVariant } from '@/features/products/types';
 
 /**
  * Home Feature API Service
@@ -20,13 +22,13 @@ class HomeService {
     try {
       const variants = await getLatestVariants(limit);
 
-      return variants.map((variant) => ({
+      return variants.map((variant: IEnrichedVariant) => ({
         id: variant._id,
         name: variant.productInfo?.name || 'Unknown Product',
         price: variant.price,
         image: variant.mainImage || '/images/placeholder.png',
         imageHover: variant.hoverImage || variant.mainImage || '/images/placeholder.png',
-        color: variant.color,
+        color: getColorName(variant.color),
         size: variant.size,
         sku: variant.sku,
       }));
@@ -44,21 +46,16 @@ class HomeService {
   async getScarvesCollection(): Promise<ScarvesProduct[]> {
     try {
       // Fetch all categories
-      const categoriesResponse = await getAllCategories();
-      
-      let categories: CategoryData[] = [];
-      if (categoriesResponse?.data) {
-        categories = categoriesResponse.data;
-      } else if (Array.isArray(categoriesResponse)) {
-        categories = categoriesResponse;
-      }
+      const response = await getAllCategories();
+
+      const categories: ICategory[] = response.data || [];
 
       if (!categories || categories.length === 0) {
         return [];
       }
 
       // Find parent Scarves category
-      const scarvesCategory = categories.find((cat: CategoryData) => {
+      const scarvesCategory = categories.find((cat: ICategory) => {
         const name = cat.name?.toLowerCase() || '';
         return name === 'scarves' || name === 'scarf';
       });
@@ -70,7 +67,7 @@ class HomeService {
       // Fetch variants from all scarves categories
       const allVariants = await getVariantsByCategoryWithChildren(
         scarvesCategory._id,
-        categories as any
+        categories
       );
 
       if (!allVariants || allVariants.length === 0) {
@@ -78,7 +75,7 @@ class HomeService {
       }
 
       // Transform and limit to 12 products for carousel
-      return (allVariants as any[]).slice(0, 12).map((variant) => ({
+      return allVariants.slice(0, 12).map((variant: IEnrichedVariant) => ({
         id: variant._id,
         name: variant.productInfo?.name || 'Scarf',
         price: variant.price,

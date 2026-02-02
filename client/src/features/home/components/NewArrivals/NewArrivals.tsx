@@ -119,8 +119,8 @@ const NewArrivals = memo(() => {
     }
 
     return (
-        <section 
-            className={`${styles.newArrivals} container`} 
+        <section
+            className={`${styles.newArrivals} container`}
             ref={newArrContainerRef}
             aria-labelledby="new-arrivals-title"
         >
@@ -134,7 +134,23 @@ const NewArrivals = memo(() => {
             </div>
             <div className={styles.productList}>
                 {products.map((product: NewArrivalProduct) => (
-                    <ScarfCard key={product.id} scarf={product} />
+                    <ScarfCard
+                        key={product.id}
+                        scarf={{
+                            _id: product.id,
+                            product_id: product.id,
+                            sku: product.sku,
+                            price: product.price,
+                            basePrice: product.price,
+                            color: product.color || 'Unknown',
+                            size: product.size || 'Free Size',
+                            stock: 0,
+                            mainImage: product.image,
+                            hoverImage: product.imageHover,
+                            images: [product.image],
+                            name: product.name,
+                        }}
+                    />
                 ))}
             </div>
         </section>

@@ -1,35 +1,13 @@
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
 import { useUserOrders } from '@/features/user/hooks';
-import { formatCurrency } from '@/features/user/utils';
+import { formatCurrency, formatDate } from '@/shared/utils/format';
+import { IOrder, IOrderItem } from '@/features/orders/types';
+import FormButton from '@/shared/components/form/FormButton';
 import styles from './ProfileOrders.module.css';
 
 /**
- * Order type (should be moved to features/orders/types in future)
+ * Status mapping
  */
-interface OrderItem {
-    name: string;
-    color: string;
-    size: string;
-    quantity: number;
-    price: number;
-}
-
-interface Order {
-    _id: string;
-    status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
-    totalPrice: number;
-    paymentMethod?: string;
-    trackingNumber?: string;
-    orderItems: OrderItem[];
-    createdAt: string;
-    paidAt?: string;
-    shippedAt?: string;
-    deliveredAt?: string;
-    estimatedDelivery?: string;
-}
-
 const statusText: Record<string, string> = {
     all: 'All',
     pending: 'Pending',
@@ -41,14 +19,10 @@ const statusText: Record<string, string> = {
 
 const flow = ['pending', 'paid', 'shipped', 'delivered'];
 
-const formatDate = (v: string | undefined): string => 
-    v ? format(new Date(v), 'MM/dd HH:mm', { locale: enUS }) : '—';
-
 /**
  * Timeline Component
- * Displays order progress timeline
  */
-function Timeline({ order }: { order: Order }) {
+function Timeline({ order }: { order: IOrder }) {
     const currentIndex = flow.indexOf(order.status);
     const steps = [
         { key: 'pending', label: 'Ordered', at: order.createdAt },
@@ -65,7 +39,7 @@ function Timeline({ order }: { order: Order }) {
                     <div key={step.key} className={styles.step}>
                         <div className={`${styles.dot} ${active ? styles.dotActive : ''}`} />
                         <div className={styles.stepLabel}>{step.label}</div>
-                        <div className={styles.stepTime}>{formatDate(step.at)}</div>
+                        <div className={styles.stepTime}>{formatDate(step.at, 'MM/dd HH:mm')}</div>
                         {idx < steps.length - 1 && (
                             <div className={`${styles.line} ${active ? styles.lineActive : ''}`} />
                         )}
@@ -78,9 +52,8 @@ function Timeline({ order }: { order: Order }) {
 
 /**
  * Detail Panel Component
- * Displays order details and timeline
  */
-function DetailPanel({ order, showTimeline = false }: { order: Order | null; showTimeline?: boolean }) {
+function DetailPanel({ order, showTimeline = false }: { order: IOrder | null; showTimeline?: boolean }) {
     if (!order) {
         return (
             <div className={styles.detailPlaceholder}>
@@ -90,7 +63,7 @@ function DetailPanel({ order, showTimeline = false }: { order: Order | null; sho
         );
     }
 
-    const totalItems = order.orderItems?.reduce((sum: number, item: OrderItem) => 
+    const totalItems = order.orderItems?.reduce((sum: number, item: IOrderItem) =>
         sum + (item.quantity || 0), 0) || 0;
 
     return (
@@ -98,7 +71,7 @@ function DetailPanel({ order, showTimeline = false }: { order: Order | null; sho
             <div className={styles.detailHeader}>
                 <div>
                     <div className={styles.code}>#{order._id.slice(-8).toUpperCase()}</div>
-                    <div className={styles.subtle}>Ordered at {formatDate(order.createdAt)}</div>
+                    <div className={styles.subtle}>Ordered at {formatDate(order.createdAt, 'MMM d, h:mm a')}</div>
                 </div>
             </div>
 
@@ -124,12 +97,12 @@ function DetailPanel({ order, showTimeline = false }: { order: Order | null; sho
             {showTimeline && <Timeline order={order} />}
 
             <div className={styles.itemsList}>
-                {order.orderItems?.map((item: OrderItem, idx: number) => (
+                {order.orderItems?.map((item: IOrderItem, idx: number) => (
                     <div key={idx} className={styles.itemRow}>
                         <div>
                             <div className={styles.itemName}>{item.name}</div>
                             <div className={styles.subtle}>
-                                {item.color} / {item.size} • x{item.quantity}
+                                {item.variantName ? `${item.variantName} • ` : ''} x{item.quantity}
                             </div>
                         </div>
                         <div className={styles.amount}>{formatCurrency(item.price)}</div>
@@ -142,20 +115,19 @@ function DetailPanel({ order, showTimeline = false }: { order: Order | null; sho
 
 /**
  * Ship Status Strip Component
- * Compact order status for mobile/desktop hero area
  */
-function ShipStatusStrip({ order }: { order: Order | null }) {
+function ShipStatusStrip({ order }: { order: IOrder | null }) {
     if (!order) return null;
-    
-    const totalItems = order.orderItems?.reduce((sum: number, item: OrderItem) => 
+
+    const totalItems = order.orderItems?.reduce((sum: number, item: IOrderItem) =>
         sum + (item.quantity || 0), 0) || 0;
-    
+
     return (
         <div className={styles.shipStrip}>
             <div className={styles.stripHeader}>
                 <div>
                     <div className={styles.code}>#{order._id.slice(-8).toUpperCase()}</div>
-                    <div className={styles.subtle}>Ordered at {formatDate(order.createdAt)}</div>
+                    <div className={styles.subtle}>Ordered at {formatDate(order.createdAt, 'MMM d, h:mm a')}</div>
                 </div>
                 <div className={styles.stripMeta}>
                     <span>Tracking: {order.trackingNumber || 'Processing'}</span>
@@ -169,36 +141,44 @@ function ShipStatusStrip({ order }: { order: Order | null }) {
 
 /**
  * Profile Orders Component
- * Displays user's order history with realtime socket updates
- * 
- * Features:
- * - Realtime order status updates via Socket.IO
- * - Filtering by status and date
- * - Sorting (newest/oldest)
- * - Mobile/Desktop responsive views
- * - Loading skeleton for better UX
  */
 export default function ProfileOrders() {
-    // Use the new hook that combines React Query + Socket.IO
-    const { data, isLoading, error } = useUserOrders();
+    const [page, setPage] = useState(1);
+    const limit = 5;
 
-    // Handle both response structures: { data: [...] } or direct array
-    const orders: Order[] = Array.isArray(data) ? data as any : (data?.data as any || []);
-    
+    // Note: To implement true server-side pagination here, we'd need to update 
+    // useUserOrders to accept pagination params. For now, we'll implement 
+    // client-side pagination on the filtered results as a quick win,
+    // or update the hook if possible. 
+    // Given the previous refactor of OrdersPage used useMyOrders (NOT useUserOrders),
+    // and useUserOrders delegates to useMyOrders, we should pass params.
+    // However, useUserOrders currently doesn't accept args.
+    // Let's rely on client-side pagination for this specific dashboard component 
+    // unless we refactor useUserOrders too.
+
+    const { data: rawData, isLoading, error } = useUserOrders();
+
+    // Handle both response structures safely
+    const allOrders = useMemo(() => {
+        if (!rawData) return [];
+        if (Array.isArray(rawData)) return rawData as IOrder[];
+        return (rawData as any)?.data || [];
+    }, [rawData]);
+
     const [statusFilter, setStatusFilter] = useState('all');
     const [sortMode, setSortMode] = useState('newest');
     const [dateFilter, setDateFilter] = useState('');
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
-    // Memoized filtered and sorted orders
-    const filtered = useMemo(() => {
-        let list: Order[] = [...orders];
-        
+    // Filter & Sort Logic
+    const filteredOrders = useMemo(() => {
+        let list = [...allOrders];
+
         // Filter by status
         if (statusFilter !== 'all') {
             list = list.filter((order) => order.status === statusFilter);
         }
-        
+
         // Filter by date
         if (dateFilter) {
             const target = new Date(dateFilter);
@@ -207,18 +187,36 @@ export default function ProfileOrders() {
                 return orderDate.toDateString() === target.toDateString();
             });
         }
-        
+
         // Sort
         list.sort((a, b) => {
             const dateA = new Date(a.createdAt).getTime();
             const dateB = new Date(b.createdAt).getTime();
             return sortMode === 'newest' ? dateB - dateA : dateA - dateB;
         });
-        
-        return list;
-    }, [orders, statusFilter, sortMode, dateFilter]);
 
-    const selectedOrder = filtered.find((order) => order._id === selectedId) || filtered[0] || null;
+        return list;
+    }, [allOrders, statusFilter, sortMode, dateFilter]);
+
+    // Client-side Pagination Logic
+    const totalPages = Math.ceil(filteredOrders.length / limit);
+    const paginatedOrders = useMemo(() => {
+        const start = (page - 1) * limit;
+        return filteredOrders.slice(start, start + limit);
+    }, [filteredOrders, page, limit]);
+
+    // Reset page when filters change
+    useMemo(() => {
+        setPage(1);
+    }, [statusFilter, dateFilter]);
+
+    const selectedOrder = paginatedOrders.find((order) => order._id === selectedId) || paginatedOrders[0] || null;
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage);
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -229,34 +227,32 @@ export default function ProfileOrders() {
                 </div>
             </div>
 
-            {/* Error State */}
             {error && (
                 <div className={styles.error}>
                     Failed to load orders. Please try again.
                 </div>
             )}
 
-            {/* Hero Areas */}
-            <div className={styles.heroAreaDesktop}>
-                <ShipStatusStrip order={selectedOrder} />
-            </div>
+            {/* Hero Areas - Only show if we have data */}
+            {!isLoading && paginatedOrders.length > 0 && (
+                <>
+                    <div className={styles.heroAreaDesktop}>
+                        <ShipStatusStrip order={selectedOrder} />
+                    </div>
+                    <div className={styles.heroAreaMobile}>
+                        <DetailPanel order={selectedOrder} showTimeline />
+                    </div>
+                </>
+            )}
 
-            <div className={styles.heroAreaMobile}>
-                <DetailPanel order={selectedOrder} showTimeline />
-            </div>
-
-            {/* Loading Skeleton */}
-            {/* Empty State */}
-            {/* Empty State */}
-            {!isLoading && !orders.length && !error && (
+            {!isLoading && !allOrders.length && !error && (
                 <div className={styles.empty}>
                     <div>No orders found.</div>
                     <div className={styles.subtle}>Your order history will appear here.</div>
                 </div>
             )}
 
-            {/* Orders Table and Detail */}
-            {!isLoading && orders.length > 0 && (
+            {!isLoading && allOrders.length > 0 && (
                 <div className={styles.layoutSplit}>
                     <div className={styles.tableCard}>
                         <div className={styles.tableToolbar}>
@@ -298,7 +294,7 @@ export default function ProfileOrders() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filtered.map((order) => (
+                                    {paginatedOrders.map((order) => (
                                         <tr
                                             key={order._id}
                                             onClick={() => setSelectedId(order._id)}
@@ -321,17 +317,59 @@ export default function ProfileOrders() {
                                             <td className={styles.amount}>
                                                 {formatCurrency(order.totalPrice || 0)}
                                             </td>
-                                            <td>{formatDate(order.createdAt)}</td>
+                                            <td>{formatDate(order.createdAt, 'MMM d')}</td>
                                         </tr>
                                     ))}
+                                    {paginatedOrders.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className={styles.empty}>
+                                                No orders match your filter.
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className={styles.pagination}>
+                                <FormButton
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={page === 1}
+                                    onClick={() => handlePageChange(page - 1)}
+                                >
+                                    Previous
+                                </FormButton>
+                                <span className={styles.pageInfo}>
+                                    Page {page} of {totalPages}
+                                </span>
+                                <FormButton
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={page === totalPages}
+                                    onClick={() => handlePageChange(page + 1)}
+                                >
+                                    Next
+                                </FormButton>
+                            </div>
+                        )}
+
                     </div>
 
                     <div className={styles.detailSide}>
                         <DetailPanel order={selectedOrder} />
                     </div>
+                </div>
+            )}
+
+            {/* Loading Skeleton */}
+            {isLoading && (
+                <div className={styles.skeletonContainer}>
+                    <div className={styles.skeletonRow} />
+                    <div className={styles.skeletonRow} />
+                    <div className={styles.skeletonRow} />
                 </div>
             )}
         </div>

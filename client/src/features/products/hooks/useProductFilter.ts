@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { IEnrichedVariant } from '@/features/products/types';
+import { getColorName } from '@/features/products/utils/productUtils';
 
 /**
  * Product Filter Hook
@@ -47,21 +48,23 @@ export const useProductFilter = (
     selectedColors: string[]
 ): UseProductFilterResult => {
     return useMemo(() => {
-        // Extract unique colors from variants
-        const availableColors = [...new Set(variants.map((v) => v.color))].filter(Boolean);
+        // Extract unique colors from variants using helper to handle both string and IColor
+        const availableColors = [...new Set(variants.map((v) => getColorName(v.color)))].filter(Boolean);
 
         // Count unique product + color combinations
         const colorCounts: Record<string, number> = {};
         const countedProductColors = new Set<string>();
 
         variants.forEach((variant) => {
-            if (variant.color) {
+            const colorName = getColorName(variant.color);
+            if (colorName) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const productId = variant.productInfo?._id || (variant as any).product;
-                const key = `${productId}_${variant.color}`;
+                const key = `${productId}_${colorName}`;
 
                 if (!countedProductColors.has(key)) {
                     countedProductColors.add(key);
-                    colorCounts[variant.color] = (colorCounts[variant.color] || 0) + 1;
+                    colorCounts[colorName] = (colorCounts[colorName] || 0) + 1;
                 }
             }
         });
@@ -71,14 +74,16 @@ export const useProductFilter = (
 
         // 1. Color filter
         if (selectedColors.length > 0) {
-            filtered = filtered.filter((v) => selectedColors.includes(v.color));
+            filtered = filtered.filter((v) => selectedColors.includes(getColorName(v.color)));
         }
 
         // 2. Remove duplicates (keep one variant per product-color)
         const uniqueMap = new Map<string, boolean>();
         filtered = filtered.filter((variant) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const productId = variant.productInfo?._id || (variant as any).product;
-            const key = `${productId}_${variant.color}`;
+            const colorName = getColorName(variant.color);
+            const key = `${productId}_${colorName}`;
 
             if (!uniqueMap.has(key)) {
                 uniqueMap.set(key, true);

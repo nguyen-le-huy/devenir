@@ -1,14 +1,12 @@
+
 import { useRef, useEffect, useState, useCallback } from 'react';
 import styles from './ChatWindow.module.css';
 import DeviIcon from './DeviIcon';
 import ChatMessage from './ChatMessage';
+import ChatHeader from './ChatHeader';
+import ChatPrompts from './ChatPrompts';
+import ChatInput, { ChatInputHandle } from './ChatInput';
 import { useChat } from '../hooks/useChat';
-import {
-    ModelIcon, ExpandIcon, CloseIcon, TrackOrderIcon,
-    AnalyzeDataIcon, BestSellersIcon, ShippingIcon,
-    PaymentIcon, MoreIcon, SendIcon, VoiceIcon,
-    ShortcutsIcon, AttachIcon
-} from './ChatIcons';
 import gsap from 'gsap';
 import SplitText from 'gsap/src/SplitText';
 
@@ -23,7 +21,7 @@ const ChatWindow = ({ onClose }: ChatWindowProps) => {
     const contentRef = useRef<HTMLDivElement>(null);
     const promptsRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<ChatInputHandle>(null);
 
     const [inputValue, setInputValue] = useState('');
 
@@ -71,10 +69,11 @@ const ChatWindow = ({ onClose }: ChatWindowProps) => {
     useEffect(() => {
         if (!contentRef.current || !promptsRef.current) return;
 
-        let splits: any[] = [];
+        const splits: any[] = [];
         let tl: gsap.core.Timeline | null = null;
 
         const contentTexts = contentRef.current.querySelectorAll('.splitChat');
+        // promptItem class is inside ChatPrompts component
         const promptsItem = promptsRef.current.querySelectorAll('.promptItem');
 
         gsap.set(contentTexts, { visibility: 'hidden', opacity: 0 });
@@ -107,6 +106,7 @@ const ChatWindow = ({ onClose }: ChatWindowProps) => {
                 }, index * 0.15);
             });
 
+            // Animate prompts after text
             promptsItem.forEach((item) => {
                 tl!.to(item, {
                     duration: 0.6,
@@ -120,7 +120,7 @@ const ChatWindow = ({ onClose }: ChatWindowProps) => {
         return () => {
             if (tl) tl.kill();
             splits.forEach(split => {
-                try { split.revert(); } catch (e) { /* Ignore revert errors */ }
+                try { split.revert(); } catch { /* Ignore revert errors */ }
             });
         };
     }, []);
@@ -155,30 +155,10 @@ const ChatWindow = ({ onClose }: ChatWindowProps) => {
         sendMessage(promptText);
     }, [sendMessage]);
 
-    const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    }, [handleSend]);
-
-    const focusInput = useCallback(() => {
-        inputRef.current?.focus();
-    }, []);
-
     return (
         <div className={styles.chatWindow} ref={chatWindowRef} data-lenis-prevent>
             <div className={styles.top} data-scrollable data-chat-scroll>
-                <div className={styles.header}>
-                    <div className={styles.model}>
-                        <p>Devi Pro 3.1</p>
-                        <ModelIcon />
-                    </div>
-                    <div className={styles.button}>
-                        <ExpandIcon />
-                        <CloseIcon onClick={onClose} style={{ cursor: 'pointer' }} className={styles.close} />
-                    </div>
-                </div>
+                <ChatHeader onClose={onClose} />
 
                 {showInitialView ? (
                     <>
@@ -198,36 +178,11 @@ const ChatWindow = ({ onClose }: ChatWindowProps) => {
                                 me what you need
                             </p>
                         </div>
-                        <div className={styles.prompts} ref={promptsRef}>
-                            <div className={styles.row}>
-                                <div className={`${styles.prompt} promptItem`} onClick={() => handlePromptClick('Track my orders')}>
-                                    <TrackOrderIcon />
-                                    <p>Track orders</p>
-                                </div>
-                                <div className={`${styles.prompt} promptItem`} onClick={() => handlePromptClick('Analyze my shopping data')}>
-                                    <AnalyzeDataIcon />
-                                    <p>Analyze data</p>
-                                </div>
-                                <div className={`${styles.prompt} promptItem`} onClick={() => handlePromptClick('Show me best sellers')}>
-                                    <BestSellersIcon />
-                                    <p>Best sellers</p>
-                                </div>
-                            </div>
-                            <div className={styles.row}>
-                                <div className={`${styles.prompt} promptItem`} onClick={() => handlePromptClick("What's your shipping policy?")}>
-                                    <ShippingIcon />
-                                    <p>Shipping info</p>
-                                </div>
-                                <div className={`${styles.prompt} promptItem`} onClick={() => handlePromptClick('What payment methods do you accept?')}>
-                                    <PaymentIcon />
-                                    <p>Payment options</p>
-                                </div>
-                                <div className={`${styles.prompt} promptItem`} onClick={() => handlePromptClick('Tell me more')}>
-                                    <MoreIcon />
-                                    <p>More</p>
-                                </div>
-                            </div>
-                        </div>
+
+                        <ChatPrompts
+                            ref={promptsRef}
+                            onPromptClick={handlePromptClick}
+                        />
                     </>
                 ) : (
                     <div className={styles.messagesArea} data-lenis-prevent data-scrollable>
@@ -253,40 +208,13 @@ const ChatWindow = ({ onClose }: ChatWindowProps) => {
                     </div>
                 )}
             </div>
-            <div className={styles.bottom}>
-                <div className={styles.input} onClick={focusInput}>
-                    <input
-                        type="text"
-                        placeholder="How can I help?"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        ref={inputRef}
-                    />
-                    <div
-                        onClick={handleSend}
-                        style={{ cursor: inputValue.trim() ? 'pointer' : 'default', opacity: inputValue.trim() ? 1 : 0.5 }}
-                    >
-                        <SendIcon />
-                    </div>
-                </div>
-                <div className={styles.actions}>
-                    <div className={styles.action}>
-                        <VoiceIcon />
-                        <p>Voice mode</p>
-                    </div>
-                    <div className={styles.shortcuts}>
-                        <div className={styles.action}>
-                            <ShortcutsIcon />
-                            <p>Shortcuts</p>
-                        </div>
-                        <div className={styles.action}>
-                            <AttachIcon />
-                            <p>Attach</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
+            <ChatInput
+                ref={inputRef}
+                value={inputValue}
+                onChange={setInputValue}
+                onSend={handleSend}
+            />
         </div>
     );
 };
