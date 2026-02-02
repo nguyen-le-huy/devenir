@@ -20,7 +20,63 @@
 
 ---
 
-## 🚀 Setup GitHub Actions Runner (One-time)
+## � Setup GitHub Secrets (Bảo mật - Recommended)
+
+### Bước 1: Chuẩn bị Environment Files
+
+```bash
+# Trên server, đọc nội dung file .env
+cd ~/Development/devenir
+cat server/.env
+```
+
+**Copy toàn bộ output** (Ctrl+Shift+C)
+
+### Bước 2: Thêm Secrets vào GitHub
+
+1. Mở repository: `https://github.com/nguyen-le-huy/devenir`
+2. Vào **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Tạo secret:
+   - **Name:** `SERVER_ENV_FILE`
+   - **Secret:** (Paste toàn bộ nội dung file .env)
+   - Click **Add secret**
+
+### Bước 3: Thêm Secrets cho Client/Admin (Optional)
+
+Nếu client hoặc admin cũng có file `.env`:
+
+```bash
+# Client .env (nếu có)
+cat client/.env
+```
+
+Tạo secret:
+- **Name:** `CLIENT_ENV_FILE`
+- **Secret:** (Paste nội dung)
+
+```bash
+# Admin .env (nếu có)
+cat admin/.env
+```
+
+Tạo secret:
+- **Name:** `ADMIN_ENV_FILE`
+- **Secret:** (Paste nội dung)
+
+### Bước 4: Verify Secrets
+
+1. Vào **Settings** → **Secrets and variables** → **Actions**
+2. Phải thấy secrets đã tạo:
+   - ✅ `SERVER_ENV_FILE`
+   - ✅ `CLIENT_ENV_FILE` (optional)
+   - ✅ `ADMIN_ENV_FILE` (optional)
+
+**Lưu ý:** Sau khi tạo, bạn **KHÔNG THỂ** xem lại nội dung secret, chỉ có thể update hoặc xóa.
+
+---
+
+## �🚀 Setup GitHub Actions Runner (One-time)
 
 ### Bước 1: Verify Prerequisites
 
@@ -262,22 +318,31 @@ sudo ./svc.sh stop
 sudo ./svc.sh start
 ```
 
-### Problem: Build failed - "no such file or directory"
+### Problem: Build failed - "no such file or directory" hoặc ".env not found"
 
-**Nguyên nhân:** File `.env` bị thiếu
+**Nguyên nhân:** GitHub Secret chưa được setup hoặc sai tên
 
 **Giải pháp:**
 ```bash
+# 1. Verify secret đã tạo trên GitHub
+# Settings → Secrets → Actions → Phải có SERVER_ENV_FILE
+
+# 2. Nếu chưa có, tạo secret (xem phần Setup GitHub Secrets)
+
+# 3. Test workflow lại
+# Vào Actions → Re-run failed jobs
+```
+
+**Fallback (nếu không dùng Secrets):**
+```bash
 cd ~/Development/devenir
 
-# Kiểm tra .env files
-ls -la server/.env
-ls -la client/.env
-ls -la admin/.env
-
-# Tạo .env nếu thiếu (copy từ .env.example)
+# Tạo .env trực tiếp trên server
 cp server/.env.example server/.env
-# Sau đó edit với credentials thật
+nano server/.env  # Edit với credentials thật
+
+# Sửa workflow để không dùng secrets
+# (Comment dòng tạo .env từ secrets)
 ```
 
 ### Problem: Permission denied khi reload Nginx

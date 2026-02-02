@@ -13,14 +13,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify Environment Files
+      - name: Create Environment Files from Secrets
         run: |
-          # Check critical .env files exist
-          if [ ! -f server/.env ]; then
-            echo "❌ server/.env not found. Please create it!"
-            exit 1
+          echo "📝 Creating .env files from GitHub Secrets..."
+          
+          # Create server/.env from secret
+          echo "${{ secrets.SERVER_ENV_FILE }}" > server/.env
+          
+          # Create client/.env if needed (optional)
+          if [ -n "${{ secrets.CLIENT_ENV_FILE }}" ]; then
+            echo "${{ secrets.CLIENT_ENV_FILE }}" > client/.env
           fi
-          echo "✅ Environment files verified"
+          
+          # Create admin/.env if needed (optional)
+          if [ -n "${{ secrets.ADMIN_ENV_FILE }}" ]; then
+            echo "${{ secrets.ADMIN_ENV_FILE }}" > admin/.env
+          fi
+          
+          echo "✅ Environment files created successfully"
 
       - name: Build Docker Images
         run: |
