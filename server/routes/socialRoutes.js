@@ -33,10 +33,20 @@ router.post('/webhook-proxy', async (req, res) => {
             pageId
         };
 
-        console.log(`[Social Proxy] Forwarding to n8n: ${webhookUrl}`);
         console.log(`[Social Proxy] Payload:`, payload);
 
-        const response = await fetch(webhookUrl, {
+        // SMART ROUTING: Tự động chuyển sang mạng nội bộ nếu gọi n8n của nhà trồng được
+        // Giúp fix lỗi Docker không gọi được tên miền public của chính nó
+        let targetUrl = webhookUrl;
+        if (webhookUrl.includes('n8n.devenir.shop')) {
+            console.log('[Social Proxy] Detected internal N8N. Switching to internal docker network...');
+            targetUrl = webhookUrl.replace('https://n8n.devenir.shop', 'http://n8n:5678');
+            targetUrl = targetUrl.replace('https://www.n8n.devenir.shop', 'http://n8n:5678');
+        }
+
+        console.log(`[Social Proxy] Sending request to: ${targetUrl}`);
+
+        const response = await fetch(targetUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

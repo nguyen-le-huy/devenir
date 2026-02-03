@@ -463,10 +463,10 @@ jobs:
 
 Sau khi deploy thành công, services sẽ accessible tại:
 
-- **Client:** https://hystudio-server.tail86e288.ts.net/
-- **Admin:** https://hystudio-server.tail86e288.ts.net/admin/
-- **API:** https://hystudio-server.tail86e288.ts.net/api
-- **N8N:** https://hystudio-server.tail86e288.ts.net/n8n/
+- **Client:** https://devenir.shop/
+- **Admin:** https://admin.devenir.shop/
+- **API:** https://api.devenir.shop/api
+- **N8N:** https://n8n.devenir.shop/
 
 ---
 
