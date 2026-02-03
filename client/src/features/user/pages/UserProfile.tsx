@@ -58,7 +58,7 @@ const UserProfile = memo(() => {
     const handleGoToAdmin = () => {
         // Open admin panel - user must login again for security
         // Use environment variable in real app
-        window.open('https://hystudio-server.tail86e288.ts.net/admin/', '_blank');
+        window.open('https://admin.devenir.shop/admin', '_blank');
     };
 
     const handleTabChange = (id: string) => {
