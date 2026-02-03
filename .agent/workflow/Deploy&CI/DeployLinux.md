@@ -90,6 +90,9 @@ cloudflared tunnel route dns devenir api.devenir.shop
 
 # N8N (Optional)
 cloudflared tunnel route dns devenir n8n.devenir.shop
+
+# WWW (Optional)
+cloudflared tunnel route dns devenir www.devenir.shop
 ```
 
 #### 3.4. Create Configuration File
@@ -115,6 +118,10 @@ ingress:
 
   # Main Site -> Container port 5173
   - hostname: devenir.shop
+    service: http://localhost:5173
+
+  # WWW -> Container Client (5173)
+  - hostname: www.devenir.shop
     service: http://localhost:5173
 
   # Bắt buộc: Catch-all rule

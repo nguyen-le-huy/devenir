@@ -439,6 +439,41 @@ jobs:
 
 ---
 
+### Lưu ý về Network cho N8N và Server
+
+**LƯU Ý QUAN TRỌNG:**
+N8N cần join vào network của hệ thống chính (devenir-network) để Server có thể gọi Webhook nội bộ.
+Dưới đây là ví dụ cấu hình trong `docker-compose.yml` cho N8N để join vào network `devenir-network` (được tạo bởi `docker compose` của dự án chính):
+
+```yaml
+# Ví dụ cấu hình N8N trong docker-compose.yml
+services:
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - default
+      - devenir-network # N8N join vào network chính của dự án
+    environment:
+      - N8N_HOST=n8n.devenir.shop
+      # ... các biến môi trường khác của N8N
+
+networks:
+  devenir-network:
+    external: true # Khai báo đây là một network đã tồn tại bên ngoài
+    name: devenir_devenir-network # Tên network được tạo bởi docker compose của dự án chính (thường là <project_name>_default hoặc <project_name>_<network_name>)
+
+volumes:
+  n8n_data:
+```
+
+---
+
 ## ✅ Checklist Deployment
 
 **Lần đầu setup:**
