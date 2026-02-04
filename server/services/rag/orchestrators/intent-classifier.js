@@ -83,19 +83,20 @@ export function quickIntentDetection(message) {
         }
     }
 
-    // HIGH PRIORITY: Product type keywords - route to product_advice immediately
+    // HIGHEST PRIORITY: Size related keywords - should override product type
+    // If user explicitly asks about size, route to size_recommendation even if product type is mentioned
+    const sizeKeywords = ['tư vấn size', 'size nào', 'size gì', 'số đo', 'chiều cao', 'cân nặng', 'form', 'vừa không', 'rộng hay chật'];
+    if (sizeKeywords.some(k => lowerMessage.includes(k))) {
+        return { intent: 'size_recommendation', confidence: 0.85 };
+    }
+
+    // HIGH PRIORITY: Product type keywords - route to product_advice
     const highPriorityProductTypes = [
         'nước hoa', 'fragrance', 'perfume', 'cologne', 'eau de parfum',
         'scarf', 'khăn', 'jacket', 'áo khoác', 'sweater', 'áo len'
     ];
     if (highPriorityProductTypes.some(k => lowerMessage.includes(k))) {
         return { intent: 'product_advice', confidence: 0.85 };
-    }
-
-    // Size related keywords
-    const sizeKeywords = ['size', 'số đo', 'chiều cao', 'cân nặng', 'form', 'vừa', 'rộng', 'chật'];
-    if (sizeKeywords.some(k => lowerMessage.includes(k))) {
-        return { intent: 'size_recommendation', confidence: 0.7 };
     }
 
     // Order lookup keywords

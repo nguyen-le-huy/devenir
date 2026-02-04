@@ -3,6 +3,8 @@ import Product from '../../../models/ProductModel.js';
 import ProductVariant from '../../../models/ProductVariantModel.js';
 
 import { searchProducts } from '../retrieval/vector-search.service.js';
+import { buildEnterpriseSizeAdvisorPrompt } from '../generation/prompts/size-advisor.prompt.js';
+import { productKnowledgeService } from '../knowledge/product-knowledge.service.js';
 
 /**
  * Size recommendation service
@@ -12,9 +14,43 @@ import { searchProducts } from '../retrieval/vector-search.service.js';
  */
 export async function sizeRecommendation(query, extractedInfo = {}, context = {}) {
     try {
-        // Get product from extracted info or context
-        let productId = extractedInfo.product_id || context.recent_product_id;
+        console.log('🎯 Size Advisor - Enhanced Mode');
+        console.log('  Query:', query);
+        console.log('  Context entities:', context.entities?.current_product?.name || 'None');
+        console.log('  Extracted height:', extractedInfo.height, 'weight:', extractedInfo.weight);
+
+        // PRIORITY 1: Check for explicit product in CURRENT query
+        // This overrides sticky context from previous turns
+        let productId = null;
         let productName = null;
+
+        // Try to find product in the query first
+        try {
+            // Remove sizing keywords to focus on product name
+            const cleanQuery = query.replace(/(tư vấn|hỏi|cho|mình|size|bao nhiêu|vừa không|có|mặc|như thế nào|là gì)/gi, '').trim();
+            if (cleanQuery.length > 5) { // Only search if remaining query is significant
+                const searchResults = await searchProducts(cleanQuery, 1);
+                if (searchResults && searchResults.length > 0) {
+                    // Strict threshold to ensure it's actually a product name mentioned
+                    if (searchResults[0].score > 0.82) {
+                        productId = searchResults[0].id;
+                        productName = searchResults[0].name;
+                        console.log(`🎯 Found explicit product in query: "${productName}" (score: ${searchResults[0].score})`);
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Error searching product in query:', err);
+        }
+
+        // PRIORITY 2: Fallback to context/extracted info if no explicit product found
+        if (!productId) {
+            productId = context.entities?.current_product?.id ||
+                extractedInfo.product_id ||
+                context.recent_product_id;
+            productName = context.entities?.current_product?.name || null;
+            if (productId) console.log('📎 Using context product:', productName);
+        }
 
         // If no ID, try to find product from conversation context
         if (!productId) {
@@ -210,83 +246,199 @@ Hoặc bạn có thể hỏi về size của sản phẩm cụ thể nhé!`
             };
         }
 
-        // Build prompt for size recommendation with specific size chart
-        // Build size recommendation prompt
-        const customerInfo = context.customerContext || '';
-        const toneNote = context.customerProfile?.customerType 
-            ? `\n(Khách hàng là ${context.customerProfile.customerType} - Điều chỉnh giọng điệu phù hợp)` 
-            : '';
+        // === ENTERPRISE UPGRADE: Use Product Knowledge + Advanced Prompting ===
 
-        const prompt = `
-Tư vấn size cho sản phẩm thời trang dựa trên bảng size chuẩn.${toneNote}
-${customerInfo}
-**Sản phẩm:** ${product.name}
-**Danh mục:** ${product.category?.name || 'N/A'}
-**Sizes có sẵn:** ${availableSizes.join(', ')}
+        // Get deep product knowledge
+        const productKnowledge = await productKnowledgeService.getProductKnowledge(
+            productId,
+            product.name
+        );
+        console.log(`📚 Product Knowledge: ${productKnowledge.material}, ${productKnowledge.fitType}`);
 
-**Bảng Size Chuẩn:**
-- XS:   < 1m60, < 50kg
-- S:    1m60 - 1m65, 50 - 60kg
-- M:    1m65 - 1m70, 60 - 70kg
-- L:    1m70 - 1m75, 70 - 80kg
-- XL:   1m75 - 1m80, 80 - 90kg
-- XXL:  1m80 - 1m85, 90 - 100kg
-- XXXL: > 1m85, > 100kg
+        // Build user measurements object
+        const userMeasurements = {
+            height: extractedInfo.height || context.entities?.user_measurements?.height,
+            weight: extractedInfo.weight || context.entities?.user_measurements?.weight,
+            chest: extractedInfo.chest || context.entities?.user_measurements?.chest,
+            waist: extractedInfo.waist || context.entities?.user_measurements?.waist,
+            shoulder: extractedInfo.shoulder || context.entities?.user_measurements?.shoulder,
+            usual_size: extractedInfo.usual_size || context.entities?.user_measurements?.usual_size
+        };
 
-**Thông tin khách hàng:**
-${extractedInfo.height ? `- Chiều cao: ${extractedInfo.height}cm` : ''}
-${extractedInfo.weight ? `- Cân nặng: ${extractedInfo.weight}kg` : ''}
-${extractedInfo.usual_size ? `- Size thường mặc: ${extractedInfo.usual_size}` : ''}
-${query}
+        // DEBUG: Log detailed measurement sources
+        console.log('📊 Measurements Debug:');
+        console.log('  extractedInfo:', JSON.stringify(extractedInfo));
+        console.log('  context.entities?.user_measurements:', JSON.stringify(context.entities?.user_measurements || {}));
+        console.log('  Final userMeasurements:', JSON.stringify(userMeasurements));
 
-**Yêu cầu:**
-1. Đề xuất size phù hợp nhất dựa trên bảng size (CHỈ từ sizes có sẵn: ${availableSizes.join(', ')})
-2. Nếu số đo nằm giữa 2 size, ưu tiên size lớn hơn cho thoải mái
-3. Giải thích ngắn gọn lý do
-${context.hasCustomerContext ? '4. Nếu khách hàng có lịch sử mua size cụ thể, tham khảo thông tin đó' : ''}
+        // === EARLY RETURN: Request measurements if missing critical data ===
+        const missingMeasurements = [];
+        if (!userMeasurements.height) missingMeasurements.push('chiều cao');
+        if (!userMeasurements.weight) missingMeasurements.push('cân nặng');
 
-Trả về JSON: 
-{
-  "recommended_size": "...",
-  "reason": "...",
-  "alternative_size": "...",
-  "fit_note": "..."
-}
-`;
+        if (missingMeasurements.length > 0) {
+            console.log(`⚠️ Missing critical measurements: ${missingMeasurements.join(', ')}`);
 
+            let answer = `**Tư vấn size cho ${product.name}**\n\n`;
+            answer += `Để tư vấn size chính xác nhất, mình cần một số thông tin từ bạn:\n\n`;
+
+            answer += `📏 **Vui lòng cung cấp:**\n`;
+            if (!userMeasurements.height) {
+                answer += `• **Chiều cao** của bạn (ví dụ: 170cm, 1m75)\n`;
+            }
+            if (!userMeasurements.weight) {
+                answer += `• **Cân nặng** của bạn (ví dụ: 65kg, 70kg)\n`;
+            }
+            answer += `\n`;
+
+            answer += `💡 **Thông tin bổ sung (không bắt buộc nhưng sẽ tư vấn chính xác hơn):**\n`;
+            answer += `• Vòng ngực\n`;
+            answer += `• Rộng vai\n`;
+            if (product.category?.name === 'Pants' || product.category?.name === 'Quần') {
+                answer += `• Vòng eo\n`;
+            }
+            answer += `\n`;
+
+            answer += `Sau khi có thông tin, mình sẽ tư vấn size phù hợp nhất dựa trên:\n`;
+            answer += `✓ Bảng size chuẩn DEVENIR\n`;
+            answer += `✓ Đặc tính chất liệu sản phẩm\n`;
+            answer += `✓ Kiểu dáng và fit\n\n`;
+
+            answer += `Bạn có thể nhập như: "Cao 175cm nặng 70kg" nhé! 😊`;
+
+            return {
+                answer,
+                requires_measurements: true,
+                missing_fields: missingMeasurements,
+                product_info: {
+                    _id: product._id,
+                    name: product.name,
+                    urlSlug: product.urlSlug
+                }
+            };
+        }
+        // === END EARLY RETURN ===
+
+        // Enrich product object with available sizes for prompt
+        const enrichedProduct = {
+            ...product,
+            availableSizes: availableSizes
+        };
+
+        // Build enterprise-grade prompt
+        const prompt = buildEnterpriseSizeAdvisorPrompt({
+            product: enrichedProduct,
+            userMeasurements,
+            conversationContext: context,
+            productKnowledge
+        });
+
+        console.log(`📝 Using Enterprise Size Advisor Prompt (${prompt.length} chars)`);
+        // === END ENTERPRISE UPGRADE ===
+
+        // Call LLM with enterprise prompt
         const response = await openai.chat.completions.create({
             model: MODELS.CHAT,
             response_format: { type: 'json_object' },
             messages: [{ role: 'user', content: prompt }],
-            temperature: 0.2
+            temperature: 0.2, // Low temperature for consistent, accurate recommendations
+            max_tokens: 1000 // Allow detailed responses
         });
 
         const result = JSON.parse(response.choices[0].message.content);
+        console.log(`✨ LLM Recommendation: ${result.recommended_size} (confidence: ${result.confidence || 'N/A'})`);
+
+        // Validate recommendation is from available sizes
+        if (!availableSizes.includes(result.recommended_size)) {
+            console.warn(`⚠️ LLM recommended unavailable size ${result.recommended_size}, falling back to closest match`);
+            result.recommended_size = this.findClosestSize(result.recommended_size, availableSizes);
+        }
 
         // Get variants of recommended size
         const recommendedVariants = variants.filter(v => v.size === result.recommended_size);
 
-        // Build answer
-        let answer = `Tư vấn size cho ${product.name}\n\n`;
-        answer += `• Size đề xuất: ${result.recommended_size}\n\n`;
-        answer += `${result.reason}\n\n`;
+        // Build professional answer using enterprise response structure
+        let answer = `**Tư vấn size cho ${product.name}**\n\n`;
 
-        if (result.fit_note) {
-            answer += `• Lưu ý: ${result.fit_note}\n\n`;
+        // Main recommendation
+        answer += `📏 **Đề xuất: Size ${result.recommended_size}**`;
+        if (result.confidence) {
+            const confidenceLabel = result.confidence >= 0.9 ? ' (Rất phù hợp)' :
+                result.confidence >= 0.7 ? ' (Phù hợp)' :
+                    ' (Cần cân nhắc)';
+            answer += confidenceLabel;
+        }
+        answer += `\n\n`;
+
+        // Reasoning - ONLY primary factor for brevity
+        if (result.reasoning && typeof result.reasoning === 'object') {
+            if (result.reasoning.primary_factor) {
+                answer += `${result.reasoning.primary_factor}\n\n`;
+            }
+        } else if (result.reason) {
+            answer += `${result.reason}\n\n`;
         }
 
-        if (result.alternative_size) {
-            answer += `• Size dự phòng: ${result.alternative_size}\n\n`;
+        // Specific advice - LIMIT to top 2 most important
+        if (result.specific_advice && Array.isArray(result.specific_advice)) {
+            const topAdvice = result.specific_advice.slice(0, 2); // Only first 2
+            if (topAdvice.length > 0) {
+                answer += `**⚠️ Lưu ý:**\n`;
+                topAdvice.forEach(advice => {
+                    answer += `• ${advice}\n`;
+                });
+                answer += `\n`;
+            }
+        } else if (result.fit_note) {
+            answer += `**⚠️ Lưu ý:** ${result.fit_note}\n\n`;
         }
 
+        // Alternative size - COMPACT format
+        if (result.alternative_size && result.alternative_reasoning) {
+            answer += `**Size thay thế:** ${result.alternative_size}\n`;
+            // Shorten alternative reasoning if too long
+            const shortReasoning = result.alternative_reasoning.length > 120
+                ? result.alternative_reasoning.substring(0, 120) + '...'
+                : result.alternative_reasoning;
+            answer += `${shortReasoning}\n\n`;
+        }
+
+        // Try both recommendation - SKIP if low value
+        // Only show if confidence is borderline (0.6-0.8)
+        if (result.try_both_recommendation === 'Có' && result.confidence && result.confidence >= 0.6 && result.confidence <= 0.8) {
+            answer += `💡 Gợi ý thử cả 2 size để chọn size vừa nhất.\n\n`;
+        }
+
+        // Available variants
         if (recommendedVariants.length > 0) {
-            answer += `Sản phẩm size ${result.recommended_size} có sẵn:\n`;
-            recommendedVariants.forEach(v => {
-                answer += `- Màu ${v.color}: $${v.price.toLocaleString('en-US')} (Còn ${v.quantity} sản phẩm)\n`;
+            answer += `**Có sẵn size ${result.recommended_size}:**\n`;
+            recommendedVariants.slice(0, 3).forEach(v => { // Max 3 variants
+                answer += `• ${v.color}: $${v.price}${v.quantity < 5 ? ' (Còn ít)' : ''}\n`;
             });
+            answer += `\n`;
         }
 
-        answer += `\nBạn có muốn thêm vào giỏ hàng không?`;
+        // Measurement request - COMPACT format
+        if (result.measurement_request && result.measurement_request.needed) {
+            const fieldTranslations = {
+                'shoulder_width': 'Rộng vai',
+                'chest': 'Vòng ngực',
+                'waist': 'Vòng eo',
+                'height': 'Chiều cao',
+                'weight': 'Cân nặng',
+                'hip': 'Vòng hông',
+                'inseam': 'Chiều dài chân'
+            };
+
+            const translatedFields = result.measurement_request.needed
+                .map(field => fieldTranslations[field] || field)
+                .join(', ');
+
+            answer += `📐 **Để tư vấn tốt hơn:** ${translatedFields}\n\n`;
+            // REMOVE long reason explanation for brevity
+        }
+
+        answer += `🛍️ Bạn có muốn thêm sản phẩm vào giỏ hàng?`;
 
         return {
             answer,

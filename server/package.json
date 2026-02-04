@@ -4,7 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run services/rag/__tests__/unit",
+    "test:integration": "vitest run services/rag/__tests__/integration",
+    "test:rag": "vitest run services/rag/__tests__",
+    "lint": "eslint services/rag --ext .js,.ts",
+    "lint:fix": "eslint services/rag --ext .js,.ts --fix",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
@@ -49,6 +56,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "eslint": "^8.57.0"
   }
 }
