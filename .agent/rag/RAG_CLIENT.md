@@ -14,43 +14,46 @@ Hệ thống sử dụng kiến trúc **Advanced RAG** với cơ chế lấy l�
 ### Sơ đồ High-Level
 ```mermaid
 flowchart TB
-    User[Customer] -->|Query: 'Tìm áo polo đỏ'| Gateway[API Gateway]
-    
-    subgraph ContextEngine["🧠 Context & Intent Manager"]
+    User[Customer] -->|Query: Tim ao polo do| Gateway[API Gateway]
+
+    subgraph ContextEngine[Context and Intent Manager]
         IC[Intent Classifier]
         Context[Context Manager]
-        History[Chat History (MongoDB)]
+        History[Chat History - MongoDB]
     end
-    
-    subgraph RetrievalLayer["🔍 Retrieval Engine"]
+
+    subgraph RetrievalLayer[Retrieval Engine]
         VectorDB[(Pinecone Vector DB)]
         TextSearch[Keyword Search]
         Reranker[Cohere Reranker]
     end
-    
-    subgraph KnowledgeLayer["📚 Knowledge Base"]
+
+    subgraph KnowledgeLayer[Knowledge Base]
         Products[Product Catalog]
-        Docs[Fashion Knowledge/FAQ]
+        Docs[Fashion Knowledge FAQ]
         Colors[Color Mapping System]
     end
-    
-    subgraph GenerationLayer["✨ Response Generation"]
+
+    subgraph GenerationLayer[Response Generation]
         Prompt[CoVe Prompt Builder]
-        LLM[GPT-4o Mini]
-        Formatter[Data Visualization]
+        LLM[GPT 4o Mini]
+        Formatter[Data Formatter]
     end
 
     Gateway --> IC
     IC --> Context
     Context --> History
+
     IC -->|Search Query| RetrievalLayer
-    RetrievalLayer <-->|Embeddings| VectorDB
-    RetrievalLayer <-->|Filter| Products
+    RetrievalLayer --> VectorDB
+    RetrievalLayer --> Products
     VectorDB --> Reranker
-    Reranker -->|Top relevant docs| Prompt
-    History -->|Past Interactions| Prompt
+
+    Reranker -->|Top Docs| Prompt
+    History -->|Past Context| Prompt
     Prompt --> LLM
     LLM --> User
+
 ```
 
 ---
