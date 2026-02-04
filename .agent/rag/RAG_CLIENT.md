@@ -37,6 +37,7 @@ flowchart TB
     subgraph GenerationLayer["✨ Response Generation"]
         Prompt[CoVe Prompt Builder]
         LLM[GPT-4o Mini]
+        Formatter[Data Visualization]
     end
 
     Gateway --> IC
@@ -119,3 +120,86 @@ Hệ thống sử dụng kỹ thuật **Chain of Verification (CoVe)** và **Few
 1.  **Parallel Execution:** Intent Classification và Retrieval chạy song song (`Promise.all`), giảm độ trễ phản hồi xuống < 2s.
 2.  **Caching Strategy:** Cache các query phổ biến và metadata màu sắc tại Redis/Memory để giảm tải DB.
 3.  **Graceful Degradation:** Nếu LLM quá tải, hệ thống tự động fallback về Keyword Search cơ bản để vẫn trả về danh sách sản phẩm.
+
+---
+
+## 6. 💻 Code-Level Walkthrough (Trace Chi Tiết)
+
+Phần này mô tả chính xác file nào gọi file nào khi User gửi một tin nhắn.
+
+### Phase 1: Frontend Layer (React)
+User nhập: *"Tìm áo khoác màu nâu"*
+
+1.  **UI Component**: `client/src/features/chat/components/ChatWindow.tsx`
+    *   Hàm `handleSendMessage()` bắt sự kiện Enter.
+    *   Gọi hook `useChat()` để quản lý state loading/error.
+2.  **API Service**: `client/src/features/chat/api/chatApi.ts`
+    *   Thực hiện `axios.post('/api/chat', { message, userId })`.
+    *   Gửi kèm `Authorization` header nếu user đã login.
+
+### Phase 2: Backend Routing & Controller
+Request đến Server Node.js:
+
+3.  **Route Definition**: `server/routes/chatRoutes.js`
+    *   Router map `POST /` tới `ChatController.sendMessage`.
+4.  **Controller**: `server/controllers/ChatController.js`
+    *   `sendMessage(req, res)`:
+        *   Trích xuất `userId`, `message` từ `req.body`.
+        *   Gọi Service chính: `const response = await ragService.chat(userId, message);`
+        *   Trả kết quả JSON về client.
+
+### Phase 3: RAG Core Orchestrator (The Brain)
+Nơi điều phối logic chính.
+
+5.  **Main Service**: `server/services/rag/core/RAGService.js`
+    *   Hàm `chat(userId, userMessage)` khởi chạy.
+    *   **Bước 3.1 - Parallel Execution:** Chạy song song 2 tác vụ:
+        *   `conversationManager.getContext()`: Lấy lịch sử chat từ MongoDB (`ChatLog` model).
+        *   `intentClassifier.classifyIntent()`: Xác định user muốn gì.
+
+6.  **Intent Classification**: `server/services/rag/orchestrators/intent-classifier.js`
+    *   **Step A:** `quickIntentDetection()` (Regex/Keyword Check) -> *Nhanh (<1ms).*
+    *   **Step B:** Nếu Keyword Confidence thấp -> Gọi LLM (OpenAI) để phân tích sâu.
+    *   *Result:* `{ intent: 'product_advice', confidence: 0.95 }`
+
+### Phase 4: Specialized Execution (The Experts)
+Dựa vào Intent, RAGService gọi file service chuyên biệt.
+
+*Trường hợp: Intent = 'product_advice'*
+
+7.  **Product Advisor**: `server/services/rag/specialized/product-advisor.service.js`
+    *   Hàm `productAdvice(query, context)`:
+    *   **Step 4.1 - Search:** Gọi `vector-search.service.js` để tìm trong Pinecone.
+    *   **Step 4.2 - Color Filter:** Gọi `findColorInQuery()` để detect "màu nâu". Query MongoDB tìm biến thể màu nâu.
+    *   **Step 4.3 - Rerank:** Gọi `reranking.service.js` (Cohere) để sắp xếp lại kết quả.
+    *   **Step 4.4 - Generation:** Build context string (Danh sách sản phẩm) -> Gọi `response-generator.js`.
+
+*Trường hợp: Intent = 'size_recommendation'*
+
+7.  **Size Advisor**: `server/services/rag/specialized/size-advisor.service.js`
+    *   Hàm `sizeRecommendation()`:
+    *   Check `extracted_info` xem có height/weight chưa. Nếu chưa -> return câu hỏi.
+    *   Nếu đủ -> Build prompt so sánh với Size Chart cứng -> Gọi LLM -> Return JSON recommend.
+
+### Phase 5: Response Generation (Creation)
+
+8.  **Prompt Builder**: `server/services/rag/generation/prompt-builder.js`
+    *   Hàm `buildCoVePrompt()`: Ghép System Prompt "Bạn là nhân viên Devenir..." + Context sản phẩm + History.
+9.  **Response Generator**: `server/services/rag/generation/response-generator.js`
+    *   Gọi `llmProvider.chatCompletion()` gửi request lên OpenAI.
+    *   Nhận text trả lời tự nhiên.
+
+### Phase 6: Data Persistence & Return
+Dữ liệu quay trở lại.
+
+10. **Save Config**: `server/services/rag/orchestrators/conversation-manager.js`
+    *   Hàm `saveInteraction()`: Lưu query + answer + intent vào MongoDB (`ChatLog`).
+    *   Update `context.current_product` nếu user vừa quan tâm sản phẩm mới (Sticky Context).
+11. **Final Return**: JSON được trả về Controller -> Client.
+    ```json
+    {
+      "answer": "Dạ mình có mẫu Áo Khoác Nâu này...",
+      "intent": "product_advice",
+      "suggested_products": [ ... ]
+    }
+    ```

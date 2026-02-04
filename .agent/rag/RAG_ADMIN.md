@@ -3,7 +3,7 @@
 > **Tài liệu kỹ thuật Hệ thống RAG Quản trị Doanh nghiệp (Operational Intelligence)**
 > *Last updated: 2026-02-04*
 
-Tài liệu này mô tả kiến trúc, luồng xử lý dữ liệu và cơ chế hoạt động của **Admin RAG** - hệ thống AI hỗ trợ vận hành dành cho quản trị viên, giúp truy xuất số liệu realtime qua giao diện ngôn ngữ tự nhiên (Natural Language Interface).
+Tài liệu này mô tả kiến trúc, quy trình hoạt động và luồng mã nguồn chi tiết của **Admin RAG** - hệ thống AI hỗ trợ vận hành dành cho quản trị viên.
 
 ---
 
@@ -128,7 +128,70 @@ Tại sao Admin RAG **KHÔNG** dùng Vector Database như Client?
 
 ---
 
-## 5. 🔮 Mở rộng Tương lai (Roadmap)
+## 6. 💻 Code-Level Walkthrough (Trace Chi Tiết)
+
+Phần này mô tả luồng thực thi code từ Frontend Admin Dashboard xuống Database khi Admin thực hiện truy vấn.
+
+### Phase 1: Admin Frontend Layer
+Admin nhập: *"Doanh thu hôm qua"*
+
+1.  **UI Component**: `admin/src/components/assistant/ChatWindow.tsx`
+    *   Bắt sự kiện gửi tin nhắn.
+    *   Gọi `adminChatApi.sendMessage(message)`.
+    *   Route API khác biệt: `/api/rag/admin-chat` (Tách biệt hoàn toàn với Client API để bảo mật).
+
+### Phase 2: Security & Routing Layer
+Request đến Server Node.js:
+
+2.  **Route Definition**: `server/routes/admin/ragRoutes.js`
+    *   Middleware `protect`: Kiểm tra JWT Token.
+    *   Middleware `adminOnly`: **Critical Step** - Kiểm tra `if (req.user.role !== 'admin') throw Error`.
+    *   Controller: `AdminRagController.chat`.
+
+### Phase 3: Specialized Admin Orchestrator
+Không đi qua `RAGService.js` chung, mà đi thẳng vào Service chuyên biệt để tối ưu Security.
+
+3.  **Main Service**: `server/services/rag/specialized/admin-analytics.service.js`
+    *   Hàm `handleAdminQuery(userId, query)`:
+    *   **Intent Detection**: Gọi `classifyAdminIntent()` dùng LLM (GPT-4o Mini) để hiểu query.
+        *   *Input:* "Doanh thu hôm qua"
+        *   *Output JSON:* `{ intent: 'revenue', period: 'yesterday' }`
+
+### Phase 4: Data Handlers (Native Query Execution)
+Dựa vào Intent JSON, switch-case gọi hàm xử lý dữ liệu.
+
+*Trường hợp: Intent = 'revenue'*
+
+4.  **Revenue Handler**: Hàm `getRevenueData(params)` trong cùng file service.
+    *   **Step 4.1 - Date Calculation**: Convert `period: 'yesterday'` thành `startDate` (00:00 hôm qua) và `endDate` (23:59 hôm qua).
+    *   **Step 4.2 - Aggregation Pipeline**:
+        ```javascript
+        await Order.aggregate([
+            { $match: { 
+                createdAt: { $gte: start, $lte: end }, 
+                status: { $in: ['paid', 'delivered'] } 
+            }},
+            { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+        ]);
+        ```
+    *   **Step 4.3 - Top Products**: Chạy thêm query group by `orderItems.product` để tìm sản phẩm bán chạy nhất hôm qua.
+
+*Trường hợp: Intent = 'product_inventory'* (User hỏi: "Check kho áo sơ mi")
+    *   Query MongoDB: `Product.find({ name: /áo sơ mi/i }).populate('variants')`.
+    *   Logic JS: Loop qua variants, tính tổng quantity.
+
+### Phase 5: Response Generation (Reporting)
+Dữ liệu thô từ DB -> Báo cáo dễ đọc.
+
+5.  **Context Injection**:
+    *   Chuẩn bị prompt: "Bạn là trợ lý ảo, đây là dữ liệu: Doanh thu = 15,000,000 VNĐ...".
+    *   Gọi `llmProvider.chatCompletion()`.
+6.  **Final Return**:
+    *   Trả về JSON cho Frontend hiển thị (Text + Biểu đồ nếu có).
+
+---
+
+## 7. Mở rộng Tương lai (Roadmap)
 
 *   **Anomaly Detection:** AI tự động quét log và cảnh báo nếu doanh thu tụt giảm bất thường (không cần Admin hỏi).
 *   **Predictive Analytics:** Dùng dữ liệu lịch sử để dự báo doanh thu tháng tới (Linear Regression).
