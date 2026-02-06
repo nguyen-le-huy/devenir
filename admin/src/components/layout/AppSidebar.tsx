@@ -77,7 +77,7 @@ const data = {
     },
     // Sales & Orders Management
     {
-      group: "Sales & Orders Management",
+      group: "Sales & Orders ",
       items: [
         {
           title: "Orders",
@@ -171,12 +171,6 @@ const data = {
           url: "/admin/customers",
           icon: IconUsers,
           badge: null,
-          items: [
-            {
-              title: "All Customers",
-              url: "/admin/customers",
-            },
-          ],
         },
         {
           title: "Reviews",
@@ -187,7 +181,7 @@ const data = {
       ],
     },
     // Marketing & Promotions
-    {
+   /* {
       group: "Marketing & Promotions",
       items: [
         {
@@ -206,42 +200,44 @@ const data = {
             },
           ],
         },
-        {
-          title: "Email Campaigns",
-          url: "/admin/campaigns",
-          icon: IconMail,
-          badge: null,
-        },
-        {
-          title: "Loyalty Programs",
-          url: "/admin/loyalty",
-          icon: IconHeartHandshake,
-          badge: null,
-        },
+        // TEMPORARILY HIDDEN - Uncomment to show again
+        // {
+        //   title: "Email Campaigns",
+        //   url: "/admin/campaigns",
+        //   icon: IconMail,
+        //   badge: null,
+        // },
+        // {
+        //   title: "Loyalty Programs",
+        //   url: "/admin/loyalty",
+        //   icon: IconHeartHandshake,
+        //   badge: null,
+        // },
       ],
-    },
+    }, */
     // Content Management
     {
       group: "Content Management",
       items: [
-        {
-          title: "Media Library",
-          url: "/admin/media",
-          icon: IconFileText,
-          badge: null,
-        },
-        {
-          title: "Pages",
-          url: "/admin/pages",
-          icon: IconClipboardList,
-          badge: null,
-        },
-        {
-          title: "Blog/News",
-          url: "/admin/blog",
-          icon: IconFileDownload,
-          badge: null,
-        },
+        // TEMPORARILY HIDDEN - Uncomment to show again
+        // {
+        //   title: "Media Library",
+        //   url: "/admin/media",
+        //   icon: IconFileText,
+        //   badge: null,
+        // },
+        // {
+        //   title: "Pages",
+        //   url: "/admin/pages",
+        //   icon: IconClipboardList,
+        //   badge: null,
+        // },
+        // {
+        //   title: "Blog/News",
+        //   url: "/admin/blog",
+        //   icon: IconFileDownload,
+        //   badge: null,
+        // },
         {
           title: "Social Posts",
           url: "/admin/social-posts",
@@ -250,48 +246,50 @@ const data = {
         },
       ],
     },
-    // AI & Automation
-    {
-      group: "AI & Automation",
-      items: [
-        {
-          title: "AI Chatbot",
-          url: "/admin/chatbot",
-          icon: IconBrain,
-          badge: null,
-        },
-        {
-          title: "Virtual Try-On",
-          url: "/admin/try-on",
-          icon: IconBrain,
-          badge: null,
-        },
-      ],
-    },
-    // Financial Management
-    {
-      group: "Financial Management",
-      items: [
-        {
-          title: "Revenue Reports",
-          url: "/admin/reports/revenue",
-          icon: IconReceipt,
-          badge: null,
-        },
-        {
-          title: "Payment Methods",
-          url: "/admin/payment-methods",
-          icon: IconCreditCard,
-          badge: null,
-        },
-        {
-          title: "Transactions",
-          url: "/admin/transactions",
-          icon: IconCash,
-          badge: null,
-        },
-      ],
-    },
+    // TEMPORARILY HIDDEN - AI & Automation section
+    // Uncomment below to show AI & Automation menu
+    // {
+    //   group: "AI & Automation",
+    //   items: [
+    //     {
+    //       title: "AI Chatbot",
+    //       url: "/admin/chatbot",
+    //       icon: IconBrain,
+    //       badge: null,
+    //     },
+    //     {
+    //       title: "Virtual Try-On",
+    //       url: "/admin/try-on",
+    //       icon: IconBrain,
+    //       badge: null,
+    //     },
+    //   ],
+    // },
+    // TEMPORARILY HIDDEN - Financial Management section
+    // Uncomment below to show Financial Management menu
+    // {
+    //   group: "Financial Management",
+    //   items: [
+    //     {
+    //       title: "Revenue Reports",
+    //       url: "/admin/reports/revenue",
+    //       icon: IconReceipt,
+    //       badge: null,
+    //     },
+    //     {
+    //       title: "Payment Methods",
+    //       url: "/admin/payment-methods",
+    //       icon: IconCreditCard,
+    //       badge: null,
+    //     },
+    //     {
+    //       title: "Transactions",
+    //       url: "/admin/transactions",
+    //       icon: IconCash,
+    //       badge: null,
+    //     },
+    //   ],
+    // },
     // System & Settings
     {
       group: "System & Settings",

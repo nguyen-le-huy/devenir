@@ -82,6 +82,7 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [brandFilter, setBrandFilter] = useState('all')
 
   // Debounce search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -163,14 +164,23 @@ export default function ProductsPage() {
   // Memoize filtered products to avoid recalculating on every render
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
+      // Search: match name, description, or brand name
+      const brandName = typeof product.brand === 'object' ? product.brand?.name : brandsById.get(product.brand || '')?.name || ''
       const matchesSearch = product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        (product.description || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        (product.description || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        brandName.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+
       const matchesStatus = statusFilter === 'all' || product.status === statusFilter
+
       const categoryId = typeof product.category === 'object' ? product.category?._id : product.category
       const matchesCategory = categoryFilter === 'all' || categoryId === categoryFilter
-      return matchesSearch && matchesStatus && matchesCategory
+
+      const brandId = typeof product.brand === 'object' ? product.brand?._id : product.brand
+      const matchesBrand = brandFilter === 'all' || brandId === brandFilter
+
+      return matchesSearch && matchesStatus && matchesCategory && matchesBrand
     })
-  }, [products, debouncedSearchTerm, statusFilter, categoryFilter])
+  }, [products, debouncedSearchTerm, statusFilter, categoryFilter, brandFilter, brandsById])
 
   // Memoize paginated products
   const paginatedProducts = useMemo(() => {
@@ -394,14 +404,14 @@ export default function ProductsPage() {
         {/* Search & Filter */}
         <Card>
           <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               {/* Search */}
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="search">Search Products</Label>
                 <div className="relative">
                   <Input
                     id="search"
-                    placeholder="Search by name or description..."
+                    placeholder="Search by name, description, or brand..."
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value)
@@ -440,6 +450,30 @@ export default function ProductsPage() {
                     {categories.map((cat: Category) => (
                       <SelectItem key={cat._id} value={cat._id}>
                         {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Brand Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="brand">Brand</Label>
+                <Select
+                  value={brandFilter}
+                  onValueChange={(value) => {
+                    setBrandFilter(value)
+                    setPage(1)
+                  }}
+                >
+                  <SelectTrigger id="brand">
+                    <SelectValue placeholder="All Brands" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Brands</SelectItem>
+                    {(brandsResponse?.data || []).map((brand: Brand) => (
+                      <SelectItem key={brand._id} value={brand._id}>
+                        {brand.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
