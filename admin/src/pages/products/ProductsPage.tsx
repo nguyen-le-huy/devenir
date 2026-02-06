@@ -165,7 +165,7 @@ export default function ProductsPage() {
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       // Search: match name, description, or brand name
-      const brandName = typeof product.brand === 'object' ? product.brand?.name : brandsById.get(product.brand || '')?.name || ''
+      const brandName = (typeof product.brand === 'object' ? product.brand?.name : brandsById.get(product.brand || '')?.name) || ''
       const matchesSearch = product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         (product.description || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         brandName.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
