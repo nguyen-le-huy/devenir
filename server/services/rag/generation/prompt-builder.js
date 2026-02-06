@@ -19,7 +19,9 @@ ${toneInstruction}
 ## Quy tắc QUAN TRỌNG NHẤT:
 - Nếu có SẢN PHẨM trong [Context] bên dưới → BẮT BUỘC phải giới thiệu sản phẩm đó
 - NẾU khách hỏi có sản phẩm X không → và Context có sản phẩm → trả lời "Dạ có bạn, mình có [tên sản phẩm]..."
-- CHỈ nói "Mình cần kiểm tra lại" khi Context HOÀN TOÀN TRỐNG hoặc không liên quan
+- NẾU khách hỏi sản phẩm A nhưng Context chỉ có sản phẩm B → Trả lời: "Dạ hiện mình chưa tìm thấy [Sản phẩm A], nhưng bên mình có [Sản phẩm B]..."
+- **TUYỆT ĐỐI KHÔNG** nói "Shop chỉ có [Sản phẩm B]" hoặc "Chỉ có thông tin về [Sản phẩm B]" (vì context chỉ hiển thị một phần sản phẩm).
+- Thay vào đó, hãy nói: "Dưới đây là một số mẫu [Sản phẩm B] nổi bật..."
 ${customerInfo ? '- SỬ DỤNG thông tin khách hàng để cá nhân hóa đề xuất (preferences, budget, purchase history), NHƯNG KHÔNG tiết lộ trực tiếp' : ''}
 
 ## Cách trả lời:
@@ -80,17 +82,23 @@ Sử dụng conversation history để hiểu ngữ cảnh của câu hỏi foll
 - "policy_faq": Hỏi về thanh toán, phương thức payment, shipping, giao hàng, đổi trả, refund
 - "general": Chỉ dùng cho chào hỏi, cảm ơn thuần túy
 
-**Trích xuất thêm thông tin nếu có:**
+**Trích xuất thêm thông tin CHỈ NẾU ĐƯỢC CUNG CẤP RÕ RÀNG:**
 - product_type: loại sản phẩm (áo, quần, váy...)
 - material: chất liệu
 - color: màu sắc
 - size: size yêu cầu
-- height: chiều cao (cm hoặc m)
-- weight: cân nặng (kg)
+- height: chiều cao (cm hoặc m) - CHỈ extract nếu user NÓI RÕ (ví dụ: "cao 175cm", "1m70")
+- weight: cân nặng (kg) - CHỈ extract nếu user NÓI RÕ (ví dụ: "nặng 70kg", "65 kg")
 - style: phong cách
 - budget: ngân sách
 - occasion: dịp sử dụng
 - is_followup: true/false (có phải câu hỏi follow-up không)
+
+⚠️ **QUY TẮC QUAN TRỌNG - CHỐNG HALLUCINATION:**
+- TUYỆT ĐỐI KHÔNG bịa đặt hoặc ước đoán height/weight nếu user KHÔNG nói rõ
+- Nếu user chỉ nói "tư vấn size" mà KHÔNG đề cập số đo → extracted_info KHÔNG có height/weight
+- Ví dụ SAI: User: "tư vấn size" → extracted_info: {height: 173, weight: 70} ❌
+- Ví dụ ĐÚNG: User: "cao 175 nặng 70" → extracted_info: {height: 175, weight: 70} ✅
 
 Trả về JSON:
 {

@@ -3,8 +3,6 @@ import { useState, useRef, useEffect, lazy, Suspense, useCallback, useMemo, memo
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from '@/core/stores/useAuthStore';
 import UserMenu from '@/features/user/components/UserMenu/UserMenu';
-import Snowfall from "@/shared/components/Snowfall/Snowfall";
-import CursorTrailer from "@/shared/components/CursorTrailer/CursorTrailer";
 import { useCategories } from '@/features/products/hooks/useCategories';
 import { useCart } from '@/features/cart/hooks/useCart';
 // import Loading from "@/shared/components/Loading/Loading"; // Not used in render? Ah, it is imported but maybe not used or used in Suspense fallback? 
@@ -123,29 +121,13 @@ const Header = memo(() => {
     return (
         <>
             <div className={`${styles.topBar} container`} ref={topBarRef}>
-                {/* Cursor Trailer Effect */}
-                <CursorTrailer
-                    containerRef={topBarRef}
-                    imageCount={11}
-                    imageBasePath="/trailer/trailer"
-                    imageExtension=".webp"
-                />
-                <Snowfall
-                    snowflakeCount={80}
-                    speed={0.5}
-                    minSize={6}
-                    maxSize={12}
-                    wind={true}
-                    windSpeed={0.3}
-                />
                 <div className={styles.left}></div>
-                <div className={styles.center}><img src="/images/giftIcon.png" alt="gift-icon" className={styles.xmasIcon} />Celebrate Christmas with Free Delivery | <span className={styles.campaignLink}>
+                <div className={styles.center}>Celebrate Christmas with Free Delivery | <span className={styles.campaignLink}>
                     <span>Explore the Holiday Deals</span>
                     <svg className={styles.linkGraphicSlide} width="300%" height="100%" viewBox="0 0 1200 60" preserveAspectRatio="none">
                         <path d="M0,56.5c0,0,298.666,0,399.333,0C448.336,56.5,513.994,46,597,46c77.327,0,135,10.5,200.999,10.5c95.996,0,402.001,0,402.001,0"></path>
                     </svg>
                 </span>
-                    <img src="/images/snowmanIcon.png" alt="snowman-icon" className={styles.snowmanIcon} />
                 </div>
                 <div className={styles.right}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
