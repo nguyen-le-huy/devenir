@@ -191,21 +191,49 @@ docker compose up -d --build
 
 ## 🔧 Quản lý Hệ thống
 
-### Kiểm tra Logs
-```bash
-# Docker logs
-docker compose logs -f server
+### Kiểm tra Cloudflare Tunnel Status
 
-# Cloudflare Tunnel logs
+```bash
+# Kiểm tra trạng thái service
 sudo systemctl status cloudflared
-# Hoặc
+
+# Liệt kê tất cả tunnels
+cloudflared tunnel list
+
+# Xem thông tin chi tiết tunnel
+cloudflared tunnel info devenir
+
+# Kiểm tra DNS routes
+cloudflared tunnel route dns show
+
+# Kiểm tra connections realtime
 sudo journalctl -u cloudflared -f
+```
+
+### Kiểm tra Docker Logs
+```bash
+# Xem logs tất cả services
+docker compose logs -f
+
+# Xem logs service cụ thể
+docker compose logs -f server
+docker compose logs -f client
+docker compose logs -f admin
+
+# Kiểm tra trạng thái containers
+docker compose ps
 ```
 
 ### Restart Services
 ```bash
+# Restart Docker containers
 docker compose restart
+
+# Restart Cloudflare Tunnel
 sudo systemctl restart cloudflared
+
+# Restart cả 2
+docker compose restart && sudo systemctl restart cloudflared
 ```
 
 ---
