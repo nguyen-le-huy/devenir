@@ -2,5 +2,8 @@
   "dependencies": {
     "date-fns": "^4.1.0",
     "react-resizable-panels": "^3.0.6"
+  },
+  "scripts": {
+    "dev": "docker compose -f docker-compose.dev.yml up"
   }
 }

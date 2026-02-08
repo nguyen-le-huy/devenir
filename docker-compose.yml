@@ -1,27 +1,32 @@
 version: '3.8'
+
 services:
   # ==========================================
-  # 1. CORE APPLICATIONS
+  # 1. CORE APPLICATIONS (PRODUCTION)
   # ==========================================
-  
+
   # Backend API
   server:
     build:
       context: ./server
       dockerfile: Dockerfile
     container_name: devenir-server
-    restart: unless-stopped
+    restart: always
     ports:
       - "3111:3111"
     environment:
       - NODE_ENV=production
       - PORT=3111
-      # Kết nối nội bộ qua tên service
       - CLIP_SERVICE_URL=http://clip-service:8899
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=redis://redis:6379
     env_file:
       - ./server/.env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       redis:
         condition: service_healthy
@@ -31,37 +36,43 @@ services:
         condition: service_healthy
     networks:
       - devenir-network
+    # In production, we do NOT mount source code volumes.
+    # We rely on the specialized Docker image.
     volumes:
-      - ./server/uploads:/app/uploads
-  # Client (React SPA)
+      - uploads:/app/uploads
+
+  # Client (React SPA) - Served via Nginx in Prod
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
     container_name: devenir-client
-    restart: unless-stopped
+    restart: always
     ports:
-      - "5173:80"
+      - "5173:80" # Map host 5173 to container 80 (Nginx)
     depends_on:
       - server
     networks:
       - devenir-network
-  # Admin Dashboard  
+
+  # Admin Dashboard - Served via Nginx in Prod
   admin:
     build:
       context: ./admin
       dockerfile: Dockerfile
     container_name: devenir-admin
-    restart: unless-stopped
+    restart: always
     ports:
-      - "5174:80"
+      - "5174:80" # Map host 5174 to container 80 (Nginx)
     depends_on:
       - server
     networks:
       - devenir-network
+
   # ==========================================
   # 2. INFRASTRUCTURE & AI SERVICES
   # ==========================================
+
   # Qdrant Vector Database
   qdrant:
     image: qdrant/qdrant:latest
@@ -77,11 +88,17 @@ services:
       - QDRANT__SERVICE__HTTP_PORT=6333
     networks:
       - devenir-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "/usr/bin/bash -c '</dev/tcp/127.0.0.1/6333'"]
       interval: 30s
       timeout: 10s
       retries: 3
+
   # Redis Cache
   redis:
     image: redis:7-alpine
@@ -94,11 +111,17 @@ services:
     command: redis-server --appendonly yes
     networks:
       - devenir-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
+
   # CLIP Service (Self-hosted AI)
   clip-service:
     build:
@@ -116,16 +139,23 @@ services:
           memory: 4G
     networks:
       - devenir-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8899/health"]
       interval: 60s
       timeout: 30s
       retries: 3
+
 volumes:
   uploads:
   qdrant_data:
   redis_data:
   clip_cache:
+
 networks:
   devenir-network:
     driver: bridge
