@@ -611,7 +611,7 @@ async function generateInventoryCSV(params) {
         attachment: {
             name: filename,
             type: 'csv',
-            url: `${process.env.API_URL || 'http://localhost:3111'}/exports/${filename}`
+            url: `${process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.devenir.shop' : 'http://localhost:3111')}/exports/${filename}`
         }
     };
 }
@@ -669,7 +669,7 @@ async function generateRevenueCSV(params) {
     const csvContent = [header, ...rows].join('\n');
     fs.writeFileSync(filePath, csvContent);
 
-    const apiBaseUrl = process.env.API_URL || 'http://localhost:3111';
+    const apiBaseUrl = process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.devenir.shop' : 'http://localhost:3111');
     const fileUrl = `${apiBaseUrl}/exports/${filename}`;
 
     const count = orders.length;
@@ -755,7 +755,8 @@ async function generateCustomerCSV() {
         // Add BOM for Excel compatibility
         fs.writeFileSync(filePath, '\ufeff' + csvContent, 'utf8');
 
-        const fileUrl = `${process.env.API_URL || 'http://localhost:3111'}/exports/${filename}`;
+        const apiBaseUrl = process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://api.devenir.shop' : 'http://localhost:3111');
+        const fileUrl = `${apiBaseUrl}/exports/${filename}`;
 
         return {
             type: 'file_generated',
