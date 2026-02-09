@@ -1,46 +1,56 @@
-## Feature Plan: All Categories Page Optimization
+## Feature Plan: Checkout Page Optimization
 
 ### Requirement Summary
-- **Visual Excellence:** The "All Categories" page serves as a high-level visual navigation menu. It must be polished and glitch-free.
+- **Visual Excellence:** The Checkout page is the final step before conversion. It must be trustworthy, fast, and visually stable.
 - **Current Issues:**
-    - Manual `useQuery` usage instead of standardized hooks.
-    - Missing `useImagePreloader`, causing potential image pop-ins.
-    - Type safety issues (`any`).
-- **Goal:** Refactor to use clean architecture and implement visual-first loading.
+    - Images (payment icons, instructional images) are hardcoded and might cause layout shifts.
+    - No image preloading strategy.
+    - Inline SVG for Coinbase is bulky and cluttering the component.
+- **Goal:** Refactor for clean code and implement visual-first loading.
 
 ### Architecture Design
 
-#### 1. Data Fetching
-- **Current:** Manual `useQuery` + `getMainCategories`.
-- **Target:** Use standard `useMainCategories` hook from `features/products/hooks/useCategories.ts`.
+#### 1. Visual-First Loading
+- **Strategy:** Block main loader until critical checkout assets are loaded:
+    - Product thumbnails in cart.
+    - Trust badges (Payment icons, Instruction images).
+- **Implementation:** Use `useImagePreloader`.
 
-#### 2. Visual-First Loading
-- **Strategy:** Block the main loader until ALL category background images are preloaded. Since there are usually few main categories (4-8), preloading all of them is acceptable and provides a premium "instant" feel.
+#### 2. Component Extraction
+- **Coinbase Button:** Extract the complex SVG to `shared/components/icons/CoinbaseIcon.tsx`.
+- **Checkout Summary:** Consider extracting the Right Column if it grows too complex, but for now, cleaning up the icon is priority.
 
 ### Implementation Steps (for Dev)
 
-1.  **Refactor Data Access**:
-    - Replace manual query with `useMainCategories()`.
-    - Properly type the data with `ICategory`.
-
+1.  **Extract Components**:
+    - Create `CoinbaseIcon` component.
+    
 2.  **Implement Preloader**:
     - Import `useImagePreloader`.
-    - Extract `thumbnailUrl` from all categories.
-    - Pass to preloader.
-    - Update `PageWrapper.isLoading` to wait for both `!isLoading` AND `areImagesLoaded`.
+    - Collect images to preload:
+        - Product images from `cart.items`.
+        - Static assets: `/images/instruction1.webp`, `/images/instruction2.webp`, payment icons.
+    - Update `PageWrapper.isLoading`.
 
-3.  **UI Cleanup**:
-    - Ensure gradient fallback is clean.
-    - Verify `Header`/`Footer` usage (Standardize if needed, though likely fine as page-level).
+3.  **Code Cleanup**:
+    - Replace inline SVG with `<CoinbaseIcon />`.
+    - Ensure `cart.items` mapping is safe.
 
 ### Test Strategy (for QA)
 - **Visual:**
-    - Load page -> Expect Full Screen Loader -> Content appears instantly with images fully visible.
-    - No "pop-in" of background images.
+    - Add item to cart -> Go to Checkout.
+    - **Expectation:** Page loads with all product images and payment icons visible.
 - **Functional:**
-    - Click any category -> Navigates to correct `/products?category=ID`.
+    - Remove item works.
+    - Edit item works.
+    - Checkout button navigates.
+
+### Risk Assessment
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|-----------|
+| **Many items in cart = Slow Load** | Low | Medium | Only preload the first 3-4 product images if cart is huge. |
 
 ### Acceptance Criteria
-- [x] Code uses `useMainCategories` hook.
-- [x] No `any` types for category data.
-- [x] Images are preloaded before content display.
+- [x] Coinbase SVG extracted.
+- [x] Critical images (products + trust badges) preloaded.
+- [x] PageWrapper blocks until visual readiness.
