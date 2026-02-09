@@ -39,7 +39,7 @@ const ProductDetail = memo(() => {
 
     // Custom Hooks
     const { variant, product, siblingVariants, isLoading: productLoading } = useProductView(variantId);
-    const { mainImage, otherImages, allGalleryImages, isSingleImage, isFewImages, rightRef, initialRightHeight } = useGallery(variant, headerHeight);
+    const { isFewImages, isSingleImage, mainImage, otherImages, rightRef, allGalleryImages } = useGallery(variant, headerHeight);
 
     // Categories & Related Products
     const { data: allCategoriesData } = useCategories();
@@ -148,7 +148,6 @@ const ProductDetail = memo(() => {
                     <div
                         className={`${styles.leftCenterContainer} ${isSingleImage ? styles.singleImage : ''} ${isFewImages ? styles.fewImagesContainer : ''}`}
                         data-tryon-container
-                        style={isFewImages && initialRightHeight ? { height: `${initialRightHeight}px` } : {}}
                     >
                         <TryOn />
                         {isSingleImage ? (

@@ -5,7 +5,7 @@
 
 /* ✅ Few images layout - align left/center with right */
 .product.fewImages {
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 .productDetail {
