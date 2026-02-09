@@ -1,34 +1,50 @@
-import styles from './AllCategories.module.css';
-import { useQuery } from '@tanstack/react-query';
-import { getMainCategories } from '@/features/products/api/categoryService';
+import { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/shared/components/layout/Header/Header';
 import Footer from '@/shared/components/layout/Footer/Footer';
 import PageWrapper from '@/shared/components/PageWrapper/PageWrapper';
 import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
+import { useMainCategories } from '@/features/products/hooks/useCategories';
+import { useImagePreloader } from '@/shared/hooks/useImagePreloader';
+import type { ICategory } from '@/features/products/types';
+import styles from './AllCategories.module.css';
 
 const AllCategories = () => {
     const navigate = useNavigate();
 
-    // Fetch all categories
-    const { data: categoriesData, isLoading } = useQuery({
-        queryKey: ['categories', 'all'],
-        queryFn: getMainCategories,
-    });
+    // Fetch all main categories using standard hook
+    const { data: response, isLoading: isCategoriesLoading } = useMainCategories();
 
-    const categories = (categoriesData as any)?.data || [];
+    const categories = useMemo(() => {
+        return (response?.data || []) as ICategory[];
+    }, [response]);
 
-    const handleCategoryClick = (categoryId: string) => {
+    // IMAGE PRELOADING (Visual-First Strategy)
+    // Preload all category thumbnails to ensure instant, glitch-free grid display
+    const categoryImages = useMemo(() => {
+        return categories
+            .filter(cat => cat.thumbnailUrl)
+            .map(cat => getOptimizedImageUrl(cat.thumbnailUrl!));
+    }, [categories]);
+
+    // Since main categories are few (typically < 10), preloading all of them provides
+    // a much more premium feel than lazy loading them individually.
+    const areImagesLoaded = useImagePreloader(categoryImages, !isCategoriesLoading && categoryImages.length > 0);
+
+    const handleCategoryClick = useCallback((categoryId: string) => {
         navigate(`/products?category=${categoryId}`);
-    };
+    }, [navigate]);
+
+    // Combined loading state
+    const isPageLoading = isCategoriesLoading || !areImagesLoaded;
 
     return (
         <>
             <Header />
-            <PageWrapper isLoading={isLoading}>
+            <PageWrapper isLoading={isPageLoading}>
                 <main className={styles.allCategories}>
                     <div className={styles.categoryGrid}>
-                        {categories.map((category: any) => (
+                        {categories.map((category) => (
                             <div
                                 key={category._id}
                                 className={styles.box}

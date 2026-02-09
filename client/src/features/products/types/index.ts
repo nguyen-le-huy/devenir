@@ -13,6 +13,9 @@ export interface ICategory {
     slug: string;
     parentCategory?: string | ICategory;
     isActive: boolean;
+    thumbnailUrl?: string;
+    description?: string;
+    children?: ICategory[];
 }
 
 export interface IBrand {

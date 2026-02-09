@@ -1,15 +1,12 @@
-import { memo, lazy, Suspense } from 'react';
+import { memo } from 'react';
 import Hero from '@/features/home/components/Hero/Hero';
-import Loading from '@/shared/components/Loading/Loading';
+import Introduction from '@/features/home/components/Introduction/Introduction';
+import NewArrivals from '@/features/home/components/NewArrivals/NewArrivals';
+import SmallTreasures from '@/features/home/components/SmallTreasures/SmallTreasures';
+import CategoryBox from '@/features/home/components/CategoryBox/CategoryBox';
+import Scarves from '@/features/home/components/Scarves/Scarves';
+import OurPartners from '@/features/home/components/OurPartners/OurPartners';
 import SEO from '@/shared/components/SEO/SEO';
-
-// Lazy load components below the fold for performance
-const Introduction = lazy(() => import('@/features/home/components/Introduction/Introduction'));
-const NewArrivals = lazy(() => import('@/features/home/components/NewArrivals/NewArrivals'));
-const SmallTreasures = lazy(() => import('@/features/home/components/SmallTreasures/SmallTreasures'));
-const CategoryBox = lazy(() => import('@/features/home/components/CategoryBox/CategoryBox'));
-const Scarves = lazy(() => import('@/features/home/components/Scarves/Scarves'));
-const OurPartners = lazy(() => import('@/features/home/components/OurPartners/OurPartners'));
 
 const HomePage = memo(() => {
     return (
@@ -21,15 +18,13 @@ const HomePage = memo(() => {
             {/* Hero is above the fold - load immediately */}
             <Hero />
 
-            {/* Below fold components - lazy load with Suspense */}
-            <Suspense fallback={<Loading />}>
-                <Introduction />
-                <NewArrivals />
-                <SmallTreasures />
-                <CategoryBox />
-                <Scarves />
-                <OurPartners />
-            </Suspense>
+            {/* Below fold components - loaded eagerly for smooth scroll experience */}
+            <Introduction />
+            <NewArrivals />
+            <SmallTreasures />
+            <CategoryBox />
+            <Scarves />
+            <OurPartners />
         </main>
     );
 });

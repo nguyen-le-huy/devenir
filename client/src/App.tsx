@@ -30,7 +30,7 @@ const RegisterPage = lazy(() => import('@/features/auth/pages/Register/RegisterP
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/auth/ResetPasswordPage'));
 const AuthPage = lazy(() => import('@/features/auth/pages/auth/AuthPage'));
 const EmailVerificationPage = lazy(() => import('@/features/auth/pages/auth/EmailVerificationPage'));
-const UserProfile = lazy(() => import('@/features/user/pages/UserProfile'));
+import UserProfile from '@/features/user/pages/UserProfile';
 const ProductByCategory = lazy(() => import('@/features/products/pages/ProductByCategory/ProductByCategory'));
 const ProductDetail = lazy(() => import('@/features/products/pages/ProductDetail/ProductDetail'));
 const CheckoutLayout = lazy(() => import('@/features/checkout/components/checkoutLayout/CheckoutLayout'));

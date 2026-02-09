@@ -18,26 +18,8 @@ import AddToBagNoti from '@/shared/components/Notification/AddToBagNoti';
 import TryOn from '@/features/products/components/TryOn/TryOn';
 import { useProductView, useGallery, useRelatedProducts } from '@/features/products/hooks/useProductDetailLogic';
 import { getColorName } from '@/features/products/utils/productUtils';
-
-// Static config to avoid re-creation
-const ACCORDION_ITEMS = [
-    {
-        id: 'productDetail',
-        title: 'Product Detail',
-        getContent: (product: any) => product?.description || "Product description is loading..."
-    },
-    {
-        id: 'sizeAndFit',
-        title: 'Size & Fit',
-        content: '168 x 30cm/66.1 x 11.8in',
-        hasButton: true
-    },
-    {
-        id: 'fabricAndCare',
-        title: 'Fabric & Care',
-        content: `100% cashmere | Specialist dry clean | Made in Scotland`
-    }
-];
+import { useImagePreloader } from '@/shared/hooks/useImagePreloader';
+import { PRODUCT_DETAIL_ACCORDION_ITEMS } from '@/features/products/constants/productDetail';
 
 const ProductDetail = memo(() => {
     const [searchParams] = useSearchParams();
@@ -85,6 +67,26 @@ const ProductDetail = memo(() => {
         return { sameColorVariants: sameColor, needsSizeSelection: !isFree && sizes.length > 0 };
     }, [siblingVariants, currentColorName]);
 
+    // IMAGE PRELOADING (Visual-First Strategy)
+    // Identify critical images that MUST be loaded before showing the page
+    const criticalImages = useMemo(() => {
+        if (!mainImage) return [];
+
+        // Always preload the Main Hero Image
+        const images = [mainImage];
+
+        // On Desktop, we might want to preload the next 1-2 grid images if they exist
+        // to prevent "pop-in" as user scrolls immediately
+        if (!isMobile && otherImages.length > 0) {
+            images.push(...otherImages.slice(0, 2));
+        }
+
+        return images;
+    }, [mainImage, otherImages, isMobile]);
+
+    // Use preloader hook
+    const areImagesLoaded = useImagePreloader(criticalImages, !productLoading && criticalImages.length > 0);
+
     // Handlers
     const handleToggle = useCallback((itemName: string) => {
         setOpenItem(prev => prev === itemName ? null : itemName);
@@ -119,7 +121,10 @@ const ProductDetail = memo(() => {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    if (productLoading) return <PageWrapper isLoading={true}><div className={styles.productDetail} /></PageWrapper>;
+    // Combine loading states
+    const isPageLoading = productLoading || !areImagesLoaded;
+
+    if (isPageLoading) return <PageWrapper isLoading={true}><div className={styles.productDetail} /></PageWrapper>;
 
     if (!variant || !product) {
         return (
@@ -224,7 +229,7 @@ const ProductDetail = memo(() => {
                         </div>
 
                         <div className={styles.box3}>
-                            {ACCORDION_ITEMS.map((item) => (
+                            {PRODUCT_DETAIL_ACCORDION_ITEMS.map((item) => (
                                 <div key={item.id} className={styles.accordionItem}>
                                     <div className={styles.itemLabel} onClick={() => handleToggle(item.id)}>
                                         <p>{item.title}</p>

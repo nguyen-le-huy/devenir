@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import styles from './ProductByCategory.module.css';
 import Filter from '@/features/products/components/Filter/Filter';
 import ScarfCard from '@/features/products/components/ProductCard/ScarfCard';
@@ -14,6 +14,7 @@ import { getOptimizedImageUrl } from '@/shared/utils/imageOptimization';
 import { useProductFilter } from '@/features/products/hooks/useProductFilter';
 import { getColorName } from '@/features/products/utils/productUtils';
 import type { IEnrichedVariant } from '@/features/products/types';
+import { useImagePreloader } from '@/shared/hooks/useImagePreloader';
 
 const ProductByCategory = memo(() => {
     const headerHeight = useHeaderHeight();
@@ -33,6 +34,8 @@ const ProductByCategory = memo(() => {
     const { data: categoryData, isLoading: categoryLoading } = useCategoryById(categoryId || '');
     const category = useMemo(() => (categoryData as any)?.data || null, [categoryData]);
 
+
+
     const { data: variantsData = [], isLoading: variantsLoading, error } = useQuery({
         queryKey: ['variants-by-category', categoryId, selectedSubcategory, allCategories.length],
         queryFn: async () => {
@@ -44,7 +47,7 @@ const ProductByCategory = memo(() => {
         },
         enabled: !!categoryId,
         staleTime: 5 * 60 * 1000,
-        placeholderData: keepPreviousData,
+        // REMOVED: placeholderData: keepPreviousData to prevent stale images
     });
 
     const { data: colorsData } = useColors();
@@ -56,9 +59,45 @@ const ProductByCategory = memo(() => {
     // Derived State
     const isFiltering = selectedSort !== 'Default' || selectedColors.length > 0;
     const hasThumbnail = category?.thumbnailUrl && !isFiltering && !selectedSubcategory;
-    const firstFourVariants = hasThumbnail ? filteredVariants.slice(0, 4) : [];
-    const remainingVariants = hasThumbnail ? filteredVariants.slice(4) : filteredVariants;
+
+    // Memoize split lists to avoid recalculation
+    const { firstFourVariants, remainingVariants } = useMemo(() => {
+        const firstFour = hasThumbnail ? filteredVariants.slice(0, 4) : [];
+        const remaining = hasThumbnail ? filteredVariants.slice(4) : filteredVariants;
+        return { firstFourVariants: firstFour, remainingVariants: remaining };
+    }, [hasThumbnail, filteredVariants]);
+
     const subcategories = useMemo(() => category?.children || [], [category]);
+
+    // IMAGE PRELOADINGLOGIC
+    // We want to block the loading screen until:
+    // 1. Data is fetched (variantsLoading = false)
+    // 2. Critical images are loaded (Hero + Top 8 products)
+    const criticalImages = useMemo(() => {
+        if (!variantsData || variantsData.length === 0) return [];
+
+        const images: string[] = [];
+
+        // 1. Category Thumbnail
+        if (hasThumbnail && category?.thumbnailUrl) {
+            images.push(getOptimizedImageUrl(category.thumbnailUrl));
+        }
+
+        // 2. Top Products (First 8 items cover most screens)
+        const topVariants = filteredVariants.slice(0, 8);
+        topVariants.forEach((v: any) => {
+            if (v.image) images.push(v.image);
+        });
+
+        return images;
+    }, [variantsData, hasThumbnail, category, filteredVariants]);
+
+    // Use custom hook to track image loading state
+    // Only enabled when variants data is actually present to preload
+    const areImagesLoaded = useImagePreloader(
+        criticalImages,
+        !variantsLoading && !categoryLoading && criticalImages.length > 0
+    );
 
     // Handlers
     const handleOpenFilter = useCallback(() => setIsFilterOpen(true), []);
@@ -120,8 +159,12 @@ const ProductByCategory = memo(() => {
         return <div className={styles.productByCategory}><h1 className={styles.title}>Please select a category</h1></div>;
     }
 
+    // Loading State: API fetching OR Image Preloading
+    // Only show content when both are ready for visual perfection
+    const isPageLoading = categoryLoading || variantsLoading || !areImagesLoaded;
+
     return (
-        <PageWrapper isLoading={categoryLoading || variantsLoading}>
+        <PageWrapper isLoading={isPageLoading}>
             <div className={styles.productByCategory}>
                 <h1 className={styles.title}>{category?.name || 'Products'}</h1>
 

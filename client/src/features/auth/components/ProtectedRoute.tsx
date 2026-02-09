@@ -26,22 +26,24 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     // Atomic selectors - only re-render when these specific values change
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const loading = useAuthStore((state) => state.loading);
-    
-    // Prevent loading flicker for fast auth checks
-    const [showLoading, setShowLoading] = useState(true);
-    
+
+    // Initialize showLoading based on current auth loading state
+    // If not loading, show content immediately (no flicker for hydrated state)
+    const [showLoading, setShowLoading] = useState(loading);
+
     useEffect(() => {
         if (!loading) {
-            // Delay hiding loading screen to prevent flicker
-            const timer = setTimeout(() => {
-                setShowLoading(false);
-            }, MIN_LOADING_DURATION);
-            
-            return () => clearTimeout(timer);
+            // Only add artificial delay if we were actually loading
+            if (showLoading) {
+                const timer = setTimeout(() => {
+                    setShowLoading(false);
+                }, MIN_LOADING_DURATION);
+                return () => clearTimeout(timer);
+            }
         } else {
             setShowLoading(true);
         }
-    }, [loading]);
+    }, [loading, showLoading]);
 
     if (loading || showLoading) {
         return <Loading size="md" />;
@@ -68,21 +70,24 @@ export const AdminRoute = ({ children }: ProtectedRouteProps) => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const loading = useAuthStore((state) => state.loading);
     const isAdmin = useAuthStore((state) => state.isAdmin);
-    
-    // Prevent loading flicker for fast auth checks
-    const [showLoading, setShowLoading] = useState(true);
-    
+
+    // Initialize showLoading based on current auth loading state
+    // If not loading, show content immediately (no flicker for hydrated state)
+    const [showLoading, setShowLoading] = useState(loading);
+
     useEffect(() => {
         if (!loading) {
-            const timer = setTimeout(() => {
-                setShowLoading(false);
-            }, MIN_LOADING_DURATION);
-            
-            return () => clearTimeout(timer);
+            // Only add artificial delay if we were actually loading
+            if (showLoading) {
+                const timer = setTimeout(() => {
+                    setShowLoading(false);
+                }, MIN_LOADING_DURATION);
+                return () => clearTimeout(timer);
+            }
         } else {
             setShowLoading(true);
         }
-    }, [loading]);
+    }, [loading, showLoading]);
 
     if (loading || showLoading) {
         return <Loading size="md" />;

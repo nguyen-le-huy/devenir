@@ -23,7 +23,6 @@ const SmallTreasures = () => {
             scrollTrigger: {
                 trigger: container,
                 start: "top 50%",
-                end: "bottom top",
             }
         })
 
@@ -36,7 +35,7 @@ const SmallTreasures = () => {
                 ease: "none",
                 scrollTrigger: {
                     trigger: container,
-                    start: "top 60%",
+                    start: "top bottom  ",
                     end: "bottom top",
                     scrub: 1,
                 }
@@ -52,7 +51,7 @@ const SmallTreasures = () => {
                 <h1>small</h1>
                 <h1>treasures</h1>
             </div>
-            <button 
+            <button
                 className="button--surtur"
                 aria-label="Explore small treasures collection"
             >
@@ -76,51 +75,51 @@ const SmallTreasures = () => {
                 </svg>
             </button>
             <div className={styles.imageParallaxContainer}>
-                <img 
-                    className={`${styles.imageParallax} ${styles.image1}`} 
-                    src="/images/treasure1.webp" 
+                <img
+                    className={`${styles.imageParallax} ${styles.image1}`}
+                    src="/images/treasure1.webp"
                     alt="Small treasure item 1"
                     loading="lazy"
                     decoding="async"
                 />
-                <img 
-                    className={`${styles.imageParallax} ${styles.image2}`} 
-                    src="/images/treasure2.webp" 
+                <img
+                    className={`${styles.imageParallax} ${styles.image2}`}
+                    src="/images/treasure2.webp"
                     alt="Small treasure item 2"
                     loading="lazy"
                     decoding="async"
                 />
-                <img 
-                    className={`${styles.imageParallax} ${styles.image3}`} 
-                    src="/images/treasure3.webp" 
+                <img
+                    className={`${styles.imageParallax} ${styles.image3}`}
+                    src="/images/treasure3.webp"
                     alt="Small treasure item 3"
                     loading="lazy"
                     decoding="async"
                 />
-                <img 
-                    className={`${styles.imageParallax} ${styles.image4}`} 
-                    src="/images/treasure4.webp" 
+                <img
+                    className={`${styles.imageParallax} ${styles.image4}`}
+                    src="/images/treasure4.webp"
                     alt="Small treasure item 4"
                     loading="lazy"
                     decoding="async"
                 />
-                <img 
-                    className={`${styles.imageParallax} ${styles.image5}`} 
-                    src="/images/treasure5.webp" 
+                <img
+                    className={`${styles.imageParallax} ${styles.image5}`}
+                    src="/images/treasure5.webp"
                     alt="Small treasure item 5"
                     loading="lazy"
                     decoding="async"
                 />
-                <img 
-                    className={`${styles.imageParallax} ${styles.image6}`} 
-                    src="/images/treasure6.webp" 
+                <img
+                    className={`${styles.imageParallax} ${styles.image6}`}
+                    src="/images/treasure6.webp"
                     alt="Small treasure item 6"
                     loading="lazy"
                     decoding="async"
                 />
-                <img 
-                    className={`${styles.imageParallax} ${styles.image7}`} 
-                    src="/images/treasure7.webp" 
+                <img
+                    className={`${styles.imageParallax} ${styles.image7}`}
+                    src="/images/treasure7.webp"
                     alt="Small treasure item 7"
                     loading="lazy"
                     decoding="async"
