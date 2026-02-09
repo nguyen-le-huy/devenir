@@ -35,7 +35,7 @@ const SmallTreasures = () => {
                 ease: "none",
                 scrollTrigger: {
                     trigger: container,
-                    start: "top bottom  ",
+                    start: "top bottom",
                     end: "bottom top",
                     scrub: 1,
                 }
