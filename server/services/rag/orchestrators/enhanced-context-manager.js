@@ -15,17 +15,38 @@ export class EnhancedContextManager extends ConversationManager {
 
     /**
      * Get enhanced context with entity extraction and semantic understanding
+     * 🆕 WITH SMART TOPIC CHANGE DETECTION
      * @param {string} userId - User ID or session ID
+     * @param {string} currentMessage - Current user message
      * @param {Array} recentMessages - Recent messages from client
      * @returns {Promise<Object>} Enhanced context with entities and semantics
      */
-    async getContext(userId, recentMessages = []) {
+    async getContext(userId, currentMessage = '', recentMessages = []) {
         try {
             // Get base context from parent class
             const baseContext = await super.getContext(userId, recentMessages);
 
+            // 🆕 DETECT TOPIC CHANGE - Clear sticky context if user switched topic
+            const shouldResetContext = await this.detectTopicChange(
+                currentMessage,
+                baseContext.history,
+                recentMessages
+            );
+
+            if (shouldResetContext) {
+                console.log('🔄 Topic change detected - Resetting sticky context!');
+                // Clear current_product but keep conversation history
+                baseContext.recent_product_id = null;
+            }
+
             // Extract structured entities from conversation
             const entities = await this.extractEntities(baseContext.history, recentMessages);
+
+            // 🆕 Override current_product if topic changed
+            if (shouldResetContext) {
+                entities.current_product = null;
+                entities.all_products = []; // Clear product stack
+            }
 
             // Build conversation summary
             const summary = this.summarizeContext(baseContext.history);
@@ -46,6 +67,9 @@ export class EnhancedContextManager extends ConversationManager {
                 // Intent tracking
                 intent_history: entities.intent_history || [],
 
+                // 🆕 Topic change flag
+                topic_changed: shouldResetContext,
+
                 // Conversation summary (for context compression)
                 summary: summary,
 
@@ -59,6 +83,7 @@ export class EnhancedContextManager extends ConversationManager {
                 current_product: enhancedContext.entities.current_product?.name || 'None',
                 all_products_count: enhancedContext.entities.all_products.length,
                 topic: enhancedContext.entities.conversation_topic,
+                topic_changed: shouldResetContext,
                 turn_count: enhancedContext.turn_count
             });
 
@@ -69,6 +94,157 @@ export class EnhancedContextManager extends ConversationManager {
             // Fallback to base context
             return super.getContext(userId, recentMessages);
         }
+    }
+
+    /**
+     * 🆕 Detect if user has changed topic completely
+     * @param {string} currentMessage - Current user message
+     * @param {Array} history - Conversation history
+     * @param {Array} recentMessages - Recent messages from client
+     * @returns {Promise<boolean>} True if topic has changed
+     */
+    async detectTopicChange(currentMessage, history = [], recentMessages = []) {
+        try {
+            if (!currentMessage || !history || history.length === 0) {
+                return false; // No history to compare
+            }
+
+            const messageLower = currentMessage.toLowerCase();
+
+            // === RULE 1: Strong Topic Change Triggers ===
+            const topicChangeTriggers = [
+                'tôi muốn',      // "I want" - usually new request
+                'bây giờ',       // "now" - shifting focus
+                'thôi',          // "stop/enough" - abandoning prev topic
+                'không',         // "no" - rejecting
+                'khác',          // "different" - want something else
+                'thay vì',       // "instead of"
+                'quên',          // "forget it"
+                'để sau',        // "later"
+                'cho tôi',       // "give me" - new demand
+                'tìm',           // "find/search" - new search
+                'xem',           // "see/view" - browsing new
+                'mua quà',       // "buy gift" - gift shopping
+                'tặng',          // "gift for"
+                'quà sinh nhật'  // "birthday gift"
+            ];
+
+            // Check for strong triggers
+            const hasTrigger = topicChangeTriggers.some(trigger => messageLower.includes(trigger));
+
+            if (hasTrigger && messageLower.length > 15) {
+                console.log(`🔄 Topic change trigger detected: Found "${topicChangeTriggers.find(t => messageLower.includes(t))}"`);
+
+                // Additional check: Does message mention previous product?
+                const lastBotMessage = [...history].reverse().find(m => m.role === 'assistant' || m.sender === 'bot');
+                if (lastBotMessage) {
+                    const prevProductNames = this.extractProductNamesFromMessage(lastBotMessage.content || lastBotMessage.text || '');
+
+                    // If current message doesn't mention any previous products → TOPIC CHANGE
+                    const mentionsPrevProduct = prevProductNames.some(name =>
+                        messageLower.includes(name.toLowerCase())
+                    );
+
+                    if (!mentionsPrevProduct) {
+                        console.log(`✅ Topic change confirmed: No mention of previous products`);
+                        return true;
+                    }
+                }
+            }
+
+            // === RULE 2: Intent Category Change ===
+            // Extract last intent from history
+            const lastIntent = [...history].reverse().find(m =>
+                m.intent || m.metadata?.intent
+            )?.intent || m.metadata?.intent;
+
+            // Classify current message intent
+            const currentQueryIntent = await this.quickIntentClassify(currentMessage);
+
+            if (lastIntent && currentQueryIntent) {
+                const intentCategories = {
+                    'size_recommendation': 'sizing',
+                    'product_advice': 'product',
+                    'order_lookup': 'orders',
+                    'policy_faq': 'support',
+                    'add_to_cart': 'checkout',
+                    'style_matching': 'styling',
+                    'gift_recommendation': 'gift'  // New category
+                };
+
+                const lastCategory = intentCategories[lastIntent];
+                const currentCategory = intentCategories[currentQueryIntent];
+
+                if (lastCategory && currentCategory && lastCategory !== currentCategory) {
+                    console.log(`🔄 Intent category change: ${lastCategory} → ${currentCategory}`);
+                    return true;
+                }
+            }
+
+            // === RULE 3: Explicit Negation/Rejection ===
+            const rejectionPatterns = [
+                /^không\s/i,              // "không" at start
+                /^thôi/i,                 // "thôi" at start
+                /không\s+(cần|muốn|thích)/i  // "không cần/muốn/thích"
+            ];
+
+            if (rejectionPatterns.some(pattern => pattern.test(currentMessage))) {
+                console.log(`🔄 Rejection detected - likely topic change`);
+                return true;
+            }
+
+            // Default: No topic change
+            return false;
+
+        } catch (error) {
+            console.error('Topic Change Detection Error:', error);
+            return false; // Safe default
+        }
+    }
+
+    /**
+     * Extract product names from bot message (from bold text)
+     */
+    extractProductNamesFromMessage(message) {
+        const boldMatches = message.match(/\*\*([^*]+)\*\*/g);
+        if (!boldMatches) return [];
+
+        return boldMatches.map(match => match.replace(/\*\*/g, '').trim())
+            .filter(text => text.length > 10 && !text.startsWith('$') && !text.match(/^\d/));
+    }
+
+    /**
+     * Quick intent classification using keywords (no LLM)
+     */
+    async quickIntentClassify(message) {
+        const messageLower = message.toLowerCase();
+
+        // Size patterns
+        if (/size|kích cỡ|cao.*nặng|\d+\s*cm.*\d+\s*kg/i.test(message)) {
+            return 'size_recommendation';
+        }
+
+        // Gift patterns
+        if (/quà|tặng|sinh nhật|anniversary|father|mother|bạn gái|bạn trai|bố|mẹ/i.test(message)) {
+            return 'gift_recommendation';
+        }
+
+        // Product search patterns
+        if (/tìm|xem|có.*không|show|áo|quần|jacket|shirt/i.test(message)) {
+            return 'product_advice';
+        }
+
+        // Order lookup
+        if (/đơn hàng|order|tra cứu|tracking/i.test(message)) {
+            return 'order_lookup';
+        }
+
+        // Cart
+        if (/thêm vào giỏ|add to cart|mua|checkout/i.test(message)) {
+            return 'add_to_cart';
+        }
+
+        return null;
     }
 
     /**

@@ -24,23 +24,93 @@ export async function sizeRecommendation(query, extractedInfo = {}, context = {}
         let productId = null;
         let productName = null;
 
-        // Try to find product in the query first
+        // 🆕 ENHANCED: Multi-tier product search strategy
+        // Tier 1: MongoDB Text Search (exact/fuzzy name match)
+        // Tier 2: MongoDB Regex Search (partial name match)
+        // Tier 3: Vector Search (semantic similarity)
+
         try {
-            // Remove sizing keywords to focus on product name
-            const cleanQuery = query.replace(/(tư vấn|hỏi|cho|mình|size|bao nhiêu|vừa không|có|mặc|như thế nào|là gì)/gi, '').trim();
-            if (cleanQuery.length > 5) { // Only search if remaining query is significant
-                const searchResults = await searchProducts(cleanQuery, 1);
-                if (searchResults && searchResults.length > 0) {
-                    // Strict threshold to ensure it's actually a product name mentioned
-                    if (searchResults[0].score > 0.82) {
-                        productId = searchResults[0].id;
-                        productName = searchResults[0].name;
-                        console.log(`🎯 Found explicit product in query: "${productName}" (score: ${searchResults[0].score})`);
+            // Extract potential product name from query
+            // Remove common size-related keywords
+            const cleanQuery = query
+                .replace(/(tôi|mình|em|bạn|cao|nặng|size|kích cỡ|thước|cho|thì|nên|lấy|chọn|mặc|vừa|không|có|bao nhiêu|như thế nào|là gì|cm|kg|m\d+)/gi, ' ')
+                .replace(/\d+\s*(cm|kg|m)/gi, '') // Remove measurements
+                .trim();
+
+            console.log(`🔍 Extracted product query: "${cleanQuery}" (from: "${query}")`);
+
+            if (cleanQuery.length > 5) {
+                // === TIER 1: MongoDB Text Search (Fast, exact/fuzzy match) ===
+                console.log('🔍 Tier 1: Trying MongoDB text search...');
+                const textSearchResults = await Product.find(
+                    { $text: { $search: cleanQuery } },
+                    { score: { $meta: 'textScore' } }
+                )
+                    .sort({ score: { $meta: 'textScore' } })
+                    .limit(1)
+                    .lean();
+
+                if (textSearchResults && textSearchResults.length > 0) {
+                    const bestMatch = textSearchResults[0];
+                    // Text search score > 1.0 is usually a good match
+                    if (bestMatch.score > 0.8) {
+                        productId = bestMatch._id;
+                        productName = bestMatch.name;
+                        console.log(`✅ Tier 1 SUCCESS: Found "${productName}" (text score: ${bestMatch.score.toFixed(2)})`);
+                    }
+                }
+
+                // === TIER 2: MongoDB Regex Search (Fallback for partial matches) ===
+                if (!productId && cleanQuery.length > 8) {
+                    console.log('🔍 Tier 2: Trying MongoDB regex search...');
+                    const keywords = cleanQuery.split(/\s+/).filter(w => w.length > 3);
+
+                    if (keywords.length > 0) {
+                        // Create regex pattern matching all keywords (order-independent)
+                        const regexPattern = keywords.map(k => `(?=.*${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`).join('');
+                        const regex = new RegExp(regexPattern, 'i');
+
+                        const regexResults = await Product.find({
+                            name: regex,
+                            isActive: true
+                        })
+                            .limit(3)
+                            .lean();
+
+                        if (regexResults && regexResults.length > 0) {
+                            // Score by name length (shorter = more specific match)
+                            const scoredResults = regexResults.map(p => ({
+                                product: p,
+                                score: 1000 - p.name.length // Prefer shorter names
+                            }));
+                            scoredResults.sort((a, b) => b.score - a.score);
+
+                            const bestMatch = scoredResults[0].product;
+                            productId = bestMatch._id;
+                            productName = bestMatch.name;
+                            console.log(`✅ Tier 2 SUCCESS: Found "${productName}" via regex`);
+                        }
+                    }
+                }
+
+                // === TIER 3: Vector Search (Semantic similarity fallback) ===
+                if (!productId) {
+                    console.log('🔍 Tier 3: Trying vector search...');
+                    const searchResults = await searchProducts(cleanQuery, 1);
+                    if (searchResults && searchResults.length > 0) {
+                        // Lower threshold for vector search since previous tiers failed
+                        if (searchResults[0].score > 0.75) {
+                            productId = searchResults[0].id;
+                            productName = searchResults[0].name;
+                            console.log(`✅ Tier 3 SUCCESS: Found "${productName}" (vector score: ${searchResults[0].score})`);
+                        } else {
+                            console.log(`⚠️ Tier 3: Vector score too low (${searchResults[0].score}) for "${searchResults[0].name}"`);
+                        }
                     }
                 }
             }
         } catch (err) {
-            console.warn('Error searching product in query:', err);
+            console.error('❌ Error in multi-tier product search:', err);
         }
 
         // PRIORITY 2: Fallback to context/extracted info if no explicit product found

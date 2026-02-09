@@ -44,7 +44,34 @@ const chatLogSchema = new mongoose.Schema(
             messageLength: Number,
             productsShown: Number,
             userSatisfaction: Number,
-            timestamp: Date
+            timestamp: Date,
+            // RAG 3.0 Quality Metrics
+            qualityMetrics: {
+                ragasScore: Number,          // Overall quality score (0-1)
+                faithfulness: Number,        // Fact accuracy (0-1)
+                relevance: Number,           // Answer relevance (0-1)
+                userFeedback: {
+                    type: String,
+                    enum: ['thumbs_up', 'thumbs_down', 'edited', null],
+                    default: null
+                },
+                wasEdited: {
+                    type: Boolean,
+                    default: false
+                }
+            },
+            // RAG 3.0 Retrieval Details
+            retrievalDetails: {
+                productsRetrieved: Number,   // Number of products retrieved
+                topRelevanceScore: Number,   // Highest relevance score
+                rerankingTime: Number,       // Reranking latency (ms)
+                cacheHit: {
+                    type: Boolean,
+                    default: false
+                },
+                personalizedBoost: Boolean   // Was personalization applied
+            },
+            requestId: String                // For feedback correlation
         },
         createdAt: {
             type: Date,

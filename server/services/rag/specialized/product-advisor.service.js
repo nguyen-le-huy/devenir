@@ -4,6 +4,9 @@ import Color from '../../../models/ColorModel.js';
 import { searchProducts, searchByCategoryMongoDB, searchKnowledgeBase } from '../retrieval/vector-search.service.js';
 import { rerankDocuments } from '../retrieval/reranking.service.js';
 import { generateResponse } from '../generation/response-generator.js';
+import { userProfiler } from '../personalization/user-profiler.service.js';
+import { applyPersonalizedRanking, extractPersonalizationInsights } from '../personalization/personalized-ranking.service.js';
+import { expandQuery } from '../query-transformation/query-expander.service.js';
 
 // Vietnamese to English color mapping
 const VI_TO_EN_COLORS = {
@@ -156,6 +159,13 @@ export async function productAdvice(query, context = {}) {
             }
         }
 
+        // 🆕 Expand query with synonyms (especially for gift shopping)
+        const expandedResult = expandQuery(enrichedQuery);
+        if (expandedResult.enhanced !== enrichedQuery) {
+            console.log(`✨ Query Expanded: "${enrichedQuery}" → "${expandedResult.enhanced}"`);
+            enrichedQuery = expandedResult.enhanced;
+        }
+
         // 1. Vector search (Product + Knowledge Base in parallel)
         const [searchResults, kbResults] = await Promise.all([
             searchProducts(enrichedQuery, { topK: 50 }),
@@ -262,6 +272,8 @@ export async function productAdvice(query, context = {}) {
             quantity: { $gt: 0 }
         }).lean();
 
+        console.log(`📦 Fetched ${allVariants.length} in-stock variants for ${productIds.length} products`);
+
         // Group variants by product_id
         const variantsByProductId = allVariants.reduce((acc, variant) => {
             const pId = variant.product_id.toString();
@@ -278,7 +290,68 @@ export async function productAdvice(query, context = {}) {
             };
         });
 
-        // 6. Build context for LLM
+        // 🆕 CRITICAL: Filter out products with NO in-stock variants
+        // ⚠️ IMPORTANT: variants from line 261 already filtered by quantity > 0
+        // So if product has variants.length > 0, it DEFINITELY has stock
+        // BUT we double-check to be safe
+        const inStockProducts = productsWithVariants.filter(product => {
+            // Check if product has any variants with stock
+            const hasInStockVariant = product.variants &&
+                product.variants.length > 0 &&
+                product.variants.some(v => v.quantity > 0);
+
+            if (!hasInStockVariant) {
+                console.log(`⚠️ Filtered out (no stock): ${product.name} (${product.variants.length} variants total)`);
+            } else {
+                const totalStock = product.variants.reduce((sum, v) => sum + v.quantity, 0);
+                console.log(`✅ In stock: ${product.name} (${product.variants.length} variants, ${totalStock} units)`);
+            }
+
+            return hasInStockVariant;
+        });
+
+        // Early return if no products have stock
+        if (inStockProducts.length === 0) {
+            console.log(`❌ NO in-stock products found after filtering!`);
+            return {
+                answer: "Rất tiếc, các sản phẩm bạn tìm hiện đang hết hàng. Bạn có thể xem các sản phẩm tương tự hoặc để lại thông tin để được thông báo khi hàng về nhé!",
+                sources: [],
+                suggested_products: []
+            };
+        }
+
+        console.log(`✅ ${inStockProducts.length}/${productsWithVariants.length} products have stock`);
+
+
+        // 6. Apply Personalized Ranking (RAG 3.0)
+        let userProfile = null;
+        let personalizedProducts = inStockProducts; // 🆕 Use only in-stock products
+
+        if (process.env.ENABLE_PERSONALIZATION === 'true' && context.userId) {
+            try {
+                userProfile = await userProfiler.getProfile(context.userId);
+
+                if (userProfile) {
+                    const scoredProducts = applyPersonalizedRanking(inStockProducts, userProfile);
+                    personalizedProducts = scoredProducts.map(sp => ({
+                        ...sp.product,
+                        _personalizedScore: sp.personalizedScore,
+                        _personalizationBoosts: sp.boosts
+                    }));
+
+                    // Log personalization insights
+                    const insights = extractPersonalizationInsights(scoredProducts);
+                    logger.info('Personalization applied', {
+                        userId: context.userId,
+                        ...insights
+                    });
+                }
+            } catch (error) {
+                logger.error('Personalization failed, continuing without', { error: error.message });
+            }
+        }
+
+        // 7. Build context for LLM
         let contextText = "## Sản phẩm liên quan:\n\n";
         let contextIdx = 0;
 
@@ -287,7 +360,7 @@ export async function productAdvice(query, context = {}) {
             contextText += `### Sản phẩm màu ${requestedColor.vi}:\n\n`;
 
             for (const colorProdId of colorMatchedProductIds) {
-                const product = productsWithVariants.find(p => p._id.toString() === colorProdId);
+                const product = personalizedProducts.find(p => p._id.toString() === colorProdId);
                 if (product) {
                     contextIdx++;
                     contextText += `### ${contextIdx}. ${product.name}\n`;
@@ -337,7 +410,7 @@ export async function productAdvice(query, context = {}) {
         // Then add products from vector search
         reranked.forEach((r, idx) => {
             const match = searchResults[r.index];
-            const product = productsWithVariants.find(
+            const product = personalizedProducts.find(
                 p => p._id.toString() === match?.metadata?.product_id
             );
 
@@ -396,7 +469,7 @@ export async function productAdvice(query, context = {}) {
         // 8. Prepare sources and suggested products
         const sources = reranked.map(r => {
             const match = searchResults[r.index];
-            const product = productsWithVariants.find(
+            const product = personalizedProducts.find(
                 p => p._id.toString() === match?.metadata?.product_id
             );
 
@@ -416,7 +489,7 @@ export async function productAdvice(query, context = {}) {
         if (requestedColor && colorMatchedProductIds.length > 0) {
             for (const colorProdId of colorMatchedProductIds) {
                 if (!seenProductIds.has(colorProdId)) {
-                    const product = productsWithVariants.find(p => p._id.toString() === colorProdId);
+                    const product = personalizedProducts.find(p => p._id.toString() === colorProdId);
                     if (product) {
                         seenProductIds.add(colorProdId);
                         orderedProducts.push(product);
@@ -433,7 +506,7 @@ export async function productAdvice(query, context = {}) {
             const productId = match?.metadata?.product_id;
 
             if (productId && !seenProductIds.has(productId)) {
-                const product = productsWithVariants.find(p => p._id.toString() === productId);
+                const product = personalizedProducts.find(p => p._id.toString() === productId);
                 if (product) {
                     seenProductIds.add(productId);
                     orderedProducts.push(product);
@@ -547,6 +620,16 @@ export async function productAdvice(query, context = {}) {
             // Bonus for color-matched products
             if (colorMatchedProductIds.includes(p._id.toString())) {
                 score += 20;
+            }
+
+            // Bonus for personalized products (RAG 3.0)
+            if (p._personalizedScore && p._personalizedScore > 1.0) {
+                const personalizedBonus = Math.round((p._personalizedScore - 1.0) * 100);
+                score += personalizedBonus;
+
+                if (personalizedBonus > 0) {
+                    console.log(`🎯 Personalization bonus for "${p.name}": +${personalizedBonus} (score: ${p._personalizedScore})`);
+                }
             }
 
             return { product: p, score };

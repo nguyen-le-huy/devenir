@@ -13,9 +13,27 @@ export function buildCoVePrompt(context, conversationHistory = [], customerConte
   // Append customer context if available
   const customerInfo = customerContext?.contextString || '';
 
+  // 🆕 Detect gift shopping intent
+  const allMessages = [...conversationHistory, { content: context }];
+  const isGiftQuery = allMessages.some(msg => {
+    const content = (msg.content || '').toLowerCase();
+    return content.includes('quà') || content.includes('tặng') ||
+      content.includes('sinh nhật') || content.includes('gift') ||
+      content.includes('mẹ') || content.includes('bố');
+  });
+
+  const productGuidance = isGiftQuery ? `
+## 🎁 MUA QUÀ TẶNG - Đề xuất 3-5 sản phẩm đa dạng:
+- Format: "**1. [Tên SP]** - $XXX: Lý do ngắn gọn"
+- Ví dụ: "**1. Nước hoa X** - $500: Hương thơm thanh lịch, sang trọng"
+` : `
+## 📦 Đề xuất: Nếu có >3 sản phẩm, suggest 3-5 items tốt nhất
+`;
+
   return `
 Bạn là chuyên gia tư vấn thời trang của cửa hàng DEVENIR. Xưng hô: "mình" và gọi khách là "bạn".
 ${toneInstruction}
+${productGuidance}
 ## Quy tắc QUAN TRỌNG NHẤT:
 - Nếu có SẢN PHẨM trong [Context] bên dưới → BẮT BUỘC phải giới thiệu sản phẩm đó
 - NẾU khách hỏi có sản phẩm X không → và Context có sản phẩm → trả lời "Dạ có bạn, mình có [tên sản phẩm]..."

@@ -93,7 +93,8 @@ export function quickIntentDetection(message) {
     // HIGH PRIORITY: Product type keywords - route to product_advice
     const highPriorityProductTypes = [
         'nước hoa', 'fragrance', 'perfume', 'cologne', 'eau de parfum',
-        'scarf', 'khăn', 'jacket', 'áo khoác', 'sweater', 'áo len'
+        'scarf', 'khăn', 'jacket', 'áo khoác', 'sweater', 'áo len',
+        'quà', 'gift', 'tặng'
     ];
     if (highPriorityProductTypes.some(k => lowerMessage.includes(k))) {
         return { intent: 'product_advice', confidence: 0.85 };
@@ -106,7 +107,8 @@ export function quickIntentDetection(message) {
     }
 
     // Add to cart intent
-    const addToCartKeywords = ['thêm vào bag', 'thêm vào giỏ', 'add to bag', 'add to cart', 'mua ngay', 'đặt hàng', 'muốn mua'];
+    // ⚠️ Removed "muốn mua" as it triggers falsely on "muốn mua quà..." (gift search)
+    const addToCartKeywords = ['thêm vào bag', 'thêm vào giỏ', 'add to bag', 'add to cart', 'mua ngay', 'đặt hàng', 'lấy cái này'];
     if (addToCartKeywords.some(k => lowerMessage.includes(k))) {
         return { intent: 'add_to_cart', confidence: 0.9 };
     }

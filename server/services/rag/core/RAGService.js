@@ -108,7 +108,7 @@ export class RAGService {
             // 1. Parallel: Classify intent + Get context + Build customer context
             const [intentResult, context, customerContext] = await Promise.all([
                 this._classifyIntent(message, conversationHistory, requestId),
-                this._getContext(userId, conversationHistory, requestId),
+                this._getContext(userId, message, conversationHistory, requestId),
                 this._buildCustomerContext(userId, requestId)
             ]);
 
@@ -229,11 +229,12 @@ export class RAGService {
 
     /**
      * Get conversation context with error handling
+     * 🆕 Now includes current message for topic change detection
      * @private
      */
-    async _getContext(userId, conversationHistory, requestId) {
+    async _getContext(userId, currentMessage, conversationHistory, requestId) {
         try {
-            return await this.conversationManager.getContext(userId, conversationHistory);
+            return await this.conversationManager.getContext(userId, currentMessage, conversationHistory);
         } catch (error) {
             logError('Context retrieval failed', error, { userId, requestId });
             // Return minimal context
@@ -241,7 +242,8 @@ export class RAGService {
                 conversation_id: `fallback_${userId}_${Date.now()}`,
                 history: conversationHistory,
                 recent_messages: conversationHistory.slice(-5),
-                has_entities: false
+                has_entities: false,
+                topic_changed: false
             };
         }
     }
