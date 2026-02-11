@@ -3,7 +3,7 @@ import axiosInstance from '@/services/axiosConfig'
 import { QUERY_KEYS } from '@/lib/queryClient'
 
 // ==================== TYPES ====================
-interface Variant {
+export interface Variant {
   _id: string
   sku: string
   product: string
@@ -38,7 +38,7 @@ interface VariantFilters {
  */
 async function fetchVariants(filters: VariantFilters = {}): Promise<{ data: Variant[], total: number }> {
   const params = new URLSearchParams()
-  
+
   if (filters.page) params.append('page', filters.page.toString())
   if (filters.limit) params.append('limit', filters.limit.toString())
   if (filters.search) params.append('search', filters.search)
@@ -47,9 +47,9 @@ async function fetchVariants(filters: VariantFilters = {}): Promise<{ data: Vari
   if (filters.color && filters.color !== 'all') params.append('color', filters.color)
 
   const response = await axiosInstance.get(`/products/admin/variants?${params.toString()}`)
-  
+
   let variants = response.data?.data || response.data || []
-  
+
   // Apply stock status filter on client side if needed
   if (filters.stockStatus && filters.stockStatus !== 'all') {
     variants = variants.filter((v: Variant) => {
@@ -173,21 +173,21 @@ export function useCreateVariant() {
     },
     onSuccess: (newVariant) => {
       // Realtime refetch - invalidate all variant & product queries
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.variants.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.categories.all,
         refetchType: 'active'
       })
-      
+
       if (newVariant?.product) {
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.variants.byProduct(newVariant.product),
           refetchType: 'active'
         })
@@ -214,25 +214,25 @@ export function useUpdateVariant() {
     },
     onSuccess: (updatedVariant, { id }) => {
       // Realtime refetch - invalidate all variant & product queries
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.variants.detail(id),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.variants.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.categories.all,
         refetchType: 'active'
       })
-      
+
       if (updatedVariant?.product) {
-        queryClient.invalidateQueries({ 
+        queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.variants.byProduct(updatedVariant.product),
           refetchType: 'active'
         })
@@ -259,15 +259,15 @@ export function useDeleteVariant() {
     },
     onSuccess: () => {
       // Realtime refetch - invalidate all variant & product queries
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.variants.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.categories.all,
         refetchType: 'active'
       })
@@ -302,15 +302,15 @@ export function useBulkUpdateVariantStock() {
     },
     onSuccess: () => {
       // Realtime refetch - invalidate all variant & product queries
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.variants.all,
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.categories.all,
         refetchType: 'active'
       })

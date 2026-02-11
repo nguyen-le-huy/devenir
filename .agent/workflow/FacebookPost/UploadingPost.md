@@ -1,277 +1,154 @@
----
-description: Workflow đăng bài sản phẩm lên Facebook tự động qua n8n
----
+# Phân Tích Chi Tiết Tính Năng: [Đăng Sản Phẩm lên Facebook]
 
-# Social Media Auto-Posting Workflow
+### 1. Công nghệ và Thư viện sử dụng
+*Phân tích các file import để liệt kê các công nghệ chính tham gia vào tính năng này.*
+* **Frontend:**
+    * **React:** Framework UI chính.
+    * **Axios (axiosInstance):** `admin/src/services/axiosConfig.ts` - Dùng để gọi API.
+    * **Zustand/Context:** Không dùng Store global cho tính năng này, sử dụng `useState` và `localStorage`.
+    * **Sonner (toast):** Hiển thị thông báo thành công/thất bại.
+* **Backend:**
+    * **Node.js / Express:** Server framework.
+    * **node-fetch:** Dùng để forward request từ Server sang n8n webhook.
+* **Database:**
+    * **MongoDB (Mongoose):** Lưu trữ sản phẩm (`Product`) và biến thể (`Variant`).
+* **Automation:**
+    * **n8n (Self-hosted):** Workflow tự động hóa (AI generation, Image processing, Posting).
+* **External Services:**
+    * **OpenAI API:** Tạo caption.
+    * **Facebook Graph API:** Upload ảnh và đăng bài (`/photos`, `/feed`).
 
-Hướng dẫn tổng quan về hệ thống đăng bài sản phẩm lên Facebook tự động từ Admin Panel thông qua n8n.
+### 2. Cấu hình và Biến môi trường
+*Liệt kê tất cả các cấu hình cần thiết để tính năng này hoạt động.*
+* **Server Environment (`.env`):**
+    * Không có biến môi trường đặc thù cho tính năng này ở backend vì URL webhook được gửi từ Client.
+* **Client Local Storage:**
+    * `social_settings`: Lưu cấu hình người dùng nhập vào (Webhook URL, Page ID).
+    * `social_posted_products`: Lưu lịch sử và trạng thái các bài đã đăng.
+* **n8n Credentials:**
+    * **Facebook OAuth2 / App Token:** Để quyền `pages_manage_posts`, `pages_show_list`.
+    * **OpenAI API Key:** Để chạy node AI generation.
 
----
+### 3. Kiến trúc Tổng quan
+* **Tóm tắt:** Tính năng cho phép người quản trị chọn một sản phẩm từ dashboard, tự động tạo nội dung bằng AI và đăng bài viết (kèm nhiều ảnh) lên Facebook Fanpage thông qua quy trình tự động hóa n8n.
+* **Sơ đồ luồng dữ liệu:**
 
-## 📁 CẤU TRÚC FILE
+```mermaid
+sequenceDiagram
+    participant User
+    participant ClientUI as Admin Client (React)
+    participant Server as Backend API (Express)
+    participant n8n as Workflow Engine
+    participant DB as MongoDB
+    participant FB as Facebook API
 
-### **Admin Panel** (`/admin/src/`)
-| File | Mô tả |
-|------|-------|
-| `pages/content/SocialPostsPage.tsx` | Trang quản lý Social Media - hiển thị danh sách sản phẩm, trạng thái đăng, nút Post |
-| `components/app-sidebar.tsx` | Sidebar navigation - chứa menu item "Social Posts" |
-| `App.tsx` | Router - định nghĩa route `/admin/social-posts` |
-
-### **Backend Server** (`/server/`)
-| File | Mô tả |
-|------|-------|
-| `routes/socialRoutes.js` | Proxy endpoint `/api/social/webhook-proxy` - chuyển tiếp request đến n8n (tránh CORS) |
-| `server.js` | Import và register route `socialRoutes` |
-
-### **n8n Workflow** (Self-hosted)
-| STT | Node | Mô tả |
-|-----|------|-------|
-| 1 | Webhook | Nhận request từ Backend Server |
-| 2 | MongoDB (Aggregate) | Lấy thông tin sản phẩm + variants từ database |
-| 3 | OpenAI (Message a model) | Tạo nội dung bài viết bằng AI |
-| 4 | Code (Split Images) | Xử lý dữ liệu, tách ảnh thành nhiều items |
-| 5 | HTTP Request (Upload) | Upload từng ảnh lên Facebook với `published: false` |
-| 6 | **Code (Aggregate IDs)** | **Gom tất cả Media ID lại thành 1 item** |
-| 7 | **HTTP Request (Publish)** | **Đăng 1 bài duy nhất với nhiều ảnh lên Facebook** |
-| 8 | Respond to Webhook | Trả kết quả về Backend Server |
-
----
-
-## 🔄 LUỒNG HOẠT ĐỘNG
-
-### Sơ đồ tổng quan
-```
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  ADMIN PANEL    │      │  BACKEND SERVER │      │       n8n       │
-│  (React)        │      │  (Express)      │      │  (Self-hosted)  │
-└────────┬────────┘      └────────┬────────┘      └────────┬────────┘
-         │                        │                        │
-         │  1. User bấm "Post"    │                        │
-         │ ─────────────────────> │                        │
-         │  POST /api/social/     │                        │
-         │  webhook-proxy         │                        │
-         │                        │  2. Chuyển tiếp        │
-         │                        │ ─────────────────────> │
-         │                        │  POST /webhook/...     │
-         │                        │                        │
-         │                        │       [Xử lý n8n]      │
-         │                        │                        │
-         │                        │  3. Kết quả           │
-         │                        │ <───────────────────── │
-         │                        │  {success, post_id}   │
-         │                        │                        │
-         │  4. Response           │                        │
-         │ <───────────────────── │                        │
-         │  "Posted successfully" │                        │
-         │                        │                        │
-    ┌────┴────┐                   │                        │
-    │ Update  │                   │                        │
-    │ UI/Toast│                   │                        │
-    └─────────┘                   │                        │
-```
-
-### Sơ đồ chi tiết trong n8n (Multi-Image Post)
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌───────────────┐
-│ Webhook  │───>│ MongoDB  │───>│  OpenAI  │───>│ Code (Split)  │
-└──────────┘    └──────────┘    └──────────┘    └───────┬───────┘
-                                                        │
-                                                        │ Output: 4 items
-                                                        │ (1 item = 1 ảnh)
-                                                        ▼
-                                               ┌────────────────┐
-                                               │ HTTP Request   │
-                                               │ (Upload ẩn)    │
-                                               │ published:false│
-                                               └───────┬────────┘
-                                                       │
-                                                       │ Output: 4 items
-                                                       │ (1 item = 1 media_id)
-                                                       ▼
-                                               ┌────────────────┐
-                                               │ Code           │
-                                               │ (Aggregate)    │◄── Execute Once!
-                                               │ Gom 4 ID → 1   │
-                                               └───────┬────────┘
-                                                       │
-                                                       │ Output: 1 item
-                                                       │ {message, attached_media:[...]}
-                                                       ▼
-                                               ┌────────────────┐
-                                               │ HTTP Request   │
-                                               │ (Publish Feed) │
-                                               │ POST /feed     │
-                                               └───────┬────────┘
-                                                       │
-                                                       │ Output: 1 post
-                                                       ▼
-                                               ┌────────────────┐
-                                               │ Respond to     │
-                                               │ Webhook        │
-                                               └────────────────┘
+    User->>ClientUI: Click "Post to Facebook" Icon
+    ClientUI->>ClientUI: Set Status "AI Generating"
+    ClientUI->>Server: POST /api/social/webhook-proxy
+    Note right of ClientUI: Payload: {productId, pageId, webhookUrl}
+    
+    Server->>n8n: Forward Request (Webhook)
+    
+    n8n->>DB: Aggregate Product & Variants
+    DB-->>n8n: Return Product Data + Images
+    
+    n8n->>n8n: OpenAI Recraft Caption
+    n8n->>n8n: Spilt Images to Items
+    
+    loop For each Image
+        n8n->>FB: POST /photos (published: false)
+        FB-->>n8n: Return media_fbid
+    end
+    
+    n8n->>FB: POST /feed (attached_media: ids)
+    FB-->>n8n: Return final post_id
+    
+    n8n-->>Server: JSON {success: true, post_id}
+    Server-->>ClientUI: JSON {success: true, post_id}
+    
+    ClientUI->>ClientUI: Update Status "Published"
+    ClientUI->>ClientUI: Save to LocalStorage
+    ClientUI->>User: Toast Success Message
 ```
 
----
+### 4. Triển khai Frontend (Client-Side)
+* **Cấu trúc Component:**
+    * **File chính:** `admin/src/pages/content/SocialPostsPage.tsx` - Layout chính.
+    * **Component danh sách:** `admin/src/features/social-posts/components/SocialPostList.tsx` - Hiển thị bảng sản phẩm và nút Post.
+    * **Component lưới:** `admin/src/features/social-posts/components/SocialPostGrid.tsx` - Hiển thị lưới sản phẩm và nút Post.
+* **Quản lý State:**
+    * **Local State (`useSocialPosts.ts`):** 
+        * `postedProducts`: Mảng lưu trạng thái bài đăng (đọc/ghi từ `localStorage`).
+        * `postingProductId`: ID đang xử lý (loading spinner).
+* **Dữ liệu đầu vào & Validate:**
+    * **Validation:** Kiểm tra `isConfigured` trong hook `useSocialPosts.ts` (dòng 50-53) trước khi gọi API. 
+    * **Quy tắc:** Phải nhập Webhook URL và Page ID trong mục Settings trước.
+* **Tầng Network:**
+    * **Hàm Trigger:** `handlePost(productId)` trong `admin/src/features/social-posts/hooks/useSocialPosts.ts`.
+    * **API Client:** `socialApi.postToFacebook` trong `admin/src/features/social-posts/api/socialApi.ts`.
+    * **Payload:**
+      ```json
+      {
+        "webhookUrl": "https://n8n.devenir.shop/webhook/...",
+        "productId": "65cb...",
+        "pageId": "1002...",
+        "postType": "multi_image"
+      }
+      ```
 
-## 📋 CHI TIẾT TỪNG NODE TRONG n8n
-
-### **Node 1: Webhook**
-- **HTTP Method**: POST
-- **Path**: `post-product` (hoặc tên bạn muốn)
-- **Response Mode**: `Using 'Respond to Webhook' Node`
-
-### **Node 2: MongoDB (Aggregate documents)**
-- **Operation**: Aggregate
-- **Collection**: `products`
-- **Pipeline**: Lookup để join với `productvariants`
-
-### **Node 3: OpenAI (Message a model)**
-- **Model**: `gpt-3.5-turbo` hoặc `gpt-4o`
-- **Prompt**: Viết caption hấp dẫn cho sản phẩm (lấy name, description từ MongoDB)
-
-### **Node 4: Code (Split Images)** - Quan trọng!
-- **Mode**: Run Once for All Items
-- **Mục đích**: Tách tất cả ảnh của sản phẩm thành nhiều items riêng biệt
-- **Output**: Mỗi item chứa `{pageId, message, imageUrl}`
-
-```javascript
-const product = $('Aggregate documents').first().json;
-const aiContent = items[0].json.message.content;
-const webhookData = $('Webhook').first().json.body;
-
-const firstVariant = product.variants?.[0];
-const price = firstVariant?.price || 0;
-const variantId = firstVariant?._id || '';
-const domain = "https://www.devenir.shop";
-const productLink = variantId 
-    ? `${domain}/product-detail?variant=${variantId}` 
-    : `${domain}/home`;
-
-const finalMessage = `${aiContent}\n\n------------------\n👉 Mua ngay tại: ${productLink}\n\n#Devenir #NewArrival`;
-
-// Lấy tất cả ảnh
-let imageUrls = [];
-if (firstVariant) {
-    if (firstVariant.mainImage) imageUrls.push(firstVariant.mainImage);
-    if (firstVariant.images) imageUrls.push(...firstVariant.images);
-}
-imageUrls = [...new Set(imageUrls)].slice(0, 10);
-
-// Trả về nhiều items (1 item = 1 ảnh)
-return imageUrls.map(url => ({
-    json: {
-        pageId: webhookData.pageId,
-        message: finalMessage,
-        imageUrl: url
+### 5. Giao diện API (Contract)
+* **Endpoint:** `POST /api/social/webhook-proxy`
+* **Bảo mật:**
+    * **Auth:** Yêu cầu Admin Token (được xử lý bởi `axiosInstance` tự động đính kèm `Authorization` header).
+* **Request Body:**
+    ```typescript
+    interface FacebookPostRequest {
+        webhookUrl: string; // URL của n8n webhook
+        productId: string;  // ID sản phẩm cần đăng
+        pageId: string;     // ID của Facebook Page
+        postType?: string;  // Mặc định: "multi_image"
     }
-}));
-```
+    ```
+* **Response:**
+    * **Thành công (200):**
+      ```json
+      {
+        "success": true, 
+        "message": "Posted successfully!", 
+        "post_id": "123456_789012"
+      }
+      ```
+    * **Lỗi (400/500):** `{ "success": false, "error": "Error message" }`
 
-### **Node 5: HTTP Request (Upload Photos)**
-- **Method**: POST
-- **URL**: `https://graph.facebook.com/{{ $json.pageId }}/photos`
-- **Authentication**: Header Auth (Bearer Token)
-- **Query Parameters**:
-  | Name | Value |
-  |------|-------|
-  | url | `{{ $json.imageUrl }}` |
-  | published | `false` ← **QUAN TRỌNG: Phải là false!** |
+### 6. Triển khai Backend (Server-Side)
+* **Định tuyến (Routing):**
+    * **File:** `server/routes/socialRoutes.js`
+    * **Middleware:** Check Auth (nếu có áp dụng global).
+* **Controller / Handler:**
+    * **File:** `server/routes/socialRoutes.js` (Handler được viết trực tiếp trong route).
+    * **Xử lý:**
+        1.  **Validate:** Kiểm tra `webhookUrl`, `productId`, `pageId` có tồn tại không (dòng 15-27).
+        2.  **Smart Routing:** Nếu `webhookUrl` chứa domain nội bộ (ví dụ `n8n.devenir.shop`), server tự động thay thế bằng IP nội bộ Docker (`http://n8n:5678`) để tránh lỗi network loopback (dòng 38-45).
+        3.  **Forwarding:** Dùng `node-fetch` gửi method `POST` tới n8n (dòng 40-48).
+        4.  **Response Handling:** Đọc response từ n8n và trả về client, giữ nguyên status code nếu n8n báo lỗi (dòng 61-74).
 
-### **Node 6: Code (Aggregate IDs)** - QUAN TRỌNG!
-- **Mode**: Run Once for All Items ← **Bật option này!**
-- **Mục đích**: Gom tất cả media ID thành 1 item duy nhất
+### 7. Tác động Cơ sở dữ liệu
+* **Bảng/Collection:** 
+    * **MongoDB:** Hiện tại **KHÔNG** ghi trực tiếp trạng thái post vào database (chỉ đọc).
+* **Thao tác:**
+    * **Read-Olny:** n8n đọc `products` và `productvariants` để lấy dữ liệu content.
+    * **Client Storage:** Trạng thái `published` được lưu ở Client `localStorage` (key: `social_posted_products`).
+    * **Đề xuất cải tiến:** Nên thêm trường `social_posts: [{ platform: 'facebook', id: '...', status: 'published' }]` vào schema `Product` để đồng bộ giữa các admin.
 
-```javascript
-// Gom tất cả ID ảnh đã upload
-const mediaIds = items.map(item => ({
-    media_fbid: item.json.id
-}));
-
-// Lấy message và pageId từ node Code đầu tiên
-const firstCodeData = $('Code in JavaScript').first().json;
-
-return {
-    json: {
-        pageId: firstCodeData.pageId,
-        message: firstCodeData.message,
-        attached_media: mediaIds
-    }
-};
-```
-
-### **Node 7: HTTP Request (Publish Feed)**
-- **Method**: POST
-- **URL**: `https://graph.facebook.com/{{ $json.pageId }}/feed`
-- **Authentication**: Header Auth (Bearer Token)
-- **Query Parameters**:
-  | Name | Value |
-  |------|-------|
-  | message | `{{ $json.message }}` |
-  | attached_media | `{{ JSON.stringify($json.attached_media) }}` |
-
-### **Node 8: Respond to Webhook**
-- **Response Body**:
-```json
-{
-    "success": true,
-    "message": "Đã đăng bài thành công!",
-    "post_id": "{{ $json.id }}"
-}
-```
-
----
-
-## ⚙️ CẤU HÌNH CẦN THIẾT
-
-### **Facebook App & Token**
-1. Tạo Facebook App loại **Business** tại [developers.facebook.com](https://developers.facebook.com)
-2. Kết nối Business Portfolio với App
-3. Thêm Use Case: **Facebook Login for Business**
-4. Customize → Add permissions: `pages_manage_posts`, `pages_show_list`, `pages_read_engagement`
-5. Vào Graph API Explorer → Chọn App → Chọn Page → Generate Access Token
-6. Gia hạn Token (60 ngày): Dùng Access Token Debugger → Extend
-
-### **n8n Credentials**
-- **MongoDB**: Connection string từ MongoDB Atlas
-- **OpenAI**: API Key từ platform.openai.com
-- **Facebook**: Header Auth với `Authorization: Bearer <PAGE_ACCESS_TOKEN>`
-
-### **Admin Settings (localStorage)**
-- `webhookUrl`: URL **Production** của n8n Webhook (KHÔNG có chữ `-test`)
-- `pageId`: Facebook Page ID
-
----
-
-## 🔧 XỬ LÝ LỖI PHỔ BIẾN
-
-| Lỗi | Nguyên nhân | Giải pháp |
-|-----|-------------|-----------|
-| CORS blocked | Admin gọi trực tiếp webhook | Sử dụng Backend proxy `/api/social/webhook-proxy` |
-| Webhook not registered | Dùng URL Test hoặc Workflow chưa Active | Bật **Activate** workflow, dùng URL Production (bỏ `-test`) |
-| Invalid Page ID | Token không khớp với Page | Lấy Token từ đúng Page muốn đăng |
-| `pages_manage_posts` not found | Facebook App thiếu permission | Thêm Use Case Facebook Login → Customize → Add permission |
-| **Đăng 4 ảnh = 4 post** | Thiếu node Aggregate | Thêm node **Code (Aggregate)** + **HTTP Request (Publish Feed)** |
-| Multi-image không hiện Grid | `published` chưa set `false` | Đảm bảo HTTP Upload có `published: false` |
-
----
-
-## 📝 GHI CHÚ QUAN TRỌNG
-
-### Token Facebook
-- Page Access Token từ Graph Explorer chỉ sống **1-2 giờ**
-- Để dùng lâu dài (**60 ngày**), cần Extend qua Access Token Debugger
-
-### Multi-Image Post (Album/Grid)
-- **PHẢI** upload ảnh với `published: false` trước
-- Sau đó gọi `/feed` với `attached_media` chứa danh sách `media_fbid`
-- Nếu chỉ dùng `/photos` trực tiếp → Mỗi ảnh sẽ thành 1 post riêng
-
-### Trạng thái Posted
-- Hiện tại lưu ở localStorage trong Admin Panel
-- Để persist lâu dài, có thể thêm trường `posted_to_facebook` vào Product model trong MongoDB
-
-### URL Webhook
-| Loại | Format | Điều kiện |
-|------|--------|-----------|
-| Test | `/webhook-test/abc123` | Chỉ khi bấm "Listen for Test Event" |
-| **Production** | `/webhook/abc123` | Luôn hoạt động khi workflow **Activated** |
+### 8. Kiểm thử và Xác minh
+* **Happy Path (Luồng chuẩn):**
+    1.  Vào Admin -> Social Posts.
+    2.  Click icon "Settings", nhập Webhook URL (Production) và Page ID.
+    3.  Click icon máy bay (Post) ở một sản phẩm.
+    4.  Trạng thái chuyển sang màu vàng (AI Generating).
+    5.  Chờ 5-10s -> Trạng thái chuyển xanh (Published) + Toast Success.
+    6.  Kiểm tra trên Facebook Page thấy bài viết mới.
+* **Các lỗi thường gặp:**
+    * *Lỗi:* "Webhook URL is required" -> *Nguyên nhân:* Chưa lưu Settings hoặc sai key localStorage.
+    * *Lỗi:* "500 Internal Server Error" -> *Nguyên nhân:* n8n workflow bị lỗi (ví dụ: OpenAI hết quota, Token Facebook hết hạn) hoặc Server không connect được n8n.
+    * *Lỗi:* "CORS Error" -> *Nguyên nhân:* Client gọi trực tiếp n8n thay vì qua Proxy (đã fix bằng Proxy).

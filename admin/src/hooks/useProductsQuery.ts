@@ -3,7 +3,7 @@ import axiosInstance from '@/services/axiosConfig'
 import { QUERY_KEYS } from '@/lib/queryClient'
 
 // ==================== TYPES ====================
-interface Product {
+export interface Product {
   _id: string
   name: string
   slug: string
@@ -34,7 +34,7 @@ interface ProductFilters {
  */
 async function fetchProducts(filters: ProductFilters = {}): Promise<{ data: Product[], total: number }> {
   const params = new URLSearchParams()
-  
+
   if (filters.page) params.append('page', filters.page.toString())
   if (filters.limit) params.append('limit', filters.limit.toString())
   if (filters.search) params.append('search', filters.search)
@@ -149,7 +149,7 @@ export function useCreateProduct() {
     },
     onSuccess: () => {
       // Invalidate all related queries to refetch fresh data
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.lists(),
         refetchType: 'active'
       })
@@ -157,7 +157,7 @@ export function useCreateProduct() {
         queryKey: QUERY_KEYS.variants.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.categories.all,
         refetchType: 'active'
       })
@@ -183,11 +183,11 @@ export function useUpdateProduct() {
     },
     onSuccess: (_, variables) => {
       // Invalidate specific product and all lists
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.detail(variables.id),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.lists(),
         refetchType: 'active'
       })
@@ -195,7 +195,7 @@ export function useUpdateProduct() {
         queryKey: QUERY_KEYS.variants.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.categories.all,
         refetchType: 'active'
       })
@@ -240,15 +240,15 @@ export function useDeleteProduct() {
     },
     onSuccess: () => {
       // Realtime refetch - invalidate all product-related queries
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.products.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.variants.lists(),
         refetchType: 'active'
       })
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.categories.all,
         refetchType: 'active'
       })
