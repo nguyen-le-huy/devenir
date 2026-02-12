@@ -1,186 +1,180 @@
+# Phân Tích Chi Tiết Tính Năng: [Visual Search - Tìm Kiếm Bằng Hình Ảnh]
 
-# Visual Search Feature Documentation
-*Tài liệu kỹ thuật chi tiết cho tính năng tìm kiếm bằng hình ảnh trên nển tảng Devenir.*
+### 1. Tổng Quan & Files Liên Quan
+*   **Mục đích:** Cho phép người dùng tìm kiếm sản phẩm thời trang bằng cách upload hình ảnh hoặc crop một vùng ảnh. Hệ thống sử dụng AI (FashionCLIP) để phân tích đặc trưng thị giác và tìm sản phẩm tương đồng trong kho dữ liệu vector (Qdrant).
+*   **Danh sách Files tham gia:**
+    *   **Frontend UI:**
+        *   `client/src/features/products/components/VisualSearch/VisualSearch.tsx`: Giao diện chính (Modal upload & crop).
+    *   **Frontend Logic:**
+        *   `client/src/features/products/hooks/useVisualSearch.ts`: Hook quản lý logic upload, crop và gọi API.
+        *   `client/src/features/products/api/imageSearchService.ts`: API Client.
+        *   `client/src/shared/utils/imageUtils.ts`: Các hàm utility xử lý ảnh (resize, compress, base64).
+    *   **Backend Route/Controller:**
+        *   `server/routes/imageSearchRoutes.js`: Định nghĩa API endpoints.
+        *   `server/controllers/ImageSearchController.js`: Validate request và điều phối logic.
+    *   **Backend Logic/Service:**
+        *   `server/services/imageSearch.service.js`: Service chính, orchestrator.
+        *   `server/services/imageSearch/clipServiceClient.js`: Client giao tiếp với CLIP Service (Python/FastAPI).
+        *   `server/services/imageSearch/qdrantVectorStore.js`: Client giao tiếp với Qdrant Vector DB.
+        *   `server/services/imageSearch/redisCache.js`: Caching layer.
 
----
-
-## 1. Tổng quan & Kiến trúc
-
-### Giới thiệu
-Tính năng Visual Search cho phép người dùng tìm kiếm sản phẩm bằng cách tải lên hình ảnh. Hệ thống sử dụng AI để phân tích đặc trưng hình ảnh (màu sắc, kiểu dáng, họa tiết) và tìm ra các sản phẩm tương đồng nhất trong kho hàng.
-
-### Sơ đồ Kiến trúc (High-Level Architecture)
-
-Hệ thống được thiết kế theo kiến trúc Microservices để đảm bảo hiệu năng và khả năng mở rộng.
+### 2. Kiến Trúc & Luồng Dữ Liệu (Data Flow)
+*   **Sơ đồ Mermaid Sequence Chi Tiết:**
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Client as React Client
-    participant API as Node.js Backend
+    participant Frontend as VisualSearch (React)
+    participant API as Backend (Node.js)
     participant Redis as Redis Cache
-    participant CLIP as FashionCLIP Service
+    participant CLIP as CLIP Service (Python)
     participant Qdrant as Qdrant Vector DB
 
-    User->>Client: Upload & Crop Image
-    Client->>API: POST /api/image-search/find-similar
+    User->>Frontend: Upload Image & Crop Area
+    Frontend->>Frontend: Resize & Compress (Client-side)
+    Frontend->>API: POST /api/image-search/find-similar (Base64)
     
-    API->>Redis: Check Cache (Image Hash)
+    API->>API: Compute Image Hash (SHA-256)
+    API->>Redis: Check Cache (Hash)
     
     alt Cache Hit
-        Redis-->>API: Return Cached Results (~1ms)
+        Redis-->>API: Return Cached Results
+        API-->>Frontend: Return JSON (Latency ~10ms)
     else Cache Miss
-        API->>CLIP: POST /encode (Base64)
-        CLIP-->>API: Return Embedding [512 dims]
+        API->>CLIP: POST /encode { image: Base64 }
+        Note right of CLIP: Model: FashionCLIP<br/>Output: 512-dim Vector
+        CLIP-->>API: Return Embedding Vector
         
-        API->>Qdrant: Search Nearest Neighbors (Vector)
-        Qdrant-->>API: Return Top Product Payloads
+        API->>Qdrant: Search Nearest Neighbors (HNSW)
+        Note right of Qdrant: Filter: score > threshold<br/>Return Payload: Name, Price, Slug...
+        Qdrant-->>API: Return Matches (Top K)
         
         API->>Redis: Save Results (TTL 1h)
+        API-->>Frontend: Return JSON (Latency ~250ms)
     end
     
-    API-->>Client: Return JSON Product List
+    Frontend->>Frontend: Navigate to /visually-similar
+    Frontend->>User: Display Product Grid
 ```
 
-### Technology Stack
+### 3. Phân Tích Chi Tiết Frontend (Client-Side)
 
-| Thành phần | Công nghệ | Vai trò & Lý do lựa chọn |
-|:---|:---|:---|
-| **AI Model** | **FashionCLIP** (Zalando) | Mô hình chuyên biệt cho thời trang, tốt hơn OpenAI CLIP gốc trong việc nhận diện thuộc tính chi tiết (váy midi, cổ V, màu be...). |
-| **Vector DB** | **Qdrant** | Database lưu trữ vector hiệu năng cao (Rust). Hỗ trợ lưu trữ Payload đầy đủ, giúp **loại bỏ bước query phụ vào MongoDB**. |
-| **Backend** | **Node.js** + Express | API Gateway điều phối luồng dữ liệu, validation và auth. |
-| **Cache** | **Redis** | Caching lớp 1. Giảm tải tính toán AI cho các request lặp lại (user refresh, back/forward). |
-| **Frontend** | **React** + `react-image-crop` | Xử lý ảnh client-side (crop, resize, compress) giúp giảm tải băng thông và server. |
+#### 3.1. Hook & Logic (`src/features/products/hooks/useVisualSearch.ts`)
+*   **`useVisualSearch(isOpen, onClose)`**:
+    *   **Mục đích:** Quản lý toàn bộ vòng đời của việc tìm kiếm ảnh.
+    *   **State nội bộ:**
+        *   `previewImage` (string | null): Base64 của ảnh gốc user upload.
+        *   `crop`, `completedCrop` (Crop type): Tọa độ vùng crop user chọn.
+        *   `isCropping` (boolean): Trạng thái đang crop hay đang xem kết quả/upload.
+        *   `isUploading` (boolean): Loading state khi gọi API.
+    *   **Helper Functions:**
+        *   `getCroppedImage()`: Cắt ảnh từ `imgRef` dựa trên `completedCrop`, vẽ lên Canvas ẩn và export ra Base64.
+        *   `handleFileSelect(file)`: Validate file (type, size), convert sang base64, set state để hiện màn hình crop.
+    *   **Exposed Handlers:**
+        *   `handleSearch()`: 
+            1. Gọi `getCroppedImage()` để lấy ảnh final.
+            2. Gọi API `findSimilarProducts(image)`.
+            3. Nếu thành công: Navigate sang trang kết quả `/visually-similar` kèm data `state` (không dùng URL params vì payload lớn).
+            4. Nếu lỗi: Set `error` state (xử lý các mã lỗi 413, 503...).
 
----
+#### 3.2. UI Components & Interaction (`VisualSearch.tsx`)
+*   **Thư viện:** Sử dụng `react-image-crop` để cung cấp giao diện crop ảnh chuyên nghiệp.
+*   **Render Logic:**
+    *   **State 1 (Upload):** Hiển thị Dropzone.
+    *   **State 2 (Cropping):** Hiển thị `ReactCrop` component bao lấy ảnh preview.
+    *   **State 3 (Loading):** Hiển thị Spinner khi đang gọi API.
+*   **Performance:** Sử dụng `memo` để tránh re-render không cần thiết khi parent component thay đổi.
 
-## 2. Chi tiết Luồng Hoạt động (Data Flow)
+#### 3.3. API Layer (`src/features/products/api/imageSearchService.ts`)
+*   **`findSimilarProducts(image, topK = 12)`**:
+    *   Gửi POST request tới `/image-search/find-similar`.
+    *   Payload: `{ image: "data:image/jpeg...", topK: 12 }`.
 
-### Bước 1: Client-Side Processing
-Tại giao diện người dùng (`VisualSearch.tsx`):
-1.  **Input**: User upload ảnh hoặc kéo thả.
-2.  **Preprocessing**:
-    *   **Cropping**: User khoanh vùng sản phẩm cần tìm (loại bỏ background nhiễu).
-    *   **Compression**: Ảnh được resize về max 1024px, nén JPEG 85% để giảm payload size.
-3.  **Request**: Gửi ảnh (Base64) lên API.
+### 4. Giao Diện API (Contract)
 
-### Bước 2: Backend Orchestration
-Upon receiving request tại `ImageSearchController.js`:
-1.  **Validation**: Kiểm tra size (<10MB) và format.
-2.  **Cache Check**: Hash ảnh input -> Kiểm tra Redis. Nếu có, trả về ngay lập tức.
-3.  **Service Call**: Nếu chưa cache, gọi sang FashionCLIP Service.
-
-### Bước 3: AI Inference (FashionCLIP)
-Service độc lập (`clip-service`) chạy Python/FastAPI:
-1.  **Input**: Ảnh Base64.
-2.  **Model**: `patrickjohncyh/fashion-clip`.
-3.  **Process**: Resize/Normalize -> Forward qua model.
-4.  **Output**: Vector 512 chiều (Embedding).
-
-### Bước 4: Similarity Search (Qdrant)
-Backend dùng vector nhận được để truy vấn Qdrant:
-1.  **Algorithm**: HNSW (Hierarchical Navigable Small World) cho tốc độ tìm kiếm cực nhanh (~5-10ms).
-2.  **Filtering**: Lọc kết quả có độ tương đồng `score < threshold` (mặc định 0.15).
-3.  **Payload**: Lấy thông tin sản phẩm trực tiếp từ Qdrant (Tên, Giá, Ảnh, Slug).
-
----
-
-## 3. Thông số Kỹ thuật & Cấu hình Model
-
-### Model Configuration
-So sánh hiệu quả giữa FashionCLIP và Generic CLIP:
-
-| Đặc điểm | OpenAI CLIP (ViT-L-14) | FashionCLIP (Self-hosted) |
-|---|---|---|
-| **Training Data** | Ảnh tạp (General objects) | **800K+ Ảnh thời trang** |
-| **Model Size** | ~850MB | **~400MB** (Nhẹ hơn) |
-| **Inference Time** | ~400ms | **~200ms** (Nhanh hơn 2x) |
-| **Color Accuracy** | Thấp (Top 5-6) | **Cao** (Top 1) |
-| **Fashion Attributes** | Trung bình | **Rất tốt** (Hiểu style, chất liệu) |
-
-### API Endpoints
-
-**1. Find Similar Products**
-*   `POST /api/image-search/find-similar`
-*   **Request**:
+*   **Endpoint:** `POST /api/image-search/find-similar`
+*   **Headers:** `Content-Type: application/json`
+*   **Request Body:**
     ```json
     {
-        "image": "data:image/jpeg;base64,.....",
-        "topK": 12,
-        "scoreThreshold": 0.15
+      "image": "data:image/jpeg;base64,/9j/4AAQSkZJRg...", // Base64 string (Max 10MB)
+      "topK": 12,           // Số lượng kết quả muốn lấy (Default: 12)
+      "scoreThreshold": 0.15 // Độ tương đồng tối thiểu (0.0 - 1.0, Default: 0.15)
     }
     ```
-*   **Response**:
+*   **Response Success (200):**
     ```json
     {
-        "success": true,
-        "data": [
-            {
-                "productName": "EKD Wool Sweater",
-                "price": 450,
-                "score": 0.61, // Độ tương đồng 61%
-                "image": "https://..."
-            }
-        ],
-        "timing": { "total": 210, "clipEncode": 200, "qdrantSearch": 6 }
+      "success": true,
+      "data": [
+        {
+          "productId": "65cb...",
+          "productName": "Striped Cotton Shirt",
+          "price": 599000,
+          "score": 0.89,       // Độ tương đồng (Càng cao càng giống)
+          "mainImage": "https://...",
+          "urlSlug": "striped-cotton-shirt"
+        }
+      ],
+      "count": 1,
+      "cached": false,         // True nếu lấy từ Redis
+      "timing": {
+        "total": 350,
+        "clipEncode": 200,
+        "qdrantSearch": 10
+      }
     }
     ```
+*   **Response Error:**
+    *   `400 Bad Request`: Image too large (>10MB) hoặc invalid format.
+    *   `503 Service Unavailable`: Qdrant hoặc CLIP service bị down.
 
----
+### 5. Phân Tích Chi Tiết Backend (Server-Side)
 
-## 4. Hiệu năng (Performance)
+#### 5.1. Controller Layer (`server/controllers/ImageSearchController.js`)
+*   **`findSimilarProductsSelfHost`**:
+    *   **Validation:** Kiểm tra nhanh kích thước Base64 string. Nếu > 10MB -> Reject ngay lập tức (Fail Fast).
+    *   **Flow:** Gọi `imageSearchService.findSimilarProducts(image)`.
+    *   **Error Handling:** Catch lỗi `Service Unavailable` để gợi ý Admin restart Docker container.
 
-Hệ thống được tối ưu hóa cho tốc độ phản hồi nhanh (Low Latency).
+#### 5.2. Service Layer (`server/services/imageSearch.service.js`)
+Đây là Orchestrator Service, điều phối toàn bộ flow.
 
-| Loại Request | Thời gian xử lý | Ghi chú |
-|---|---|---|
-| **Cold Request** (Lần đầu) | 150ms - 250ms | Bao gồm: Upload + Encode + Search |
-| **Warm Request** (Cached) | **~1ms - 5ms** | Trả về trực tiếp từ Redis |
+*   **Logic xử lý (Step-by-step):**
+    1.  **Init Check:** Đảm bảo connection tới Qdrant và Redis đã sẵn sàng (`ensureInitialized`).
+    2.  **Cache Check (Redis):**
+        *   Tạo hash SHA-256 từ chuỗi Base64 ảnh input.
+        *   Query Redis với key `img_search:${hash}`.
+        *   Nếu có -> Trả về ngay (Latency < 10ms).
+    3.  **Vector Encoding (CLIP Service):**
+        *   Gọi sang container `clip-service` (Port 8899).
+        *   Input: Ảnh Base64.
+        *   Output: Vector 512 chiều (Embedding).
+        *   Model: `patrickjohncyh/fashion-clip`.
+    4.  **Similarity Search (Qdrant):**
+        *   Gửi vector vừa tạo vào Qdrant Collection `clothing_products`.
+        *   Query tìm `topK` vector gần nhất (dùng thuật toán HNSW/Cosine Similarity).
+        *   Filter: Loại bỏ các kết quả có `score < scoreThreshold`.
+    5.  **Payload Extraction:**
+        *   *Điểm đặc biệt:* Hệ thống lưu toàn bộ thông tin hiển thị (Name, Price, Slug, Image) ngay trong Payload của Qdrant.
+        *   -> **Không cần query ngược lại MongoDB**, giúp giảm 1 round-trip database và tăng tốc độ.
+    6.  **Caching:** Lưu kết quả vào Redis với TTL (Time-To-Live) mặc định 1 giờ.
 
-**Bảng phân tích thời gian (Timing Breakdown)**:
-*   Cache Check: **~1ms**
-*   AI Inference (Encode): **~100-200ms** (Phụ thuộc CPU/GPU)
-*   Vector Search (Qdrant): **~5-10ms** (Với 10k+ sản phẩm)
+### 6. Các Vấn Đề Kỹ Thuật (Edge Cases & Performance)
 
----
+*   **Performance (Cold Start):** Lần search đầu tiên sẽ chậm hơn (~300-500ms) do phải encode ảnh và search vector. Các lần sau nếu ảnh trùng lặp sẽ cực nhanh nhờ Redis.
+*   **Qdrant Availability:** Nếu Qdrant chết, search sẽ fail toàn bộ. Service có cơ chế health check (`/api/image-search/health`) để monitor.
+*   **Image Pre-processing:** Client thực hiện resize ảnh về max 1024px trước khi gửi. Điều này cực kỳ quan trọng để giảm bandwidth upload và giảm tải cho CLIP Service.
+*   **Security:** API là Public (để khách hàng dùng), nhưng có Rate Limiting (thông qua `express-rate-limit` ở tầng `app.js` - Global Middleware) để tránh spam request làm quá tải GPU/CPU server.
 
-## 5. Cấu trúc Source Code
-
-### 📁 Docker Services
-*   `docker-compose.visual-search.yml`: Định nghĩa stack (Qdrant, Redis, CLIP Service).
-*   `clip-service/`: Source code Python API cho model AI.
-
-### 📁 Server (Node.js)
-*   `services/imageSearch/clipServiceClient.js`: Client giao tiếp với AI Service.
-*   `services/imageSearch/qdrantVectorStore.js`: Client giao tiếp Qdrant.
-*   `services/imageSearch/redisCache.js`: Client xử lý caching.
-*   `scripts/ingestion/ingest-to-qdrant.js`: Script đồng bộ dữ liệu từ DB sang Vector DB.
-
-### 📁 Client (React)
-*   `components/VisualSearch/VisualSearch.tsx`: UI Upload & Crop.
-*   `hooks/useVisualSearch.ts`: Logic xử lý state và API calls.
-
----
-
-## 6. Hướng dẫn Vận hành (Operational Guide)
-
-### Các lệnh quan trọng
-
-```bash
-# 1. Khởi động hệ thống Visual Search (Docker)
-docker compose -f docker-compose.visual-search.yml up -d
-
-# 2. Xem logs dịch vụ AI
-docker compose -f docker-compose.visual-search.yml logs -f clip-service
-
-# 3. Đồng bộ dữ liệu vào Qdrant (Chạy khi có sản phẩm mới)
-cd server && node scripts/ingestion/ingest-to-qdrant.js --force
-
-# 4. Xóa Cache (Chạy khi update model)
-docker exec devenir-redis redis-cli FLUSHDB
-```
-
-### Xử lý sự cố (Troubleshooting)
-1.  **AI Service bị chậm?** -> Kiểm tra CPU usage hoặc cân nhắc bật GPU acceleration trong `docker-compose`.
-2.  **Kết quả tìm kiếm không chính xác?** -> Kiểm tra bước crop ảnh ở client, đảm bảo user không lấy quá nhiều background nhiễu.
-3.  **Lỗi connection?** -> Đảm bảo các port 6333 (Qdrant), 6379 (Redis), 8899 (CLIP) không bị chặn firewall.
+### 7. Hướng Dẫn Debug & Kiểm Thử
+*   **Logs:**
+    *   Backend log (`npm run dev`): Tìm keyword `[ImageSearchService]`, `Encoding image via CLIP...`.
+    *   Kiểm tra thời gian xử lý: Response JSON trả về object `timing` chi tiết từng bước.
+*   **Check Services:**
+    *   Gọi `GET /api/image-search/health` để xem trạng thái CLIP, Qdrant, Redis.
+*   **Test Case:**
+    1.  **Case 1 (Standard):** Upload ảnh áo thun đỏ -> Kết quả trả về các áo thun đỏ tương tự.
+    2.  **Case 2 (Cache):** Upload lại ảnh vừa rồi -> Response `cached: true`, `timing.total` giảm xuống < 20ms.
+    3.  **Case 3 (Crop):** Upload ảnh cả người, crop lấy phần giày -> Kết quả trả về giày tương tự (chứng tỏ crop hoạt động đúng).
+    4.  **Case 4 (System Down):** Stop container `devenir-qdrant` -> Search -> Nhận lỗi 503 kèm hướng dẫn fix.
