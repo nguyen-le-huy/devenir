@@ -204,9 +204,9 @@ class SemanticCache {
      * Hash embedding to create consistent cache key
      * @private
      * @param {number[]} embedding - Embedding vector
-     * @returns {string} MD5 hash
+     * @returns {Promise<string>} MD5 hash
      */
-    hashEmbedding(embedding) {
+    async hashEmbedding(embedding) {
         const crypto = await import('crypto');
         const str = embedding.slice(0, 10).join(',');
         return crypto.default.createHash('md5').update(str).digest('hex');

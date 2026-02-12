@@ -143,7 +143,6 @@ export function quickIntentDetection(message) {
         'áo', 'quần', 'váy', 'đầm', 'jacket', 'coat', 'scarf', 'khăn', 'túi', 'bag', 'giày', 'boots',
         'nước hoa', 'fragrance', 'perfume', 'eau de parfum', 'cologne',
         'wallet', 'ví', 'tie', 'cà vạt', 'cufflink', 'sweater', 'áo len',
-        'wallet', 'ví', 'tie', 'cà vạt', 'cufflink', 'sweater', 'áo len',
         // Product questions - origin, material, details
         'sản xuất', 'xuất xứ', 'made in', 'origin', 'chất liệu', 'nguyên liệu', 'material', 'fabric',
         'mô tả', 'chi tiết', 'thông tin', 'về sản phẩm', 'detail',

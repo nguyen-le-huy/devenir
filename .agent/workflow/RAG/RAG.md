@@ -8,7 +8,7 @@
 
 ### Mục Đích
 Hệ thống RAG của Devenir cung cấp AI Chat Assistant thông minh cho khách hàng và admin, với khả năng:
-- Tư vấn sản phẩm thời trang nam dựa trên ngữ cảnh (Context-Aware)
+- Tư vấn sản phẩm thời trang dựa trên ngữ cảnh (Context-Aware)
 - Tư vấn size cá nhân hóa
 - Gợi ý phối đồ theo phong cách
 - Tra cứu đơn hàng & chính sách

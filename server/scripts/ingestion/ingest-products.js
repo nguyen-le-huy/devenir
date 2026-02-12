@@ -202,7 +202,7 @@ async function ingestAllProducts() {
                         const materials = product.details?.material || product.description; // Simple fallback
 
                         const prompt = `
-        Bạn là chuyên gia thời trang AI. Hãy tạo danh sách 3 mệnh đề (propositions) ngắn gọn (dưới 30 từ/câu) bằng Tiếng Việt để mô tả sản phẩm này cho hệ thống tìm kiếm (RAG).
+        Bạn là chuyên gia thời trang AI. Hãy tạo danh sách 6 mệnh đề (propositions) ngắn gọn (dưới 30 từ/câu) bằng Tiếng Việt để mô tả sản phẩm này cho hệ thống tìm kiếm (RAG).
         
         Thông tin sản phẩm:
         - Tên: ${product.name}
