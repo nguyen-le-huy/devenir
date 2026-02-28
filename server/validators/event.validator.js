@@ -20,7 +20,7 @@ export const singleEventSchema = z.object({
         type: z.string().min(1),
         data: z.record(z.any()).optional(),
         timestamp: z.string().or(z.number()).or(z.date()).optional(),
-        token: z.string().optional(),
+        token: z.string().nullish(),
     }),
 });
 

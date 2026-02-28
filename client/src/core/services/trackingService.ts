@@ -42,8 +42,9 @@ class TrackingService {
 
     // Initialize Socket.IO connection
     try {
-      this.socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3111', {
+      this.socket = io(import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:3111', {
         auth: { token },
+        transports: ['websocket', 'polling'],
         autoConnect: true,
         reconnection: true,
         reconnectionAttempts: 5,

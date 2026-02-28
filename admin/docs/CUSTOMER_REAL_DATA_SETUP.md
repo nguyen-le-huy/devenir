@@ -31,7 +31,7 @@ cd server
 npm run dev
 ```
 
-Server sẽ chạy tại: `http://localhost:5000`
+Server sẽ chạy tại: `http://localhost:3111`
 
 ### 2. Start Admin Panel
 
@@ -52,7 +52,7 @@ Admin panel sẽ chạy tại: `http://localhost:5174` (hoặc port khác nếu 
 ```env
 MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
-PORT=5000
+PORT=3111
 ```
 
 ### 5. Login vào Admin Panel
@@ -108,7 +108,7 @@ Sử dụng tài khoản admin đã có hoặc tạo mới:
 
 **Giải pháp**:
 
-1. Kiểm tra server đang chạy: `http://localhost:5000/api/customers/overview`
+1. Kiểm tra server đang chạy: `http://localhost:3111/api/customers/overview`
 2. Kiểm tra CORS trong `server/server.js`:
 
 ```javascript
@@ -116,7 +116,7 @@ app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:5174"], // Admin panel ports
     credentials: true,
-  })
+  }),
 );
 ```
 

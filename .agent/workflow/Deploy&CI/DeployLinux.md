@@ -39,9 +39,11 @@ docker compose up -d --build
 ```
 
 Kiểm tra trạng thái containers:
+
 ```bash
 docker compose ps
 ```
+
 Đảm bảo tất cả services (server, client, admin, redis, qdrant...) đều `Up` hoặc `Healthy`.
 
 ---
@@ -61,7 +63,8 @@ echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudf
 # Cài đặt
 sudo apt-get update && sudo apt-get install cloudflared -y
 ```
-*(Lưu ý: `noble` là codename cho Ubuntu 24.04/Linux Mint 22. Nếu bản cũ hơn thay bằng `jammy` hoặc `focal`)*
+
+_(Lưu ý: `noble` là codename cho Ubuntu 24.04/Linux Mint 22. Nếu bản cũ hơn thay bằng `jammy` hoặc `focal`)_
 
 #### 3.2. Authenticate & Create Tunnel
 
@@ -108,9 +111,16 @@ ingress:
   - hostname: admin.devenir.shop
     service: http://localhost:5174
 
-  # API -> Container port 3111
+  # API -> Container port 3111 (Node.js + Socket.IO)
   - hostname: api.devenir.shop
     service: http://localhost:3111
+    originRequest:
+      noTLSVerify: false
+      connectTimeout: 30s
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
+      # Disable HTTP/2 để đảm bảo WebSocket upgrade (HTTP/1.1) hoạt động đúng
+      http2Origin: false
 
   # N8N -> Container port 5678
   - hostname: n8n.devenir.shop
@@ -127,6 +137,11 @@ ingress:
   # Bắt buộc: Catch-all rule
   - service: http_status:404
 ```
+
+> **Lý do cần `originRequest` cho `api.devenir.shop`:**
+>
+> - `http2Origin: false` → Buộc cloudflared dùng HTTP/1.1 khi kết nối về Node.js. WebSocket **bắt buộc** cần HTTP/1.1 Upgrade header. Nếu cloudflared dùng HTTP/2, WebSocket upgrade bị fail.
+> - `keepAliveTimeout: 90s` → Socket.IO có `pingInterval: 25s` và `pingTimeout: 60s`. Timeout này đảm bảo cloudflared không đóng connection trước khi Socket.IO kịp ping.
 
 #### 3.5. Install System Service
 
@@ -146,6 +161,23 @@ sudo systemctl start cloudflared
 sudo systemctl enable cloudflared
 ```
 
+#### 3.6. Áp dụng config mới lên server
+
+Sau khi sửa `config.yml`, reload cloudflared để áp dụng:
+
+```bash
+# Copy config mới vào /etc/cloudflared/
+sudo cp ~/.cloudflared/config.yml /etc/cloudflared/
+
+# Restart cloudflared để áp dụng originRequest settings
+sudo systemctl restart cloudflared
+
+# Kiểm tra logs ngay sau restart (xem có WebSocket connection nào fail không)
+sudo journalctl -u cloudflared -f --no-pager
+```
+
+> **Lưu ý:** Bước này là bắt buộc sau khi thêm `originRequest` vào config. Nếu không restart, cloudflared vẫn dùng config cũ và Socket.IO vẫn fail trên production.
+
 ---
 
 ### **Bước 4: Cấu hình Production & Rebuild**
@@ -153,22 +185,26 @@ sudo systemctl enable cloudflared
 Sau khi có domain thật, cần update code để nhận diện domain (Fix CORS, API URL).
 
 #### 4.1. Update Backend (CORS)
+
 Sửa `server/server.js`, thêm domain mới vào `allowedOrigins`:
+
 ```javascript
 const allowedOrigins = [
   // ...
-  'https://devenir.shop',
-  'https://www.devenir.shop',
-  'https://admin.devenir.shop',
-  'https://api.devenir.shop',
+  "https://devenir.shop",
+  "https://www.devenir.shop",
+  "https://admin.devenir.shop",
+  "https://api.devenir.shop",
   // ...
 ];
 ```
 
 #### 4.2. Update Client & Admin Env
+
 Tạo file `.env.production` cho Client và Admin để trỏ về API domain thật (thay vì localhost).
 
 **client/.env.production:**
+
 ```env
 VITE_API_URL=https://api.devenir.shop/api
 VITE_SOCKET_URL=https://api.devenir.shop
@@ -176,11 +212,13 @@ VITE_GOOGLE_CLIENT_ID=...
 ```
 
 **admin/.env.production:**
+
 ```env
 VITE_API_URL=https://api.devenir.shop/api
 ```
 
 #### 4.3. Rebuild Containers
+
 Force build lại để code mới và env mới có hiệu lực.
 
 ```bash
@@ -211,6 +249,7 @@ sudo journalctl -u cloudflared -f
 ```
 
 ### Kiểm tra Docker Logs
+
 ```bash
 # Xem logs tất cả services
 docker compose logs -f
@@ -225,6 +264,7 @@ docker compose ps
 ```
 
 ### Restart Services
+
 ```bash
 # Restart Docker containers
 docker compose restart
@@ -257,8 +297,10 @@ Nếu trước đó dùng **Tailscale Funnel**, hãy tắt đi để tránh conf
 sudo tailscale funnel reset
 sudo tailscale serve reset
 ```
+
 Vẫn nên giữ Tailscale chạy ngầm để có thể SSH vào server từ xa (qua IP `100.x.x.x`) khi cần bảo trì.
 
 ---
+
 **Last Updated:** February 2026
 **Author:** HyStudio Development Team
