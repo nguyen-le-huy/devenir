@@ -49,13 +49,18 @@ class AuthService {
             emailVerificationExpires: verificationExpires
         });
 
-        // 4. Send Email
-        const verificationUrl = `${clientUrl}/verify-email/${verificationToken}`;
-        await sendResetEmail({
-            email: user.email,
-            subject: 'Verify your email - Devenir',
-            message: `Please click the link below to verify your email:\n\n${verificationUrl}\n\nThis link expires in 24 hours.`
-        });
+        // 4. Send Email — rollback user if email fails
+        try {
+            const verificationUrl = `${clientUrl}/verify-email/${verificationToken}`;
+            await sendResetEmail({
+                email: user.email,
+                subject: 'Verify your email - Devenir',
+                message: `Please click the link below to verify your email:\n\n${verificationUrl}\n\nThis link expires in 24 hours.`
+            });
+        } catch (emailErr) {
+            await User.findByIdAndDelete(user._id);
+            throw new Error('Failed to send verification email. Please try again later.');
+        }
 
         return user;
     }
