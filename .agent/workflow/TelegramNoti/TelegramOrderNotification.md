@@ -87,23 +87,23 @@ const paymentEmoji = order.paymentGateway === 'PayOS' ? '🏦' : '₿';
 
 // Build message
 const message = `
-🎉 *ĐƠN HÀNG MỚI!*
+🎉 <b>ĐƠN HÀNG MỚI!</b>
 
-📦 *Mã đơn:* \`#${order.orderCode}\`
-💰 *Tổng tiền:* *$${order.totalPrice}*
-${paymentEmoji} *Thanh toán:* ${order.paymentGateway}
+📦 <b>Mã đơn:</b> <code>#${order.orderCode}</code>
+💰 <b>Tổng tiền:</b> <b>$${order.totalPrice}</b>
+${paymentEmoji} <b>Thanh toán:</b> ${order.paymentGateway}
 
-👤 *Khách hàng:*
+👤 <b>Khách hàng:</b>
 • Email: ${order.customerEmail}
 • SĐT: ${address.phone}
 
-📍 *Địa chỉ:*
+📍 <b>Địa chỉ:</b>
 ${fullAddress}
 
-🛍️ *Sản phẩm:*
+🛍️ <b>Sản phẩm:</b>
 ${itemsList}
 
-🚚 *Giao hàng:* ${order.deliveryWindow === 'standard' ? 'Tiêu chuẩn (2-3 ngày)' : order.deliveryWindow === 'next' ? 'Ngày hôm sau' : 'Chọn ngày'}
+🚚 <b>Giao hàng:</b> ${order.deliveryWindow === 'standard' ? 'Tiêu chuẩn (2-3 ngày)' : order.deliveryWindow === 'next' ? 'Ngày hôm sau' : 'Chọn ngày'}
 
 ⏰ ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}
 `.trim();
@@ -121,7 +121,7 @@ return {
 - **Operation**: Send Message
 - **Chat ID**: `{{ $json.chatId }}`
 - **Text**: `{{ $json.text }}`
-- **Parse Mode**: Markdown
+- **Parse Mode**: HTML
 
 ### **Node 4: Respond to Webhook**
 - **Response Body**:

@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get order data - try body first (webhook), then direct json\nconst order = $input.first().json.body || $input.first().json;\n\n// Safety check\nif (!order || !order.items) {\n  return {\n    json: {\n      chatId: order?.telegramChatId || '-1003601880605',\n      text: '⚠️ Received order notification but data is incomplete.'\n    }\n  };\n}\n\nconst itemsList = order.items.map((item, idx) => \n  `  ${idx + 1}. ${item.name}\\n     • Màu: ${item.color} | Size: ${item.size}\\n     • SL: ${item.quantity} x $${item.price}`\n).join('\\n\\n');\n\nconst address = order.shippingAddress || {};\nconst fullAddress = `${address.street || ''}, ${address.city || ''}`;\nconst paymentEmoji = order.paymentGateway === 'PayOS' ? '🏦' : '₿';\n\nconst message = `\n🎉 *ĐƠN HÀNG MỚI!*\n\n📦 *Mã đơn:* \\`#${order.orderCode}\\`\n💰 *Tổng tiền:* *$${order.totalPrice}*\n${paymentEmoji} *Thanh toán:* ${order.paymentGateway}\n\n👤 *Khách hàng:*\n- Email: ${order.customerEmail}\n- SĐT: ${address.phone || 'N/A'}\n\n📍 *Địa chỉ:*\n${fullAddress}\n\n🛍️ *Sản phẩm:*\n${itemsList}\n\n🚚 *Giao hàng:* ${order.deliveryWindow === 'standard' ? 'Tiêu chuẩn (2-3 ngày)' : order.deliveryWindow === 'next' ? 'Ngày hôm sau' : 'Chọn ngày'}\n\n⏰ ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`.trim();\n\nreturn {\n  json: {\n    chatId: order.telegramChatId || '-1003601880605',\n    text: message\n  }\n};"
+        "jsCode": "// Get order data - try body first (webhook), then direct json\nconst order = $input.first().json.body || $input.first().json;\n\n// Safety check\nif (!order || !order.items) {\n  return {\n    json: {\n      chatId: order?.telegramChatId || '-1003601880605',\n      text: '⚠️ Received order notification but data is incomplete.'\n    }\n  };\n}\n\nconst itemsList = order.items.map((item, idx) => \n  `  ${idx + 1}. ${item.name}\\n     • Màu: ${item.color} | Size: ${item.size}\\n     • SL: ${item.quantity} x $${item.price}`\n).join('\\n\\n');\n\nconst address = order.shippingAddress || {};\nconst fullAddress = `${address.street || ''}, ${address.city || ''}`;\nconst paymentEmoji = order.paymentGateway === 'PayOS' ? '🏦' : '₿';\n\nconst message = `\n🎉 <b>ĐƠN HÀNG MỚI!</b>\n\n📦 <b>Mã đơn:</b> <code>#${order.orderCode}</code>\n💰 <b>Tổng tiền:</b> <b>$${order.totalPrice}</b>\n${paymentEmoji} <b>Thanh toán:</b> ${order.paymentGateway}\n\n👤 <b>Khách hàng:</b>\n- Email: ${order.customerEmail}\n- SĐT: ${address.phone || 'N/A'}\n\n📍 <b>Địa chỉ:</b>\n${fullAddress}\n\n🛍️ <b>Sản phẩm:</b>\n${itemsList}\n\n🚚 <b>Giao hàng:</b> ${order.deliveryWindow === 'standard' ? 'Tiêu chuẩn (2-3 ngày)' : order.deliveryWindow === 'next' ? 'Ngày hôm sau' : 'Chọn ngày'}\n\n⏰ ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}\n`.trim();\n\nreturn {\n  json: {\n    chatId: order.telegramChatId || '-1003601880605',\n    text: message\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -32,11 +32,11 @@
     },
     {
       "parameters": {
-        "chatId": "=-1003601880605",
+        "chatId": "={{ $json.chatId }}",
         "text": "={{ $json.text }}",
         "additionalFields": {
           "appendAttribution": false,
-          "parse_mode": "Markdown"
+          "parse_mode": "HTML"
         }
       },
       "type": "n8n-nodes-base.telegram",
